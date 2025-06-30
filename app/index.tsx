@@ -7,7 +7,7 @@ import {
   Title1,
 } from '@/components';
 
-export default function Index() {
+const Index = () => {
   return (
     <ScreenContainer>
       <RektLogo width={100} height={100} />
@@ -18,4 +18,6 @@ export default function Index() {
       </Column>
     </ScreenContainer>
   );
-}
+};
+
+export default Index;
