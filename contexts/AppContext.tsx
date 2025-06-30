@@ -1,6 +1,20 @@
-import { createContext, useContext, useState } from 'react';
+import {
+  createContext,
+  Dispatch,
+  SetStateAction,
+  useContext,
+  useState,
+} from 'react';
 
-export const AppContext = createContext({});
+type AppContextType = {
+  isLoggedIn: boolean;
+  setIsLoggedIn: Dispatch<SetStateAction<boolean>>;
+};
+
+export const AppContext = createContext<AppContextType>({
+  isLoggedIn: false,
+  setIsLoggedIn: () => {},
+});
 
 export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
