@@ -1,3 +1,5 @@
+import { I18nManager } from 'react-native';
+
 import {
   DarkTheme,
   DefaultTheme,
@@ -9,6 +11,10 @@ import { darkTheme, lightTheme } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Stack } from 'expo-router';
 import { ThemeProvider as StyledThemeProvider } from 'styled-components/native';
+
+// Configure RTL support for languages like Arabic and Hebrew
+I18nManager.allowRTL(true);
+I18nManager.swapLeftAndRightInRTL(true);
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
