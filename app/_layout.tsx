@@ -4,6 +4,7 @@ import {
   ThemeProvider as NavigationThemeProvider,
 } from '@react-navigation/native';
 
+import { AppProvider } from '../contexts/AppContext';
 import { darkTheme, lightTheme } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Stack } from 'expo-router';
@@ -15,10 +16,12 @@ export default function RootLayout() {
   const styledTheme = colorScheme === 'dark' ? darkTheme : lightTheme;
 
   return (
-    <NavigationThemeProvider value={navTheme}>
-      <StyledThemeProvider theme={styledTheme}>
-        <Stack />
-      </StyledThemeProvider>
-    </NavigationThemeProvider>
+    <AppProvider>
+      <NavigationThemeProvider value={navTheme}>
+        <StyledThemeProvider theme={styledTheme}>
+          <Stack />
+        </StyledThemeProvider>
+      </NavigationThemeProvider>
+    </AppProvider>
   );
 }
