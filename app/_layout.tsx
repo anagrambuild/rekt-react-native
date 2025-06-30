@@ -19,7 +19,7 @@ export default function RootLayout() {
     <AppProvider>
       <NavigationThemeProvider value={navTheme}>
         <StyledThemeProvider theme={styledTheme}>
-          <Stack />
+          <Stack screenOptions={{ headerShown: false }} />
         </StyledThemeProvider>
       </NavigationThemeProvider>
     </AppProvider>
