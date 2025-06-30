@@ -1,17 +1,16 @@
-import { View } from 'react-native';
-
-import { Title1 } from '@/components';
+import {
+  LoginButton,
+  ScreenContainer,
+  SignupButton,
+  Title1,
+} from '@/components';
 
 export default function Index() {
   return (
-    <View
-      style={{
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-      }}
-    >
+    <ScreenContainer>
       <Title1>Hello World</Title1>
-    </View>
+      <SignupButton onPress={() => console.log('signup')} />
+      <LoginButton onPress={() => console.log('login')} />
+    </ScreenContainer>
   );
 }
