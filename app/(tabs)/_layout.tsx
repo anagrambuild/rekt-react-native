@@ -1,5 +1,6 @@
 import { View } from 'react-native';
 
+// https://icons.expo.fyi/Index
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import MaterialIcon from '@expo/vector-icons/MaterialIcons';
 
