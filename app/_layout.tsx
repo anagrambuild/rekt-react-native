@@ -9,6 +9,7 @@ import {
 import { AppProvider } from '../contexts/AppContext';
 import { darkTheme, lightTheme } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { ThemeProvider as StyledThemeProvider } from 'styled-components/native';
 
@@ -20,6 +21,16 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
   const navTheme = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
   const styledTheme = colorScheme === 'dark' ? darkTheme : lightTheme;
+
+  const [fontsLoaded] = useFonts({
+    Unbounded: require('../assets/fonts/Unbounded-VariableFont_wght.ttf'),
+    Geist: require('../assets/fonts/Geist-VariableFont_wght.ttf'),
+    'Geist Mono': require('../assets/fonts/GeistMono-VariableFont_wght.ttf'),
+  });
+
+  if (!fontsLoaded) {
+    return null;
+  }
 
   return (
     <AppProvider>

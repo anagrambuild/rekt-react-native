@@ -21,7 +21,6 @@ const sharedStyles = css`
 
 const sharedTextStyles = css`
   font-size: 18px;
-  font-weight: 500;
 `;
 
 // SIGNUP BUTTON
@@ -33,6 +32,8 @@ const StyledSignupButton = styled.Pressable`
 
 const SigninButtonText = styled.Text`
   color: ${({ theme }: ThemedButtonTextProps) => theme.colors.background};
+  font-family: 'Geist';
+  font-weight: 400;
   ${sharedTextStyles}
 `;
 
@@ -50,6 +51,8 @@ const StyledLoginButton = styled.Pressable`
 
 const LoginButtonText = styled.Text`
   color: ${({ theme }: ThemedButtonTextProps) => theme.colors.textPrimary};
+  font-family: 'Geist';
+  font-weight: 400;
   ${sharedTextStyles}
 `;
 
