@@ -6,8 +6,6 @@ import MaterialIcon from '@expo/vector-icons/MaterialIcons';
 import DiceIcon from '@/assets/images/app-svgs/dice.svg';
 import RektLogo from '@/assets/images/rekt-logo.svg';
 import { TabIconWithIndicator } from '@/components';
-import { HapticTab } from '@/components/HapticTab';
-import TabBarBackground from '@/components/ui/TabBarBackground';
 import { Tabs } from 'expo-router';
 import { useTheme } from 'styled-components/native';
 
@@ -19,8 +17,6 @@ export default function TabLayout() {
       screenOptions={{
         tabBarActiveTintColor: theme.colors.tint,
         headerShown: false,
-        tabBarButton: HapticTab,
-        tabBarBackground: TabBarBackground,
         tabBarIconStyle: { marginTop: 0 },
       }}
     >
