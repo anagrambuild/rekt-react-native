@@ -1,12 +1,12 @@
 import { ScreenContainer } from '@/components/common/containers';
 import { Title1 } from '@/components/common/texts';
 
-const Home = () => {
+const Profile = () => {
   return (
     <ScreenContainer>
-      <Title1>Home</Title1>
+      <Title1>Profile</Title1>
     </ScreenContainer>
   );
 };
 
-export default Home;
+export default Profile;
