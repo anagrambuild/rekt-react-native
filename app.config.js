@@ -79,6 +79,7 @@ module.exports = {
           backgroundColor: '#000000',
         },
       ],
+      'expo-localization',
     ],
     experiments: {
       typedRoutes: true,
