@@ -1,4 +1,4 @@
-import { SafeAreaView, StyleProp, ViewStyle } from 'react-native';
+import { Platform, SafeAreaView, StyleProp, ViewStyle } from 'react-native';
 
 // eslint-disable-next-line import/no-named-as-default
 import styled, { DefaultTheme } from 'styled-components/native';
@@ -9,6 +9,7 @@ interface StyledSafeAreaViewProps {
 }
 
 const screenPadding = 20;
+const paddingTop = Platform.OS === 'ios' ? 0 : 30;
 
 const StyledSafeAreaView = styled(SafeAreaView)<StyledSafeAreaViewProps>`
   flex: 1;
@@ -32,7 +33,7 @@ export const ScreenContainer = ({
         $padding={screenPadding}
         $alignItems={alignItems}
         $justifyContent={justifyContent}
-        style={{ flex: 1 }}
+        style={{ flex: 1, marginTop: paddingTop }}
       >
         {children}
       </Column>
@@ -78,3 +79,37 @@ export const Row = styled.View<RowProps>`
   padding: ${({ $padding }: RowProps) => $padding || 0}px;
   ${({ style }: RowProps) => style}
 `;
+
+// Tab Icon With Indicator
+const TabIconContainer = styled.View`
+  align-items: center;
+  justify-content: flex-end;
+  height: 36px;
+`;
+
+const TabIconIndicator = styled.View`
+  position: absolute;
+  top: 0;
+  width: ${({ width }: { width: number }) => width}px;
+  height: 3px;
+  border-radius: 2px;
+  background-color: ${({ theme }: { theme: DefaultTheme }) =>
+    theme.colors.tint};
+`;
+
+export const TabIconWithIndicator = ({
+  children,
+  focused,
+  width = 48,
+}: {
+  children: React.ReactNode;
+  focused: boolean;
+  width?: number | string;
+}) => {
+  return (
+    <TabIconContainer>
+      {focused && <TabIconIndicator width={width} />}
+      {children}
+    </TabIconContainer>
+  );
+};

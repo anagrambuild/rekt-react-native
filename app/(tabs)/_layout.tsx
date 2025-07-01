@@ -1,7 +1,12 @@
-import { Platform } from 'react-native';
+import { View } from 'react-native';
 
+import FontAwesome from '@expo/vector-icons/FontAwesome';
+import MaterialIcon from '@expo/vector-icons/MaterialIcons';
+
+import DiceIcon from '@/assets/images/app-svgs/dice.svg';
+import RektLogo from '@/assets/images/rekt-logo.svg';
+import { TabIconWithIndicator } from '@/components';
 import { HapticTab } from '@/components/HapticTab';
-import { IconSymbol } from '@/components/ui/IconSymbol';
 import TabBarBackground from '@/components/ui/TabBarBackground';
 import { Tabs } from 'expo-router';
 import { useTheme } from 'styled-components/native';
@@ -16,29 +21,52 @@ export default function TabLayout() {
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarBackground: TabBarBackground,
-        tabBarStyle: Platform.select({
-          ios: {
-            position: 'absolute',
-          },
-          default: {},
-        }),
+        tabBarIconStyle: { marginTop: 0 },
       }}
     >
       <Tabs.Screen
         name='index'
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name='house.fill' color={color} />
+          title: '',
+          tabBarIcon: ({ focused }) => (
+            <TabIconWithIndicator focused={focused}>
+              <View style={{ marginBottom: -10 }}>
+                <RektLogo width={40} height={40} />
+              </View>
+            </TabIconWithIndicator>
           ),
         }}
       />
       <Tabs.Screen
-        name='explore'
+        name='minigame'
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name='paperplane.fill' color={color} />
+          title: '',
+          tabBarIcon: ({ color, focused }) => (
+            <TabIconWithIndicator focused={focused}>
+              <DiceIcon width={24} height={24} color={color} />
+            </TabIconWithIndicator>
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name='leaderboard'
+        options={{
+          title: '',
+          tabBarIcon: ({ color, focused }) => (
+            <TabIconWithIndicator focused={focused}>
+              <MaterialIcon name='bar-chart' size={24} color={color} />
+            </TabIconWithIndicator>
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name='profile'
+        options={{
+          title: '',
+          tabBarIcon: ({ color, focused }) => (
+            <TabIconWithIndicator focused={focused}>
+              <FontAwesome name='user-circle' size={20} color={color} />
+            </TabIconWithIndicator>
           ),
         }}
       />
