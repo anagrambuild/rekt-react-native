@@ -38,7 +38,7 @@ const SigninButtonText = styled.Text`
 
 export const SignupButton = (props: React.ComponentProps<typeof Pressable>) => (
   <StyledSignupButton {...props}>
-    <SigninButtonText>Sign up</SigninButtonText>
+    <SigninButtonText>{props.children}</SigninButtonText>
   </StyledSignupButton>
 );
 
@@ -55,6 +55,6 @@ const LoginButtonText = styled.Text`
 
 export const LoginButton = (props: React.ComponentProps<typeof Pressable>) => (
   <StyledLoginButton {...props}>
-    <LoginButtonText>Login</LoginButtonText>
+    <LoginButtonText>{props.children}</LoginButtonText>
   </StyledLoginButton>
 );

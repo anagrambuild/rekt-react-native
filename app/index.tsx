@@ -27,8 +27,12 @@ const Index = () => {
       <RektLogo width={100} height={100} />
       <Title1>{t('Welcome')}</Title1>
       <Column>
-        <SignupButton onPress={() => setIsLoggedIn(true)} />
-        <LoginButton onPress={() => setIsLoggedIn(true)} />
+        <SignupButton onPress={() => setIsLoggedIn(true)}>
+          {t('Sign up')}
+        </SignupButton>
+        <LoginButton onPress={() => setIsLoggedIn(true)}>
+          {t('Login')}
+        </LoginButton>
       </Column>
     </ScreenContainer>
   );
