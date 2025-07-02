@@ -2,5 +2,10 @@
   "Welcome": "Welcome",
   "Login": "Login",
   "Sign up": "Sign up",
-  "Logout": "Logout"
+  "Logout": "Logout",
+  "Won": "Won",
+  "Lost": "Lost",
+  "Got rekt": "Got rekt",
+  "Long": "Long",
+  "Short": "Short"
 }

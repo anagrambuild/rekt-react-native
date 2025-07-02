@@ -1,7 +1,6 @@
 import { ImageSourcePropType, View } from 'react-native';
 
-import { Column, Row } from './common';
-import { BodyMSecondary, BodySSecondary } from './common/texts';
+import { BodyMSecondary, BodySSecondary, Column, Row } from './common';
 import greenArrow from '@/assets/images/app-pngs/green-arrow.png';
 import lostFace from '@/assets/images/app-pngs/lost-face.png';
 import redArrow from '@/assets/images/app-pngs/red-arrow.png';
@@ -9,6 +8,7 @@ import rektBomb from '@/assets/images/app-pngs/rekt-bomb.png';
 import wonCash from '@/assets/images/app-pngs/won-cash.png';
 import FireIcon from '@/assets/images/app-svgs/fire.svg';
 import { Image } from 'expo-image';
+import { useTranslation } from 'react-i18next';
 // eslint-disable-next-line import/no-named-as-default
 import styled, { DefaultTheme, useTheme } from 'styled-components/native';
 
@@ -62,6 +62,7 @@ export const PerpSocialChip = ({
   earningMultiple,
 }: PerpSocialChipProps) => {
   const theme = useTheme() as DefaultTheme;
+  const { t } = useTranslation();
 
   const getMetaColor = () => {
     if (position === 'won') return theme.colors.profit;
@@ -114,7 +115,7 @@ export const PerpSocialChip = ({
       >
         <Row $width='auto' $gap={8}>
           <BodyMSecondary style={{ color: theme.colors.midEmText }}>
-            {position.charAt(0).toUpperCase() + position.slice(1)}
+            {`${t(position.charAt(0).toUpperCase() + position.slice(1))}`}
           </BodyMSecondary>
           {position === 'won' && (
             <Row $width='auto' $gap={4}>

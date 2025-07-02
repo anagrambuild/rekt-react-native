@@ -2,13 +2,7 @@ import { ScrollView } from 'react-native';
 
 import { perpSocials, tokens } from './mockData';
 import RektLogo from '@/assets/images/rekt-logo.svg';
-import {
-  PerpSocialChip,
-  Row,
-  ScreenContainer,
-  Title1,
-  TokenChip,
-} from '@/components';
+import { PerpSocialChip, Row, ScreenContainer, TokenChip } from '@/components';
 
 export const HomeScreen = () => {
   return (
@@ -40,7 +34,6 @@ export const HomeScreen = () => {
           />
         ))}
       </ScrollView>
-      <Title1>Home</Title1>
     </ScreenContainer>
   );
 };
