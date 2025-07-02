@@ -6,6 +6,7 @@
 // Grayscale
 export const white = '#FFFFFF';
 export const black = '#000000';
+export const black2 = '#232329';
 export const gray100 = '#F5F5F5';
 export const gray200 = '#E0E0E0';
 export const gray300 = '#CCCCCC';

@@ -68,12 +68,13 @@ interface RowProps {
   $justifyContent?: string;
   $padding?: number;
   style?: StyleProp<ViewStyle>;
+  width?: number | string;
   theme: DefaultTheme;
 }
 
 export const Row = styled.View<RowProps>`
   flex-direction: row;
-  width: 100%;
+  width: ${({ width }: RowProps) => width || '100%'};
   gap: ${({ $gap }: RowProps) => $gap || 0}px;
   justify-content: ${({ $justifyContent }: RowProps) =>
     $justifyContent || 'space-between'};
