@@ -16,10 +16,10 @@ module.exports = defineConfig([
           groups: [
             // React and React Native first
             ['^react$', '^react-native$'],
+            // @imports (e.g., @components, @/)
+            ['^@components', '^@/'],
             // Other packages
             ['^@?\\w'],
-            // Internal packages (e.g., @components)
-            ['^@components', '^@?w'],
             // Parent imports
             ['^..(?!/?$)', '^../?$'],
             // Other relative imports

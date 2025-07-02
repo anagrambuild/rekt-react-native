@@ -1,8 +1,10 @@
 import { ScrollView } from 'react-native';
 
-import { perpSocials, tokens } from './mockData';
 import RektLogo from '@/assets/images/rekt-logo.svg';
-import { PerpSocialChip, Row, ScreenContainer, TokenChip } from '@/components';
+import { Row, ScreenContainer } from '@/components';
+
+import { PerpSocialChip, PriceChartCard, TokenChip } from './homeComponents';
+import { perpSocials, tokens } from './mockData';
 
 export const HomeScreen = () => {
   return (
@@ -19,6 +21,7 @@ export const HomeScreen = () => {
           ))}
         </Row>
       </Row>
+
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -34,6 +37,8 @@ export const HomeScreen = () => {
           />
         ))}
       </ScrollView>
+
+      <PriceChartCard />
     </ScreenContainer>
   );
 };
