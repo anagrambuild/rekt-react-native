@@ -1,20 +1,21 @@
-import diamond from '@/assets/images/app-pngs/diamond.png';
-import usdc from '@/assets/images/app-pngs/usdc.png';
-import RektLogo from '@/assets/images/rekt-logo.svg';
-import { Row, ScreenContainer, Title1, TokenChip } from '@/components';
+import { ScrollView } from 'react-native';
 
-// mock data for tokens at top of screen
-const tokens = [
-  { id: 0, imgSrc: diamond, value: '58K' },
-  { id: 1, imgSrc: usdc, value: '69000' },
-];
+import { perpSocials, tokens } from './mockData';
+import RektLogo from '@/assets/images/rekt-logo.svg';
+import {
+  PerpSocialChip,
+  Row,
+  ScreenContainer,
+  Title1,
+  TokenChip,
+} from '@/components';
 
 export const HomeScreen = () => {
   return (
     <ScreenContainer>
       <Row>
         <RektLogo width={60} height={60} />
-        <Row $justifyContent='flex-end' $gap={16} width='auto'>
+        <Row $justifyContent='flex-end' $gap={16} $width='auto'>
           {tokens.map((token) => (
             <TokenChip
               key={token.id}
@@ -24,6 +25,21 @@ export const HomeScreen = () => {
           ))}
         </Row>
       </Row>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ gap: 16 }}
+      >
+        {perpSocials.map((perpSocial) => (
+          <PerpSocialChip
+            key={perpSocial.id}
+            imgSrc={perpSocial.imgSrc}
+            position={perpSocial.position}
+            meta={perpSocial.meta}
+            earningMultiple={perpSocial.earningMultiple}
+          />
+        ))}
+      </ScrollView>
       <Title1>Home</Title1>
     </ScreenContainer>
   );
