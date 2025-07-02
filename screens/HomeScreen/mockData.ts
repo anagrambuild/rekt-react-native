@@ -1,10 +1,10 @@
+import type { PerpPosition } from './homeComponents/PerpSocialChip';
 import diamond from '@/assets/images/mock-pngs/diamond.png';
 import goldPfp from '@/assets/images/mock-pngs/gold-pfp.png';
 import greenPfp from '@/assets/images/mock-pngs/green-pfp.png';
 import orangePfp from '@/assets/images/mock-pngs/orange-pfp.png';
 import pinkPfp from '@/assets/images/mock-pngs/pink-pfp.png';
 import usdc from '@/assets/images/mock-pngs/usdc.png';
-import type { PerpPosition } from '@/components/PerpSocialChip';
 
 // mock data for tokens at top of screen
 export const tokens = [
