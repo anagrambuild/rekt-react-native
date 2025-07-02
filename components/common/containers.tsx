@@ -47,13 +47,14 @@ interface ColumnProps {
   $alignItems?: string;
   $justifyContent?: string;
   $padding?: number;
+  $width?: number | string;
   style?: StyleProp<ViewStyle>;
   theme: DefaultTheme;
 }
 
 export const Column = styled.View<ColumnProps>`
   flex-direction: column;
-  width: 100%;
+  width: ${({ $width }: ColumnProps) => $width || '100%'};
   gap: ${({ $gap }: ColumnProps) => $gap || 0}px;
   align-items: ${({ $alignItems }: ColumnProps) => $alignItems || 'center'};
   justify-content: ${({ $justifyContent }: ColumnProps) =>
@@ -65,17 +66,19 @@ export const Column = styled.View<ColumnProps>`
 // Row
 interface RowProps {
   $gap?: number;
+  $alignItems?: string;
   $justifyContent?: string;
   $padding?: number;
   style?: StyleProp<ViewStyle>;
-  width?: number | string;
+  $width?: number | string;
   theme: DefaultTheme;
 }
 
 export const Row = styled.View<RowProps>`
   flex-direction: row;
-  width: ${({ width }: RowProps) => width || '100%'};
+  width: ${({ $width }: RowProps) => $width || '100%'};
   gap: ${({ $gap }: RowProps) => $gap || 0}px;
+  align-items: ${({ $alignItems }: RowProps) => $alignItems || 'center'};
   justify-content: ${({ $justifyContent }: RowProps) =>
     $justifyContent || 'space-between'};
   padding: ${({ $padding }: RowProps) => $padding || 0}px;
@@ -92,7 +95,7 @@ const TabIconContainer = styled.View`
 const TabIconIndicator = styled.View`
   position: absolute;
   top: 0;
-  width: ${({ width }: { width: number }) => width}px;
+  width: ${({ $width }: { $width: number }) => $width}px;
   height: 3px;
   border-radius: 2px;
   background-color: ${({ theme }: { theme: DefaultTheme }) =>
@@ -102,15 +105,15 @@ const TabIconIndicator = styled.View`
 export const TabIconWithIndicator = ({
   children,
   focused,
-  width = 48,
+  $width = 72,
 }: {
   children: React.ReactNode;
   focused: boolean;
-  width?: number | string;
+  $width?: number | string;
 }) => {
   return (
     <TabIconContainer>
-      {focused && <TabIconIndicator width={width} />}
+      {focused && <TabIconIndicator $width={$width} />}
       {children}
     </TabIconContainer>
   );
