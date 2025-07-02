@@ -73,9 +73,10 @@ interface RowProps {
 
 export const Row = styled.View<RowProps>`
   flex-direction: row;
+  width: 100%;
   gap: ${({ $gap }: RowProps) => $gap || 0}px;
   justify-content: ${({ $justifyContent }: RowProps) =>
-    $justifyContent || 'center'};
+    $justifyContent || 'space-between'};
   padding: ${({ $padding }: RowProps) => $padding || 0}px;
   ${({ style }: RowProps) => style}
 `;

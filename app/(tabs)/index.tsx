@@ -1,12 +1,7 @@
-import { ScreenContainer } from '@/components/common/containers';
-import { Title1 } from '@/components/common/texts';
+import { HomeScreen } from '@/screens';
 
 const Home = () => {
-  return (
-    <ScreenContainer>
-      <Title1>Home</Title1>
-    </ScreenContainer>
-  );
+  return <HomeScreen />;
 };
 
 export default Home;
