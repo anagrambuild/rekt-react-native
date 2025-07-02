@@ -1,7 +1,5 @@
-import { ScrollView } from 'react-native';
-
 import RektLogo from '@/assets/images/rekt-logo.svg';
-import { Row, ScreenContainer } from '@/components';
+import { Row, ScreenContainer, ScrollRow } from '@/components';
 
 import { PerpSocialChip, PriceChartCard, TokenChip } from './homeComponents';
 import { perpSocials, tokens } from './mockData';
@@ -22,11 +20,7 @@ export const HomeScreen = () => {
         </Row>
       </Row>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ gap: 16 }}
-      >
+      <ScrollRow contentContainerStyle={{ gap: 16 }}>
         {perpSocials.map((perpSocial) => (
           <PerpSocialChip
             key={perpSocial.id}
@@ -36,7 +30,7 @@ export const HomeScreen = () => {
             earningMultiple={perpSocial.earningMultiple}
           />
         ))}
-      </ScrollView>
+      </ScrollRow>
 
       <PriceChartCard />
     </ScreenContainer>

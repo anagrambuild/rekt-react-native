@@ -1,4 +1,10 @@
-import { Platform, SafeAreaView, StyleProp, ViewStyle } from 'react-native';
+import {
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleProp,
+  ViewStyle,
+} from 'react-native';
 
 // eslint-disable-next-line import/no-named-as-default
 import styled, { DefaultTheme } from 'styled-components/native';
@@ -84,6 +90,48 @@ export const Row = styled.View<RowProps>`
   padding: ${({ $padding }: RowProps) => $padding || 0}px;
   ${({ style }: RowProps) => style}
 `;
+
+// ScrollRow
+export const ScrollRow = ({
+  children,
+  $gap = 0,
+  $alignItems = 'center' as const,
+  $padding = 0,
+  style,
+  $width = '100%',
+  $contentContainerStyle,
+  ...props
+}: {
+  children: React.ReactNode;
+  $gap?: number;
+  $alignItems?: 'flex-start' | 'flex-end' | 'center';
+  $padding?: number;
+  style?: StyleProp<ViewStyle>;
+  $width?: number | string;
+  $contentContainerStyle?: StyleProp<ViewStyle>;
+  [key: string]: any;
+}) => {
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      style={[{ width: $width as any, padding: $padding }, style]}
+      contentContainerStyle={[
+        {
+          flexDirection: 'row',
+          gap: $gap,
+          alignItems: $alignItems,
+          padding: $padding,
+          width: '100%',
+        },
+        $contentContainerStyle,
+      ]}
+      {...props}
+    >
+      {children}
+    </ScrollView>
+  );
+};
 
 // Tab Icon With Indicator
 const TabIconContainer = styled.View`
