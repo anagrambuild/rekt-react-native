@@ -29,12 +29,12 @@ export const primaryBlueDark = '#075A7A';
 
 // Green
 export const primaryGreen = '#00B86B';
-export const primaryGreenLight = '#B3FFD6';
+export const primaryGreenLight = '#07F1A3';
 export const primaryGreenDark = '#007A4D';
 
 // Red
 export const primaryRed = '#FF3B30';
-export const primaryRedLight = '#FFB3B3';
+export const primaryRedLight = '#FECACA';
 export const primaryRedDark = '#B22A1A';
 
 // Purple
@@ -56,6 +56,12 @@ export const primaryTealDark = '#007A6B';
 export const primaryPink = '#FF5CA7';
 export const primaryPinkLight = '#FFB3D6';
 export const primaryPinkDark = '#B23B7A';
+
+//Gradients
+export const gradientRed = '#ED1300';
+export const gradientOrange = '#F36523';
+export const gradientGreen = '#00ED82';
+export const gradientGreenGlow = '#23F350';
 
 // --- Designer's Dark Theme Colors ---
 export const bg = '#09090B';
