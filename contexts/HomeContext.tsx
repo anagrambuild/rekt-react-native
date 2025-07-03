@@ -6,6 +6,8 @@ interface HomeContextType {
   selectedTimeframe: string;
   setSelectedTimeframe: (timeframe: string) => void;
   priceChartTimeframes: { label: string; value: string }[];
+  tradeSide: 'long' | 'short' | null;
+  setTradeSide: (side: 'long' | 'short' | null) => void;
 }
 
 export const HomeContext = createContext<HomeContextType>({
@@ -14,6 +16,8 @@ export const HomeContext = createContext<HomeContextType>({
   selectedTimeframe: '1m',
   setSelectedTimeframe: () => {},
   priceChartTimeframes: [],
+  tradeSide: null,
+  setTradeSide: () => {},
 });
 
 export const useHomeContext = () => {
@@ -23,6 +27,7 @@ export const useHomeContext = () => {
 export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
   const [selectedToken, setSelectedToken] = useState<string>('sol');
   const [selectedTimeframe, setSelectedTimeframe] = useState<string>('1m');
+  const [tradeSide, setTradeSide] = useState<'long' | 'short' | null>(null);
 
   return (
     <HomeContext.Provider
@@ -32,6 +37,8 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
         selectedTimeframe,
         setSelectedTimeframe,
         priceChartTimeframes,
+        tradeSide,
+        setTradeSide,
       }}
     >
       {children}

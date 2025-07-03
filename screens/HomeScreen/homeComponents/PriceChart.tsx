@@ -1,5 +1,5 @@
 import React from 'react';
-import { Dimensions, View } from 'react-native';
+import { Dimensions } from 'react-native';
 
 // https://gifted-charts.web.app/linechart/#animated
 import { LineChart, yAxisSides } from 'react-native-gifted-charts';
