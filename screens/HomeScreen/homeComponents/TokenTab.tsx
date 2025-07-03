@@ -9,7 +9,6 @@ import SolSelected from '@/assets/images/app-svgs/sol-selected.svg';
 import SolUnselected from '@/assets/images/app-svgs/sol-unselected.svg';
 import { BodyS } from '@/components';
 
-// eslint-disable-next-line import/no-named-as-default
 import styled, { DefaultTheme } from 'styled-components/native';
 
 interface TabContainerProps {

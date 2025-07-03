@@ -30,6 +30,7 @@ module.exports = defineConfig([
         },
       ],
       'simple-import-sort/exports': 'error',
+      'import/no-named-as-default': 'off',
     },
   },
 ]);

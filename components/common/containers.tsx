@@ -6,7 +6,6 @@ import {
   ViewStyle,
 } from 'react-native';
 
-// eslint-disable-next-line import/no-named-as-default
 import styled, { DefaultTheme } from 'styled-components/native';
 
 // Screen Container
@@ -46,6 +45,15 @@ export const ScreenContainer = ({
     </StyledSafeAreaView>
   );
 };
+
+// Gap
+interface GapProps {
+  height?: number;
+}
+
+export const Gap = styled.View<GapProps>`
+  height: ${({ height }: GapProps) => height || 8}px;
+`;
 
 // Column
 interface ColumnProps {

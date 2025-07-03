@@ -1,6 +1,5 @@
 import { Pressable } from 'react-native';
 
-// eslint-disable-next-line import/no-named-as-default
 import styled, { css, DefaultTheme } from 'styled-components/native';
 
 interface ThemedButtonProps {

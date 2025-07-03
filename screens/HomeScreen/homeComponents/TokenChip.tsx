@@ -1,8 +1,8 @@
 import { ImageSourcePropType } from 'react-native';
 
 import { BodyMSecondary } from '@/components';
+
 import { Image } from 'expo-image';
-// eslint-disable-next-line import/no-named-as-default
 import styled, { DefaultTheme } from 'styled-components/native';
 
 const Container = styled.View`

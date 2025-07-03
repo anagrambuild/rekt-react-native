@@ -1,20 +1,20 @@
 import { ImageSourcePropType, View } from 'react-native';
 
-import {
-  BodyMSecondary,
-  BodySSecondary,
-  Column,
-  Row,
-} from '../../../components/common';
 import greenArrow from '@/assets/images/app-pngs/green-arrow.png';
 import lostFace from '@/assets/images/app-pngs/lost-face.png';
 import redArrow from '@/assets/images/app-pngs/red-arrow.png';
 import rektBomb from '@/assets/images/app-pngs/rekt-bomb.png';
 import wonCash from '@/assets/images/app-pngs/won-cash.png';
 import FireIcon from '@/assets/images/app-svgs/fire.svg';
+
+import {
+  BodyMSecondary,
+  BodySSecondary,
+  Column,
+  Row,
+} from '../../../components/common';
 import { Image } from 'expo-image';
 import { useTranslation } from 'react-i18next';
-// eslint-disable-next-line import/no-named-as-default
 import styled, { DefaultTheme, useTheme } from 'styled-components/native';
 
 const pfpSize = 40;
