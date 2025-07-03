@@ -98,6 +98,7 @@ const Title = styled.Text`
 `;
 
 const Subtitle = styled.Text`
+  color: ${({ color }: { color: string }) => color};
   font-size: 12px;
 `;
 
