@@ -1,14 +1,21 @@
-import { useState } from 'react';
-
-import { Card, ScrollRow } from '@/components';
+import { Card, Picker, ScrollRow } from '@/components';
+import { useHomeContext } from '@/contexts';
 
 import { PriceChart } from './PriceChart';
 import { TokenTab } from './TokenTab';
+import styled from 'styled-components/native';
 
 export const PriceChartCard = () => {
-  const [selectedToken, setSelectedToken] = useState<string>('sol');
+  const {
+    selectedToken,
+    setSelectedToken,
+    selectedTimeframe,
+    setSelectedTimeframe,
+    priceChartTimeframes,
+  } = useHomeContext();
+
   return (
-    <Card>
+    <Card style={{ gap: 4 }}>
       <ScrollRow contentContainerStyle={{ gap: 4 }}>
         <TokenTab
           name='sol'
@@ -29,7 +36,27 @@ export const PriceChartCard = () => {
           onPress={() => setSelectedToken('btc')}
         />
       </ScrollRow>
-      <PriceChart />
+      <ChartContainer>
+        <PickerContainer>
+          <Picker
+            options={priceChartTimeframes}
+            selectedValue={selectedTimeframe}
+            onValueChange={setSelectedTimeframe}
+          />
+        </PickerContainer>
+        <PriceChart />
+      </ChartContainer>
     </Card>
   );
 };
+
+const ChartContainer = styled.View`
+  position: relative;
+`;
+
+const PickerContainer = styled.View`
+  position: absolute;
+  top: 12;
+  left: 12;
+  z-index: 1;
+`;

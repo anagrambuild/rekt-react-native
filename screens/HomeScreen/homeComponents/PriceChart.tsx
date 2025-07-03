@@ -3,7 +3,7 @@ import { Dimensions, View } from 'react-native';
 
 // https://gifted-charts.web.app/linechart/#animated
 import { LineChart, yAxisSides } from 'react-native-gifted-charts';
-import { useTheme } from 'styled-components/native';
+import styled, { DefaultTheme, useTheme } from 'styled-components/native';
 
 const data = [
   { value: 167 },
@@ -20,14 +20,7 @@ export const PriceChart = () => {
   const chartWidth = Dimensions.get('window').width * 0.7;
 
   return (
-    <View
-      style={{
-        alignItems: 'center',
-        backgroundColor: 'transparent',
-        borderRadius: 16,
-        padding: 16,
-      }}
-    >
+    <Wrapper>
       <LineChart
         data={data}
         isAnimated
@@ -53,6 +46,14 @@ export const PriceChart = () => {
         width={chartWidth}
         yAxisSide={yAxisSides.RIGHT}
       />
-    </View>
+    </Wrapper>
   );
 };
+
+const Wrapper = styled.View`
+  align-items: center;
+  background-color: ${({ theme }: { theme: DefaultTheme }) =>
+    theme.colors.background};
+  border-radius: 16px;
+  padding: 16px;
+`;
