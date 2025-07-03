@@ -1,10 +1,18 @@
 import RektLogo from '@/assets/images/rekt-logo.svg';
-import { Row, ScreenContainer, ScrollRow } from '@/components';
+import { Gap, Row, ScreenContainer, ScrollRow, Title4 } from '@/components';
 
-import { PerpSocialChip, PriceChartCard, TokenChip } from './homeComponents';
+import {
+  LongButton,
+  PerpSocialChip,
+  PriceChartCard,
+  ShortButton,
+  TokenChip,
+} from './homeComponents';
 import { perpSocials, tokens } from './mockData';
+import { useTranslation } from 'react-i18next';
 
 export const HomeScreen = () => {
+  const { t } = useTranslation();
   return (
     <ScreenContainer>
       <Row>
@@ -33,6 +41,22 @@ export const HomeScreen = () => {
       </ScrollRow>
 
       <PriceChartCard />
+      <Gap />
+      <Row $padding={16}>
+        <Title4>{t('Ride the market')}</Title4>
+      </Row>
+      <Row $padding={0}>
+        <ShortButton
+          onPress={() => console.log('short')}
+          title={t('Short')}
+          subtitle={t('Price will go down')}
+        />
+        <LongButton
+          onPress={() => console.log('long')}
+          title={t('Long')}
+          subtitle={t('Price will go up')}
+        />
+      </Row>
     </ScreenContainer>
   );
 };
