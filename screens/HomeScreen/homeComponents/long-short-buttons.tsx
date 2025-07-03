@@ -20,7 +20,7 @@ const arrowButtonShared = {
 
 const ShortArrowContainer = styled.View`
   ${arrowButtonShared}
-  border-radius: 628.571px;
+  border-radius: 22px;
   overflow: hidden;
 `;
 
