@@ -48,6 +48,13 @@ module.exports = {
     scheme: 'rektreactnative',
     userInterfaceStyle: 'automatic',
     newArchEnabled: true,
+    // Add EAS Updates configuration
+    updates: {
+      url: `https://u.expo.dev/${easProjectId}`,
+    },
+    runtimeVersion: {
+      policy: 'sdkVersion',
+    },
     ios: {
       supportsTablet: true,
       bundleIdentifier,
