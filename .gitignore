@@ -36,4 +36,3 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
-assets/images/mock-pngs/liam.png
