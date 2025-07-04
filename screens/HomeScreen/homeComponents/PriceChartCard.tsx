@@ -56,7 +56,7 @@ const ChartContainer = styled.View`
 
 const PickerContainer = styled.View`
   position: absolute;
-  top: 12;
-  left: 12;
+  top: 12px;
+  left: 12px;
   z-index: 1;
 `;

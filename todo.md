@@ -12,3 +12,4 @@ polishing (mismatches from designs)
 - linear gradient on home graph
 - check with enlarged text and different size devices
 - removed unused colors and theme vars
+- icons for long and short segment control
