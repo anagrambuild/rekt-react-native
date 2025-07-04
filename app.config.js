@@ -12,15 +12,15 @@ let env = 'development';
 
 // Preview settings
 if (process.env.DEPLOY_ENVIRONMENT === 'preview') {
-  //   name = 'rekt-preview';
-  //   slug = 'rekt-preview';
-  //   version = '0.0.1-preview';
-  //   easProjectId = 'PREVIEW_PROJECT_ID'; // Replace with actual preview EAS project ID if needed
-  //   icon = './assets/images/preview-icon.png'; // Replace if you have a preview icon
-  //   androidIcon = './assets/images/preview-adaptive-icon.png'; // Replace if you have a preview icon
-  //   packageName = 'com.anagramxyz.rektreactnativepreview';
-  //   bundleIdentifier = 'com.anagramxyz.rektreactnativepreview';
-  //   env = 'preview';
+  name = 'Rekt Preview';
+  slug = 'rekt-react-native';
+  version = '0.0.1';
+  //   easProjectId = 'PREVIEW_PROJECT_ID'; // Optional: Only if you want a separate project in Expo dashboard
+  icon = './assets/images/mock-pngs/liam.png';
+  androidIcon = './assets/images/mock-pngs/liam.png';
+  packageName = 'com.anagramxyz.rektreactnativepreview';
+  bundleIdentifier = 'com.anagramxyz.rektreactnativepreview';
+  env = 'preview';
 }
 
 // Example: override for production
@@ -48,6 +48,13 @@ module.exports = {
     scheme: 'rektreactnative',
     userInterfaceStyle: 'automatic',
     newArchEnabled: true,
+    // Add EAS Updates configuration
+    updates: {
+      url: `https://u.expo.dev/${easProjectId}`,
+    },
+    runtimeVersion: {
+      policy: 'sdkVersion',
+    },
     ios: {
       supportsTablet: true,
       bundleIdentifier,

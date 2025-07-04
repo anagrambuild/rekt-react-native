@@ -1,6 +1,6 @@
-// styled.d.ts
-import 'styled-components';
 import { lightTheme } from '@/constants/theme';
+
+import 'styled-components';
 
 type Theme = typeof lightTheme;
 

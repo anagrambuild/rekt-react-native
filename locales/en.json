@@ -2,5 +2,13 @@
   "Welcome": "Welcome",
   "Login": "Login",
   "Sign up": "Sign up",
-  "Logout": "Logout"
+  "Logout": "Logout",
+  "Won": "Won",
+  "Lost": "Lost",
+  "Got rekt": "Got rekt",
+  "Ride the market": "Ride the market",
+  "Long": "Long",
+  "Short": "Short",
+  "Price will go down": "Price will go down",
+  "Price will go up": "Price will go up"
 }

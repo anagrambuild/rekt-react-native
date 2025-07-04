@@ -1,6 +1,11 @@
-import { Platform, SafeAreaView, StyleProp, ViewStyle } from 'react-native';
+import {
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleProp,
+  ViewStyle,
+} from 'react-native';
 
-// eslint-disable-next-line import/no-named-as-default
 import styled, { DefaultTheme } from 'styled-components/native';
 
 // Screen Container
@@ -41,19 +46,29 @@ export const ScreenContainer = ({
   );
 };
 
+// Gap
+interface GapProps {
+  height?: number;
+}
+
+export const Gap = styled.View<GapProps>`
+  height: ${({ height }: GapProps) => height || 8}px;
+`;
+
 // Column
 interface ColumnProps {
   $gap?: number;
   $alignItems?: string;
   $justifyContent?: string;
   $padding?: number;
+  $width?: number | string;
   style?: StyleProp<ViewStyle>;
   theme: DefaultTheme;
 }
 
 export const Column = styled.View<ColumnProps>`
   flex-direction: column;
-  width: 100%;
+  width: ${({ $width }: ColumnProps) => $width || '100%'};
   gap: ${({ $gap }: ColumnProps) => $gap || 0}px;
   align-items: ${({ $alignItems }: ColumnProps) => $alignItems || 'center'};
   justify-content: ${({ $justifyContent }: ColumnProps) =>
@@ -65,20 +80,66 @@ export const Column = styled.View<ColumnProps>`
 // Row
 interface RowProps {
   $gap?: number;
+  $alignItems?: string;
   $justifyContent?: string;
   $padding?: number;
   style?: StyleProp<ViewStyle>;
+  $width?: number | string;
   theme: DefaultTheme;
 }
 
 export const Row = styled.View<RowProps>`
   flex-direction: row;
+  width: ${({ $width }: RowProps) => $width || '100%'};
   gap: ${({ $gap }: RowProps) => $gap || 0}px;
+  align-items: ${({ $alignItems }: RowProps) => $alignItems || 'center'};
   justify-content: ${({ $justifyContent }: RowProps) =>
-    $justifyContent || 'center'};
+    $justifyContent || 'space-between'};
   padding: ${({ $padding }: RowProps) => $padding || 0}px;
   ${({ style }: RowProps) => style}
 `;
+
+// ScrollRow
+export const ScrollRow = ({
+  children,
+  $gap = 0,
+  $alignItems = 'center' as const,
+  $padding = 0,
+  style,
+  $width = '100%',
+  $contentContainerStyle,
+  ...props
+}: {
+  children: React.ReactNode;
+  $gap?: number;
+  $alignItems?: 'flex-start' | 'flex-end' | 'center';
+  $padding?: number;
+  style?: StyleProp<ViewStyle>;
+  $width?: number | string;
+  $contentContainerStyle?: StyleProp<ViewStyle>;
+  [key: string]: any;
+}) => {
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      style={[{ width: $width as any, padding: $padding }, style]}
+      contentContainerStyle={[
+        {
+          flexDirection: 'row',
+          gap: $gap,
+          alignItems: $alignItems,
+          padding: $padding,
+          width: '100%',
+        },
+        $contentContainerStyle,
+      ]}
+      {...props}
+    >
+      {children}
+    </ScrollView>
+  );
+};
 
 // Tab Icon With Indicator
 const TabIconContainer = styled.View`
@@ -90,7 +151,7 @@ const TabIconContainer = styled.View`
 const TabIconIndicator = styled.View`
   position: absolute;
   top: 0;
-  width: ${({ width }: { width: number }) => width}px;
+  width: ${({ $width }: { $width: number }) => $width}px;
   height: 3px;
   border-radius: 2px;
   background-color: ${({ theme }: { theme: DefaultTheme }) =>
@@ -100,15 +161,15 @@ const TabIconIndicator = styled.View`
 export const TabIconWithIndicator = ({
   children,
   focused,
-  width = 48,
+  $width = 72,
 }: {
   children: React.ReactNode;
   focused: boolean;
-  width?: number | string;
+  $width?: number | string;
 }) => {
   return (
     <TabIconContainer>
-      {focused && <TabIconIndicator width={width} />}
+      {focused && <TabIconIndicator $width={$width} />}
       {children}
     </TabIconContainer>
   );

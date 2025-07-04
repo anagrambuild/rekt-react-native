@@ -1,14 +1,15 @@
 import { I18nManager } from 'react-native';
 
+import { darkTheme, lightTheme } from '@/constants/theme';
+import { AppProvider, HomeProvider } from '@/contexts';
+import { useColorScheme } from '@/hooks/useColorScheme';
+
 import {
   DarkTheme,
   DefaultTheme,
   ThemeProvider as NavigationThemeProvider,
 } from '@react-navigation/native';
 
-import { AppProvider } from '../contexts/AppContext';
-import { darkTheme, lightTheme } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/useColorScheme';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { ThemeProvider as StyledThemeProvider } from 'styled-components/native';
@@ -34,11 +35,13 @@ export default function RootLayout() {
 
   return (
     <AppProvider>
-      <NavigationThemeProvider value={navTheme}>
-        <StyledThemeProvider theme={styledTheme}>
-          <Stack screenOptions={{ headerShown: false }} />
-        </StyledThemeProvider>
-      </NavigationThemeProvider>
+      <HomeProvider>
+        <NavigationThemeProvider value={navTheme}>
+          <StyledThemeProvider theme={styledTheme}>
+            <Stack screenOptions={{ headerShown: false }} />
+          </StyledThemeProvider>
+        </NavigationThemeProvider>
+      </HomeProvider>
     </AppProvider>
   );
 }

@@ -1,6 +1,5 @@
 import { Pressable } from 'react-native';
 
-// eslint-disable-next-line import/no-named-as-default
 import styled, { css, DefaultTheme } from 'styled-components/native';
 
 interface ThemedButtonProps {
@@ -13,7 +12,7 @@ interface ThemedButtonTextProps {
 
 const sharedStyles = css`
   padding: 14px 32px;
-  border-radius: 999px;
+  border-radius: 100px;
   align-items: center;
   justify-content: center;
   width: 100%;

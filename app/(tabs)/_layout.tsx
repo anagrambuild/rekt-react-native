@@ -1,12 +1,13 @@
 import { View } from 'react-native';
 
+import DiceIcon from '@/assets/images/app-svgs/dice.svg';
+import RektLogo from '@/assets/images/rekt-logo.svg';
+import { TabIconWithIndicator } from '@/components';
+
 // https://icons.expo.fyi/Index
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import MaterialIcon from '@expo/vector-icons/MaterialIcons';
 
-import DiceIcon from '@/assets/images/app-svgs/dice.svg';
-import RektLogo from '@/assets/images/rekt-logo.svg';
-import { TabIconWithIndicator } from '@/components';
 import { Tabs } from 'expo-router';
 import { useTheme } from 'styled-components/native';
 
