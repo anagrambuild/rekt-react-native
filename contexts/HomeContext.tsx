@@ -10,6 +10,8 @@ interface HomeContextType {
   setTradeSide: (side: 'long' | 'short' | null) => void;
   amount: number;
   setAmount: (amount: number) => void;
+  leverage: number;
+  setLeverage: (leverage: number) => void;
 }
 
 export const HomeContext = createContext<HomeContextType>({
@@ -22,6 +24,8 @@ export const HomeContext = createContext<HomeContextType>({
   setTradeSide: () => {},
   amount: 0,
   setAmount: () => {},
+  leverage: 1,
+  setLeverage: () => {},
 });
 
 export const useHomeContext = () => {
@@ -33,6 +37,11 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
   const [selectedTimeframe, setSelectedTimeframe] = useState<string>('1m');
   const [tradeSide, setTradeSide] = useState<'long' | 'short' | null>(null);
   const [amount, setAmount] = useState<number>(10);
+  const [leverage, _setLeverage] = useState<number>(1);
+
+  const setLeverage = (val: number) => {
+    _setLeverage(val === 0 ? 1 : val);
+  };
 
   return (
     <HomeContext.Provider
@@ -46,6 +55,8 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
         setTradeSide,
         amount,
         setAmount,
+        leverage,
+        setLeverage,
       }}
     >
       {children}

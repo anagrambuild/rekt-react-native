@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 
+import { useHomeContext } from '@/contexts/HomeContext';
+
 import Slider from '@react-native-community/slider';
 
 import { LinearGradient } from 'expo-linear-gradient';
@@ -10,15 +12,15 @@ import { useTheme } from 'styled-components/native';
 // const sliderHandle = require('../assets/images/app-pngs/slider-handle.png');
 
 export const HorizontalSlider = () => {
-  const [value, setValue] = useState(0);
+  const { leverage, setLeverage } = useHomeContext();
   const [trackWidth, setTrackWidth] = useState(0);
   const theme = useTheme();
   const steps = 10;
-  const min = 1;
+  const min = 0;
   const max = 100;
   const thumbWidth = 30; // or your actual thumb size
   const stepSize = (max - min) / steps;
-  const n = Math.round((value - min) / stepSize);
+  const n = Math.round((leverage - min) / stepSize);
   const adjustedWidth =
     (trackWidth - thumbWidth) * (n / steps) + thumbWidth / 2;
   const offset = 20;
@@ -57,8 +59,8 @@ export const HorizontalSlider = () => {
           minimumValue={min}
           maximumValue={max}
           step={10}
-          value={value}
-          onValueChange={setValue}
+          value={leverage}
+          onValueChange={setLeverage}
           minimumTrackTintColor='transparent'
           maximumTrackTintColor='transparent'
           // thumbImage={sliderHandle}
