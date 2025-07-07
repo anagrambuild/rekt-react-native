@@ -50,9 +50,9 @@ export const ScreenContainer = ({
         $padding={screenPadding}
         $marginTop={paddingTop}
         contentContainerStyle={{
-          flex: 1,
           justifyContent: justifyContent,
           alignItems: alignItems,
+          minHeight: '90%',
         }}
       >
         {children}
@@ -189,3 +189,11 @@ export const TabIconWithIndicator = ({
     </TabIconContainer>
   );
 };
+
+// Divider
+export const Divider = styled.View`
+  width: 100%;
+  height: 1px;
+  background-color: ${({ theme }: { theme: DefaultTheme }) =>
+    theme.colors.borderLight};
+`;
