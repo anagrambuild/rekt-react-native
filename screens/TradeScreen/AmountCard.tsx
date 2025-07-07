@@ -10,14 +10,18 @@ import MaterialIcon from '@expo/vector-icons/MaterialIcons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from 'styled-components/native';
 
-export const AmountCard = () => {
+export const AmountCard = ({
+  setAmountPopupVisible,
+}: {
+  setAmountPopupVisible: (visible: boolean) => void;
+}) => {
   const { t } = useTranslation();
   const theme = useTheme();
   const { amount, setAmount } = useHomeContext();
   return (
     <Card $padding={8}>
       <Row $gap={8}>
-        <Pressable>
+        <Pressable onPress={() => setAmountPopupVisible(true)}>
           <Row $gap={8} $width='auto'>
             <UsdcIcon />
             <Body1Secondary>{t('Amount')}</Body1Secondary>

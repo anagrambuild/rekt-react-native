@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import {
@@ -17,6 +18,7 @@ import MaterialIcon from '@expo/vector-icons/MaterialIcons';
 import { PerpSocialChip, PriceChartCard } from '../HomeScreen/homeComponents';
 import { perpSocials } from '../HomeScreen/mockData';
 import { AmountCard } from './AmountCard';
+import { AmountPopup } from './AmountPopup';
 import { SliderCard } from './SliderCard';
 import { router, Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -27,6 +29,8 @@ export const TradeScreen = () => {
   const { t } = useTranslation();
   const { tradeSide, setTradeSide, selectedToken } = useHomeContext();
 
+  const [amountPopupVisible, setAmountPopupVisible] = useState(false);
+  console.log('amountPopupVisible', amountPopupVisible);
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
@@ -75,16 +79,22 @@ export const TradeScreen = () => {
             <PriceChartCard />
           </Column>
           <Column $gap={4}>
-            <AmountCard />
+            <AmountCard setAmountPopupVisible={setAmountPopupVisible} />
             <SliderCard />
           </Column>
-          <PrimaryButton>
-            {`${tradeSide.charAt(0).toUpperCase()}${tradeSide.slice(
-              1
-            )} ${selectedToken.toUpperCase()}`}
-          </PrimaryButton>
         </Column>
+        <PrimaryButton>
+          {`${tradeSide.charAt(0).toUpperCase()}${tradeSide.slice(
+            1
+          )} ${selectedToken.toUpperCase()}`}
+        </PrimaryButton>
       </ScreenContainer>
+      {amountPopupVisible && (
+        <AmountPopup
+          visible={amountPopupVisible}
+          onClose={() => setAmountPopupVisible(false)}
+        />
+      )}
     </>
   );
 };
