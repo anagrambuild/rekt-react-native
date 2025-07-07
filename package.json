@@ -55,7 +55,8 @@
     "react-native-web": "~0.20.0",
     "react-native-webview": "13.13.5",
     "styled-components": "^6.1.19",
-    "expo-updates": "~0.28.16"
+    "expo-updates": "~0.28.16",
+    "@react-native-community/slider": "4.5.6"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
