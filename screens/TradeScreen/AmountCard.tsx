@@ -15,7 +15,7 @@ export const AmountCard = () => {
   const theme = useTheme();
   const { amount, setAmount } = useHomeContext();
   return (
-    <Card $padding={16}>
+    <Card $padding={8}>
       <Row $gap={8}>
         <Pressable>
           <Row $gap={8} $width='auto'>

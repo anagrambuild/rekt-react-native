@@ -6,8 +6,8 @@ interface HomeContextType {
   selectedTimeframe: string;
   setSelectedTimeframe: (timeframe: string) => void;
   priceChartTimeframes: { label: string; value: string }[];
-  tradeSide: 'long' | 'short' | null;
-  setTradeSide: (side: 'long' | 'short' | null) => void;
+  tradeSide: 'long' | 'short';
+  setTradeSide: (side: 'long' | 'short') => void;
   amount: number;
   setAmount: (amount: number) => void;
   leverage: number;
@@ -20,7 +20,7 @@ export const HomeContext = createContext<HomeContextType>({
   selectedTimeframe: '1m',
   setSelectedTimeframe: () => {},
   priceChartTimeframes: [],
-  tradeSide: null,
+  tradeSide: 'short',
   setTradeSide: () => {},
   amount: 0,
   setAmount: () => {},
@@ -35,7 +35,7 @@ export const useHomeContext = () => {
 export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
   const [selectedToken, setSelectedToken] = useState<string>('sol');
   const [selectedTimeframe, setSelectedTimeframe] = useState<string>('1m');
-  const [tradeSide, setTradeSide] = useState<'long' | 'short' | null>(null);
+  const [tradeSide, setTradeSide] = useState<'long' | 'short'>('short');
   const [amount, setAmount] = useState<number>(10);
   const [leverage, _setLeverage] = useState<number>(1);
 

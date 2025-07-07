@@ -2,6 +2,7 @@ import { Pressable, View } from 'react-native';
 
 import {
   Column,
+  PrimaryButton,
   Row,
   ScreenContainer,
   ScrollRow,
@@ -24,56 +25,64 @@ import { useTheme } from 'styled-components/native';
 export const TradeScreen = () => {
   const theme = useTheme();
   const { t } = useTranslation();
-  const { tradeSide, setTradeSide } = useHomeContext();
+  const { tradeSide, setTradeSide, selectedToken } = useHomeContext();
   console.log(tradeSide);
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <ScreenContainer>
-        <Column $gap={16}>
-          <Row>
-            <Pressable onPress={() => router.back()}>
-              <MaterialIcon
-                name='keyboard-arrow-left'
-                size={32}
-                color={theme.colors.textSecondary}
-              />
-            </Pressable>
-            <SegmentContainer>
-              <SegmentControl
-                Svg={MaterialCommunityIcons}
-                svgProps={{ name: 'arrow-bottom-right-thin-circle-outline' }}
-                label={t('Short')}
-                selected={tradeSide === 'short'}
-                onPress={() => setTradeSide('short')}
-              />
-              <SegmentControl
-                Svg={MaterialCommunityIcons}
-                svgProps={{ name: 'arrow-top-right-thin-circle-outline' }}
-                label={t('Long')}
-                selected={tradeSide === 'long'}
-                onPress={() => setTradeSide('long')}
-              />
-            </SegmentContainer>
-            <View style={{ width: 32 }} />
-          </Row>
+        <Column $gap={12} $alignItems='space-between'>
+          <Column $gap={8}>
+            <Row>
+              <Pressable onPress={() => router.back()}>
+                <MaterialIcon
+                  name='keyboard-arrow-left'
+                  size={32}
+                  color={theme.colors.textSecondary}
+                />
+              </Pressable>
+              <SegmentContainer>
+                <SegmentControl
+                  Svg={MaterialCommunityIcons}
+                  svgProps={{ name: 'arrow-bottom-right-thin-circle-outline' }}
+                  label={t('Short')}
+                  selected={tradeSide === 'short'}
+                  onPress={() => setTradeSide('short')}
+                />
+                <SegmentControl
+                  Svg={MaterialCommunityIcons}
+                  svgProps={{ name: 'arrow-top-right-thin-circle-outline' }}
+                  label={t('Long')}
+                  selected={tradeSide === 'long'}
+                  onPress={() => setTradeSide('long')}
+                />
+              </SegmentContainer>
+              <View style={{ width: 32 }} />
+            </Row>
 
-          <ScrollRow contentContainerStyle={{ gap: 16 }}>
-            {perpSocials.map((perpSocial) => (
-              <PerpSocialChip
-                key={perpSocial.id}
-                imgSrc={perpSocial.imgSrc}
-                position={perpSocial.position}
-                meta={perpSocial.meta}
-                earningMultiple={perpSocial.earningMultiple}
-              />
-            ))}
-          </ScrollRow>
+            <ScrollRow contentContainerStyle={{ gap: 16 }}>
+              {perpSocials.map((perpSocial) => (
+                <PerpSocialChip
+                  key={perpSocial.id}
+                  imgSrc={perpSocial.imgSrc}
+                  position={perpSocial.position}
+                  meta={perpSocial.meta}
+                  earningMultiple={perpSocial.earningMultiple}
+                />
+              ))}
+            </ScrollRow>
 
-          <PriceChartCard />
-          {/* <Gap /> */}
-          <AmountCard />
-          <SliderCard />
+            <PriceChartCard />
+          </Column>
+          <Column $gap={4}>
+            <AmountCard />
+            <SliderCard />
+          </Column>
+          <PrimaryButton>
+            {`${tradeSide.charAt(0).toUpperCase()}${tradeSide.slice(
+              1
+            )} ${selectedToken.toUpperCase()}`}
+          </PrimaryButton>
         </Column>
       </ScreenContainer>
     </>
