@@ -23,9 +23,21 @@ const StyledSafeAreaView = styled(SafeAreaView)<StyledSafeAreaViewProps>`
     theme.colors.background};
 `;
 
+const StyledScrollView = styled(ScrollView)<{
+  $padding?: number;
+  $alignItems?: string;
+  $justifyContent?: string;
+  $marginTop?: number;
+}>`
+  width: 100%;
+  flex: 1;
+  padding: ${({ $padding = 0 }: { $padding?: number }) => $padding}px;
+  margin-top: ${({ $marginTop = 0 }: { $marginTop?: number }) => $marginTop}px;
+`;
+
 export const ScreenContainer = ({
   children,
-  alignItems,
+  alignItems = 'center',
   justifyContent = 'space-between',
 }: {
   children: React.ReactNode;
@@ -34,14 +46,17 @@ export const ScreenContainer = ({
 }) => {
   return (
     <StyledSafeAreaView>
-      <Column
+      <StyledScrollView
         $padding={screenPadding}
-        $alignItems={alignItems}
-        $justifyContent={justifyContent}
-        style={{ flex: 1, marginTop: paddingTop }}
+        $marginTop={paddingTop}
+        contentContainerStyle={{
+          flex: 1,
+          justifyContent: justifyContent,
+          alignItems: alignItems,
+        }}
       >
         {children}
-      </Column>
+      </StyledScrollView>
     </StyledSafeAreaView>
   );
 };

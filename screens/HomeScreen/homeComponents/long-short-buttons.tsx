@@ -8,8 +8,6 @@ import { Theme } from '@/types/styled';
 import { LinearGradient } from 'expo-linear-gradient';
 import styled, { useTheme } from 'styled-components/native';
 
-// TODO - add ScrollView for ScreenContainer
-
 const arrowButtonShared = {
   display: 'flex',
   width: 44,

@@ -9,7 +9,7 @@ polishing (mismatches from designs)
 
 - flame for splash screen
 - add commas for number strings
-- linear gradient on home graph
+- linear gradient on active tab
 - check with enlarged text and different size devices
 - removed unused colors and theme vars
 - icons for long and short segment control
