@@ -1,9 +1,14 @@
 import styled, { DefaultTheme } from 'styled-components/native';
 
-export const Card = styled.View`
+interface CardProps {
+  $padding?: number;
+}
+
+export const Card = styled.View<CardProps>`
   width: 100%;
   background-color: ${({ theme }: { theme: DefaultTheme }) =>
     theme.colors.card};
   border-radius: 16px;
-  padding: 4px;
+  padding: ${({ $padding }: { $padding?: number }) =>
+    $padding ? `${$padding}px` : '4px'};
 `;

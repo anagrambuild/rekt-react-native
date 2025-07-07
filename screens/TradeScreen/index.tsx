@@ -2,7 +2,6 @@ import { Pressable, View } from 'react-native';
 
 import {
   Column,
-  Gap,
   Row,
   ScreenContainer,
   ScrollRow,
@@ -16,9 +15,12 @@ import MaterialIcon from '@expo/vector-icons/MaterialIcons';
 
 import { PerpSocialChip, PriceChartCard } from '../HomeScreen/homeComponents';
 import { perpSocials } from '../HomeScreen/mockData';
+import { AmountCard } from './AmountCard';
+import { SliderCard } from './SliderCard';
 import { router, Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from 'styled-components/native';
+
 export const TradeScreen = () => {
   const theme = useTheme();
   const { t } = useTranslation();
@@ -69,7 +71,9 @@ export const TradeScreen = () => {
           </ScrollRow>
 
           <PriceChartCard />
-          <Gap />
+          {/* <Gap /> */}
+          <AmountCard />
+          <SliderCard />
         </Column>
       </ScreenContainer>
     </>
