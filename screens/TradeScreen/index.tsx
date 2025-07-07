@@ -26,7 +26,7 @@ export const TradeScreen = () => {
   const theme = useTheme();
   const { t } = useTranslation();
   const { tradeSide, setTradeSide, selectedToken } = useHomeContext();
-  console.log(tradeSide);
+
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />

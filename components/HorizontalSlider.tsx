@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
   outerContainer: {
     width: '100%',
     alignItems: 'center',
-    paddingVertical: 16,
+    paddingVertical: 0,
   },
   trackBackground: {
     width: '100%',
