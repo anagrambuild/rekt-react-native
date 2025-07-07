@@ -3,9 +3,9 @@ import { useEffect } from 'react';
 import RektLogo from '@/assets/images/rekt-logo.svg';
 import {
   Column,
-  LoginButton,
+  PrimaryButton,
   ScreenContainer,
-  SignupButton,
+  SecondaryButton,
   Title1,
 } from '@/components';
 import { useAppContext } from '@/contexts';
@@ -28,12 +28,12 @@ const Index = () => {
       <RektLogo width={100} height={100} />
       <Title1>{t('Welcome')}</Title1>
       <Column>
-        <SignupButton onPress={() => setIsLoggedIn(true)}>
+        <PrimaryButton onPress={() => setIsLoggedIn(true)}>
           {t('Sign up')}
-        </SignupButton>
-        <LoginButton onPress={() => setIsLoggedIn(true)}>
+        </PrimaryButton>
+        <SecondaryButton onPress={() => setIsLoggedIn(true)}>
           {t('Login')}
-        </LoginButton>
+        </SecondaryButton>
       </Column>
     </ScreenContainer>
   );

@@ -1,3 +1,3 @@
 export * from './IconButton';
-export * from './login-buttons';
+export * from './main-buttons';
 export * from './SegmentControl';

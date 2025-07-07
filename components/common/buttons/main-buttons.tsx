@@ -22,8 +22,8 @@ const sharedTextStyles = css`
   font-size: 18px;
 `;
 
-// SIGNUP BUTTON
-const StyledSignupButton = styled.Pressable`
+// Primary BUTTON
+const StyledPrimaryButton = styled.Pressable`
   ${sharedStyles}
   background-color: ${({ theme }: ThemedButtonProps) =>
     theme.colors.textPrimary};
@@ -36,27 +36,31 @@ const SigninButtonText = styled.Text`
   ${sharedTextStyles}
 `;
 
-export const SignupButton = (props: React.ComponentProps<typeof Pressable>) => (
-  <StyledSignupButton {...props}>
+export const PrimaryButton = (
+  props: React.ComponentProps<typeof Pressable>
+) => (
+  <StyledPrimaryButton {...props}>
     <SigninButtonText>{props.children}</SigninButtonText>
-  </StyledSignupButton>
+  </StyledPrimaryButton>
 );
 
 // LOGIN BUTTON
-const StyledLoginButton = styled.Pressable`
+const StyledSecondaryButton = styled.Pressable`
   ${sharedStyles}/* background-color: ${({ theme }: ThemedButtonProps) =>
     theme.colors.background}; */
 `;
 
-const LoginButtonText = styled.Text`
+const SecondaryButtonText = styled.Text`
   color: ${({ theme }: ThemedButtonTextProps) => theme.colors.textPrimary};
   font-family: 'Geist';
   font-weight: 400;
   ${sharedTextStyles}
 `;
 
-export const LoginButton = (props: React.ComponentProps<typeof Pressable>) => (
-  <StyledLoginButton {...props}>
-    <LoginButtonText>{props.children}</LoginButtonText>
-  </StyledLoginButton>
+export const SecondaryButton = (
+  props: React.ComponentProps<typeof Pressable>
+) => (
+  <StyledSecondaryButton {...props}>
+    <SecondaryButtonText>{props.children}</SecondaryButtonText>
+  </StyledSecondaryButton>
 );
