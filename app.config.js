@@ -8,6 +8,7 @@ let icon = './assets/images/icon.png';
 let androidIcon = './assets/images/adaptive-icon.png';
 let packageName = 'com.anagramxyz.rektreactnative';
 let bundleIdentifier = 'com.anagramxyz.rektreactnative';
+let scheme = 'rektreactnative';
 let env = 'development';
 
 // Preview settings
@@ -20,6 +21,7 @@ if (process.env.DEPLOY_ENVIRONMENT === 'preview') {
   androidIcon = './assets/images/mock-pngs/liam.png';
   packageName = 'com.anagramxyz.rektreactnativepreview';
   bundleIdentifier = 'com.anagramxyz.rektreactnativepreview';
+  scheme = 'rektreactnativepreview';
   env = 'preview';
 }
 
@@ -34,6 +36,7 @@ if (process.env.DEPLOY_ENVIRONMENT === 'production') {
   // androidIcon = './assets/images/prod-adaptive-icon.png';
   // packageName = 'com.anagramxyz.rektreactnativeprod';
   // bundleIdentifier = 'com.anagramxyz.rektreactnativeprod';
+  // scheme = 'rektreactnativeprod';
   // env = 'production';
 }
 
@@ -45,7 +48,7 @@ module.exports = {
     version,
     orientation: 'portrait',
     icon,
-    scheme: 'rektreactnative',
+    scheme,
     userInterfaceStyle: 'automatic',
     newArchEnabled: true,
     // Add EAS Updates configuration
