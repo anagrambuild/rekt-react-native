@@ -107,12 +107,12 @@ export const TradeScreen = () => {
             <AmountCard setAmountModalVisible={setAmountModalVisible} />
             <SliderCard />
           </Column>
+          <PrimaryButton>
+            {`${tradeSide.charAt(0).toUpperCase()}${tradeSide.slice(
+              1
+            )} ${selectedToken.toUpperCase()}`}
+          </PrimaryButton>
         </Column>
-        <PrimaryButton>
-          {`${tradeSide.charAt(0).toUpperCase()}${tradeSide.slice(
-            1
-          )} ${selectedToken.toUpperCase()}`}
-        </PrimaryButton>
       </ScreenContainer>
       {amountPopupVisible && (
         <AmountModal

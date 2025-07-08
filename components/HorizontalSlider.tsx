@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 
 import { useHomeContext } from '@/contexts/HomeContext';
@@ -11,7 +11,11 @@ import styled, { useTheme } from 'styled-components/native';
 // could not get the image to work on dev build
 // const sliderHandle = require('../assets/images/app-pngs/slider-handle.png');
 
-export const HorizontalSlider = () => {
+export const HorizontalSlider = ({
+  isMaxLeverageOn,
+}: {
+  isMaxLeverageOn: boolean;
+}) => {
   const {
     selectedToken,
     solLeverage,
@@ -37,17 +41,31 @@ export const HorizontalSlider = () => {
       : setBtcLeverage;
 
   const [trackWidth, setTrackWidth] = useState(0);
+  const [max, setMax] = useState(100); // dynamic max
   const theme = useTheme();
-  const steps = 10;
+  const steps = isMaxLeverageOn ? 20 : 10;
   const min = 0;
-  const max = 100;
   const thumbWidth = 30; // or your actual thumb size
   const stepSize = (max - min) / steps;
   const n = Math.round((leverage - min) / stepSize);
   const adjustedWidth =
     (trackWidth - thumbWidth) * (n / steps) + thumbWidth / 2;
-  const offset = 20;
+  const offset = 12;
   const fillWidth = adjustedWidth + offset;
+
+  useEffect(() => {
+    if (isMaxLeverageOn) {
+      setMax(200);
+    } else {
+      setMax(100);
+    }
+  }, [isMaxLeverageOn]);
+
+  useEffect(() => {
+    if (leverage >= 100 && !isMaxLeverageOn) {
+      setLeverage(100);
+    }
+  }, [leverage, isMaxLeverageOn, setLeverage]);
 
   return (
     <OuterContainer>
@@ -58,7 +76,10 @@ export const HorizontalSlider = () => {
       >
         {/* Gradient Fill to the left of the thumb */}
         <TrackFill
-          colors={[theme.colors.segmentedControl, theme.colors.brand]}
+          colors={[
+            theme.colors.segmentedControl,
+            isMaxLeverageOn ? theme.colors.brandDark : theme.colors.brand,
+          ]}
           start={[0, 0.5]}
           end={[1, 0.5]}
           width={fillWidth}
@@ -68,8 +89,10 @@ export const HorizontalSlider = () => {
           {Array.from({ length: steps + 1 }).map((_, i) => (
             <Tick
               key={i}
-              height={i === 0 || i === steps ? 24 : 16}
-              backgroundColor={theme.colors.text}
+              height={
+                i === 0 || i === steps || i === Math.floor(steps / 2) ? 20 : 12
+              }
+              backgroundColor={theme.colors.textPrimary}
             />
           ))}
         </TicksRow>
@@ -90,7 +113,7 @@ export const HorizontalSlider = () => {
   );
 };
 
-const iosTrackOffset = Platform.OS === 'ios' ? 2 : 0;
+const iosTrackOffset = Platform.OS === 'ios' ? -2 : -6;
 
 const OuterContainer = styled.View`
   width: 100%;
@@ -99,8 +122,8 @@ const OuterContainer = styled.View`
 
 const TrackBackground = styled.View<any>`
   width: 100%;
-  height: 44px;
-  border-radius: 22px;
+  height: 32px;
+  border-radius: 16px;
   justify-content: center;
   position: relative;
   overflow: hidden;
