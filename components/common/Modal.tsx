@@ -1,4 +1,4 @@
-import { Modal as RNModal } from 'react-native';
+import { KeyboardAvoidingView, Modal as RNModal, Platform } from 'react-native';
 
 import styled, { DefaultTheme } from 'styled-components/native';
 
@@ -20,8 +20,13 @@ export const Modal: React.FC<ModalProps> = ({
       visible={visible}
       onRequestClose={onRequestClose}
     >
-      <Backdrop onPress={onRequestClose} testID='modal-backdrop' />
-      <ContentContainer>{children}</ContentContainer>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
+        <Backdrop onPress={onRequestClose} testID='modal-backdrop' />
+        <ContentContainer>{children}</ContentContainer>
+      </KeyboardAvoidingView>
     </RNModal>
   );
 };
