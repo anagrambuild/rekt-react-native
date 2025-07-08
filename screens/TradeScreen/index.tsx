@@ -18,7 +18,7 @@ import MaterialIcon from '@expo/vector-icons/MaterialIcons';
 import { PerpSocialChip, PriceChartCard } from '../HomeScreen/homeComponents';
 import { perpSocials } from '../HomeScreen/mockData';
 import { AmountCard } from './AmountCard';
-import { AmountPopup } from './AmountPopup';
+import { AmountModal } from './AmountModal';
 import { SliderCard } from './SliderCard';
 import { router, Stack } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -29,7 +29,7 @@ export const TradeScreen = () => {
   const { t } = useTranslation();
   const { tradeSide, setTradeSide, selectedToken } = useHomeContext();
 
-  const [amountPopupVisible, setAmountPopupVisible] = useState(false);
+  const [amountPopupVisible, setAmountModalVisible] = useState(false);
   console.log('amountPopupVisible', amountPopupVisible);
   return (
     <>
@@ -81,7 +81,7 @@ export const TradeScreen = () => {
             <PriceChartCard />
           </Column>
           <Column $gap={4}>
-            <AmountCard setAmountPopupVisible={setAmountPopupVisible} />
+            <AmountCard setAmountModalVisible={setAmountModalVisible} />
             <SliderCard />
           </Column>
         </Column>
@@ -92,9 +92,9 @@ export const TradeScreen = () => {
         </PrimaryButton>
       </ScreenContainer>
       {amountPopupVisible && (
-        <AmountPopup
+        <AmountModal
           visible={amountPopupVisible}
-          onClose={() => setAmountPopupVisible(false)}
+          onClose={() => setAmountModalVisible(false)}
         />
       )}
     </>

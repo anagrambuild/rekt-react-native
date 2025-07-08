@@ -11,9 +11,9 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from 'styled-components/native';
 
 export const AmountCard = ({
-  setAmountPopupVisible,
+  setAmountModalVisible,
 }: {
-  setAmountPopupVisible: (visible: boolean) => void;
+  setAmountModalVisible: (visible: boolean) => void;
 }) => {
   const { t } = useTranslation();
   const theme = useTheme();
@@ -21,7 +21,7 @@ export const AmountCard = ({
   return (
     <Card $padding={8}>
       <Row $gap={8}>
-        <Pressable onPress={() => setAmountPopupVisible(true)}>
+        <Pressable onPress={() => setAmountModalVisible(true)}>
           <Row $gap={8} $width='auto'>
             <UsdcIcon />
             <Body1Secondary>{t('Amount')}</Body1Secondary>

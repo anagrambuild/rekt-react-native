@@ -15,7 +15,7 @@ import styled, { useTheme } from 'styled-components/native';
 // TODO - set wallet balance in context
 const walletBalance = 1000.24;
 // TODO - add amounts for sol eth and btc
-export const AmountPopup = ({
+export const AmountModal = ({
   visible,
   onClose,
 }: {
