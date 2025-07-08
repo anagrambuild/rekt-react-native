@@ -48,7 +48,9 @@ export const TradeScreen = () => {
               <SegmentContainer>
                 <SegmentControl
                   Svg={MaterialCommunityIcons}
-                  svgProps={{ name: 'arrow-bottom-right-thin-circle-outline' }}
+                  svgProps={{
+                    name: 'arrow-bottom-right-thin-circle-outline',
+                  }}
                   label={t('Short')}
                   selected={tradeSide === 'short'}
                   onPress={() => setTradeSide('short')}

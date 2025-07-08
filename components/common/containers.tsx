@@ -145,7 +145,6 @@ export const ScrollRow = ({
           gap: $gap,
           alignItems: $alignItems,
           padding: $padding,
-          width: '100%',
         },
         $contentContainerStyle,
       ]}
