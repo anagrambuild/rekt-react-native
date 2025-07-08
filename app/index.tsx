@@ -24,16 +24,26 @@ const Index = () => {
   }, [isLoggedIn]);
 
   return (
-    <ScreenContainer>
-      <RektLogo width={100} height={100} />
-      <Title1>{t('Welcome')}</Title1>
-      <Column>
-        <PrimaryButton onPress={() => setIsLoggedIn(true)}>
-          {t('Sign up')}
-        </PrimaryButton>
-        <SecondaryButton onPress={() => setIsLoggedIn(true)}>
-          {t('Login')}
-        </SecondaryButton>
+    <ScreenContainer
+      $alignItems='stretch'
+      $justifyContent='flex-start'
+      style={{ flex: 1 }}
+    >
+      <Column
+        $width='100%'
+        $justifyContent='space-between'
+        style={{ height: '100%' }}
+      >
+        <RektLogo width={100} height={100} />
+        <Title1>{t('Welcome')}</Title1>
+        <Column>
+          <PrimaryButton onPress={() => setIsLoggedIn(true)}>
+            {t('Sign up')}
+          </PrimaryButton>
+          <SecondaryButton onPress={() => setIsLoggedIn(true)}>
+            {t('Login')}
+          </SecondaryButton>
+        </Column>
       </Column>
     </ScreenContainer>
   );
