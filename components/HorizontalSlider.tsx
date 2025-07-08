@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import { Platform } from 'react-native';
 
 import { useHomeContext } from '@/contexts/HomeContext';
 
 import Slider from '@react-native-community/slider';
 
 import { LinearGradient } from 'expo-linear-gradient';
-import { useTheme } from 'styled-components/native';
+import styled, { useTheme } from 'styled-components/native';
 
 // could not get the image to work on dev build
 // const sliderHandle = require('../assets/images/app-pngs/slider-handle.png');
@@ -27,35 +27,31 @@ export const HorizontalSlider = () => {
   const fillWidth = adjustedWidth + offset;
 
   return (
-    <View style={styles.outerContainer}>
+    <OuterContainer>
       {/* Track Background */}
-      <View
-        style={[styles.trackBackground, { backgroundColor: theme.colors.card }]}
-        onLayout={(e) => setTrackWidth(e.nativeEvent.layout.width)}
+      <TrackBackground
+        backgroundColor={theme.colors.card}
+        onLayout={(e: any) => setTrackWidth(e.nativeEvent.layout.width)}
       >
         {/* Gradient Fill to the left of the thumb */}
-        <LinearGradient
+        <TrackFill
           colors={[theme.colors.segmentedControl, theme.colors.brand]}
           start={[0, 0.5]}
           end={[1, 0.5]}
-          style={[styles.trackFill, { width: fillWidth }]}
+          width={fillWidth}
         />
         {/* Tick marks */}
-        <View style={styles.ticksRow} pointerEvents='none'>
+        <TicksRow pointerEvents='none'>
           {Array.from({ length: steps + 1 }).map((_, i) => (
-            <View
+            <Tick
               key={i}
-              style={[
-                styles.tick,
-                i === 0 || i === steps ? styles.tickLarge : styles.tickSmall,
-                { backgroundColor: theme.colors.text },
-              ]}
+              height={i === 0 || i === steps ? 24 : 16}
+              backgroundColor={theme.colors.text}
             />
           ))}
-        </View>
+        </TicksRow>
         {/* Slider */}
-        <Slider
-          style={styles.slider}
+        <StyledSlider
           minimumValue={min}
           maximumValue={max}
           step={10}
@@ -66,60 +62,64 @@ export const HorizontalSlider = () => {
           // thumbImage={sliderHandle}
           thumbTintColor={theme.colors.text}
         />
-      </View>
-    </View>
+      </TrackBackground>
+    </OuterContainer>
   );
 };
 
 const iosTrackOffset = Platform.OS === 'ios' ? 2 : 0;
 
-const styles = StyleSheet.create({
-  outerContainer: {
-    width: '100%',
-    alignItems: 'center',
-    paddingVertical: 0,
-  },
-  trackBackground: {
-    width: '100%',
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  trackFill: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    borderRadius: 22,
-    opacity: 0.7,
-    zIndex: 1,
-  },
-  slider: {
-    width: '100%',
-    height: 44,
-    position: 'absolute',
-    top: iosTrackOffset,
-    left: 0,
-    zIndex: 3,
-  },
-  ticksRow: {
-    ...StyleSheet.absoluteFillObject,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    zIndex: 2,
-    paddingHorizontal: 16,
-  },
-  tick: {
-    width: 2,
-    borderRadius: 1,
-  },
-  tickLarge: {
-    height: 24,
-  },
-  tickSmall: {
-    height: 16,
-  },
-});
+const OuterContainer = styled.View`
+  width: 100%;
+  align-items: center;
+`;
+
+const TrackBackground = styled.View<any>`
+  width: 100%;
+  height: 44px;
+  border-radius: 22px;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  background-color: ${(props: any) => props.backgroundColor};
+`;
+
+const TrackFill = styled(LinearGradient)<any>`
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 22px;
+  opacity: 0.7;
+  z-index: 1;
+  width: ${(props: any) => props.width}px;
+`;
+
+const TicksRow = styled.View`
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 2;
+  padding: 0px 16px;
+`;
+
+const Tick = styled.View<any>`
+  width: 2px;
+  border-radius: 1px;
+  height: ${(props: any) => props.height}px;
+  background-color: ${(props: any) => props.backgroundColor};
+`;
+
+const StyledSlider = styled(Slider)`
+  width: 100%;
+  height: 44px;
+  position: absolute;
+  top: ${iosTrackOffset}px;
+  left: 0;
+  z-index: 3;
+`;
