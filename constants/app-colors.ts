@@ -69,6 +69,7 @@ export const bgDepressed = black;
 export const card = '#121216';
 export const cardEmphasized = '#19191F';
 export const brand = '#FF5527'; // #FF5527
+export const brandDark = '#FF273C';
 export const highEmText = white;
 export const midEmText = gray500;
 export const lowEmText = '#52525B';
