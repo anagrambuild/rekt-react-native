@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 
 interface HomeContextType {
   selectedToken: string;
@@ -6,12 +6,25 @@ interface HomeContextType {
   selectedTimeframe: string;
   setSelectedTimeframe: (timeframe: string) => void;
   priceChartTimeframes: { label: string; value: string }[];
-  tradeSide: 'long' | 'short';
-  setTradeSide: (side: 'long' | 'short') => void;
-  amount: number;
-  setAmount: (amount: number) => void;
-  leverage: number;
-  setLeverage: (leverage: number) => void;
+  solTradeSide: 'long' | 'short';
+  setSolTradeSide: (side: 'long' | 'short') => void;
+  ethTradeSide: 'long' | 'short';
+  setEthTradeSide: (side: 'long' | 'short') => void;
+  btcTradeSide: 'long' | 'short';
+  setBtcTradeSide: (side: 'long' | 'short') => void;
+  solAmount: number;
+  setSolAmount: (amount: number) => void;
+  ethAmount: number;
+  setEthAmount: (amount: number) => void;
+  btcAmount: number;
+  setBtcAmount: (amount: number) => void;
+  solLeverage: number;
+  setSolLeverage: (leverage: number) => void;
+  ethLeverage: number;
+  setEthLeverage: (leverage: number) => void;
+  btcLeverage: number;
+  setBtcLeverage: (leverage: number) => void;
+  walletBalance: number;
 }
 
 export const HomeContext = createContext<HomeContextType>({
@@ -20,12 +33,25 @@ export const HomeContext = createContext<HomeContextType>({
   selectedTimeframe: '1m',
   setSelectedTimeframe: () => {},
   priceChartTimeframes: [],
-  tradeSide: 'short',
-  setTradeSide: () => {},
-  amount: 0,
-  setAmount: () => {},
-  leverage: 1,
-  setLeverage: () => {},
+  solTradeSide: 'short',
+  setSolTradeSide: () => {},
+  ethTradeSide: 'short',
+  setEthTradeSide: () => {},
+  btcTradeSide: 'short',
+  setBtcTradeSide: () => {},
+  solAmount: 0,
+  setSolAmount: () => {},
+  ethAmount: 0,
+  setEthAmount: () => {},
+  btcAmount: 0,
+  setBtcAmount: () => {},
+  solLeverage: 1,
+  setSolLeverage: () => {},
+  ethLeverage: 1,
+  setEthLeverage: () => {},
+  btcLeverage: 1,
+  setBtcLeverage: () => {},
+  walletBalance: 0,
 });
 
 export const useHomeContext = () => {
@@ -35,9 +61,27 @@ export const useHomeContext = () => {
 export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
   const [selectedToken, setSelectedToken] = useState<string>('sol');
   const [selectedTimeframe, setSelectedTimeframe] = useState<string>('1m');
-  const [tradeSide, setTradeSide] = useState<'long' | 'short'>('short');
-  const [amount, setAmount] = useState<number>(10);
-  const [leverage, _setLeverage] = useState<number>(1);
+  const [solTradeSide, setSolTradeSide] = useState<'long' | 'short'>('short');
+  const [ethTradeSide, setEthTradeSide] = useState<'long' | 'short'>('short');
+  const [btcTradeSide, setBtcTradeSide] = useState<'long' | 'short'>('short');
+  const [solAmount, setSolAmount] = useState<number>(10);
+  const [ethAmount, setEthAmount] = useState<number>(10);
+  const [btcAmount, setBtcAmount] = useState<number>(10);
+
+  const [solLeverage, setSolLeverage] = useState<number>(1);
+  const [ethLeverage, setEthLeverage] = useState<number>(1);
+  const [btcLeverage, setBtcLeverage] = useState<number>(1);
+
+  const [walletBalance, setWalletBalance] = useState<number>(0);
+
+  useEffect(() => {
+    // TODO - fetch real wallet balance
+    const fetchWalletBalance = async () => {
+      // const balance = await getWalletBalance();
+      setWalletBalance(1004.56);
+    };
+    fetchWalletBalance();
+  }, []);
 
   const setLeverage = (val: number) => {
     _setLeverage(val === 0 ? 1 : val);
@@ -51,12 +95,25 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
         selectedTimeframe,
         setSelectedTimeframe,
         priceChartTimeframes,
-        tradeSide,
-        setTradeSide,
-        amount,
-        setAmount,
-        leverage,
-        setLeverage,
+        solTradeSide,
+        setSolTradeSide,
+        ethTradeSide,
+        setEthTradeSide,
+        btcTradeSide,
+        setBtcTradeSide,
+        solAmount,
+        setSolAmount,
+        ethAmount,
+        setEthAmount,
+        btcAmount,
+        setBtcAmount,
+        solLeverage,
+        setSolLeverage,
+        ethLeverage,
+        setEthLeverage,
+        btcLeverage,
+        setBtcLeverage,
+        walletBalance,
       }}
     >
       {children}

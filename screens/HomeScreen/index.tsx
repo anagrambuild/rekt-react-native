@@ -23,7 +23,16 @@ import { useTranslation } from 'react-i18next';
 export const HomeScreen = () => {
   const { t } = useTranslation();
   const router = useRouter();
-  const { setTradeSide } = useHomeContext();
+  const { setSolTradeSide, setEthTradeSide, setBtcTradeSide, selectedToken } =
+    useHomeContext();
+
+  const setTradeSide =
+    selectedToken === 'sol'
+      ? setSolTradeSide
+      : selectedToken === 'eth'
+      ? setEthTradeSide
+      : setBtcTradeSide;
+
   return (
     <ScreenContainer>
       <Column $gap={16}>

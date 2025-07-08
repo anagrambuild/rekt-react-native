@@ -12,7 +12,30 @@ import styled, { useTheme } from 'styled-components/native';
 // const sliderHandle = require('../assets/images/app-pngs/slider-handle.png');
 
 export const HorizontalSlider = () => {
-  const { leverage, setLeverage } = useHomeContext();
+  const {
+    selectedToken,
+    solLeverage,
+    ethLeverage,
+    btcLeverage,
+    setSolLeverage,
+    setEthLeverage,
+    setBtcLeverage,
+  } = useHomeContext();
+
+  const leverage =
+    selectedToken === 'sol'
+      ? solLeverage
+      : selectedToken === 'eth'
+      ? ethLeverage
+      : btcLeverage;
+
+  const setLeverage =
+    selectedToken === 'sol'
+      ? setSolLeverage
+      : selectedToken === 'eth'
+      ? setEthLeverage
+      : setBtcLeverage;
+
   const [trackWidth, setTrackWidth] = useState(0);
   const theme = useTheme();
   const steps = 10;

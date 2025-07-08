@@ -12,9 +12,6 @@ import { PresetButton } from './PresetButton';
 import { useTranslation } from 'react-i18next';
 import styled, { useTheme } from 'styled-components/native';
 
-// TODO - set wallet balance in context
-const walletBalance = 1000.24;
-// TODO - add amounts for sol eth and btc
 export const AmountModal = ({
   visible,
   onClose,
@@ -24,8 +21,31 @@ export const AmountModal = ({
 }) => {
   const theme = useTheme();
   const { t } = useTranslation();
-  const { amount, setAmount } = useHomeContext();
+  const {
+    solAmount,
+    setSolAmount,
+    ethAmount,
+    setEthAmount,
+    btcAmount,
+    setBtcAmount,
+    selectedToken,
+    walletBalance,
+  } = useHomeContext();
   const inputRef = useRef<TextInput>(null);
+
+  const amount =
+    selectedToken === 'sol'
+      ? solAmount
+      : selectedToken === 'eth'
+      ? ethAmount
+      : btcAmount;
+
+  const setAmount =
+    selectedToken === 'sol'
+      ? setSolAmount
+      : selectedToken === 'eth'
+      ? setEthAmount
+      : setBtcAmount;
 
   useEffect(() => {
     if (visible) {

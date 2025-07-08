@@ -17,7 +17,30 @@ export const AmountCard = ({
 }) => {
   const { t } = useTranslation();
   const theme = useTheme();
-  const { amount, setAmount } = useHomeContext();
+  const {
+    setSolAmount,
+    setEthAmount,
+    setBtcAmount,
+    selectedToken,
+    solAmount,
+    ethAmount,
+    btcAmount,
+  } = useHomeContext();
+
+  const amount =
+    selectedToken === 'sol'
+      ? solAmount
+      : selectedToken === 'eth'
+      ? ethAmount
+      : btcAmount;
+
+  const setAmount =
+    selectedToken === 'sol'
+      ? setSolAmount
+      : selectedToken === 'eth'
+      ? setEthAmount
+      : setBtcAmount;
+
   return (
     <Card $padding={8}>
       <Row $gap={8}>

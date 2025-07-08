@@ -14,7 +14,30 @@ import { useTranslation } from 'react-i18next';
 
 export const SliderCard = () => {
   const { t } = useTranslation();
-  const { amount, leverage } = useHomeContext();
+  const {
+    selectedToken,
+    solAmount,
+    ethAmount,
+    btcAmount,
+    solLeverage,
+    ethLeverage,
+    btcLeverage,
+  } = useHomeContext();
+
+  const amount =
+    selectedToken === 'sol'
+      ? solAmount
+      : selectedToken === 'eth'
+      ? ethAmount
+      : btcAmount;
+
+  const leverage =
+    selectedToken === 'sol'
+      ? solLeverage
+      : selectedToken === 'eth'
+      ? ethLeverage
+      : btcLeverage;
+
   return (
     <Card $padding={16} style={{ gap: 8 }}>
       <Column $gap={16} $alignItems='flex-start'>

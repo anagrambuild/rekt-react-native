@@ -14,6 +14,8 @@ polishing (mismatches from designs)
 - check with enlarged text and different size devices
 - removed unused colors and theme vars
 - icons for long and short segment control
+- Slider - touch up or make an ArcSlider
+- AmountModal.tsx could be polished especially for android - maybe use bottom up shelf or avoid keyboard view
 
 WIRING UP REAL DATA
 

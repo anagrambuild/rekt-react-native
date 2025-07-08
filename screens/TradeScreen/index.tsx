@@ -27,7 +27,29 @@ import { useTheme } from 'styled-components/native';
 export const TradeScreen = () => {
   const theme = useTheme();
   const { t } = useTranslation();
-  const { tradeSide, setTradeSide, selectedToken } = useHomeContext();
+  const {
+    setSolTradeSide,
+    setEthTradeSide,
+    setBtcTradeSide,
+    selectedToken,
+    solTradeSide,
+    ethTradeSide,
+    btcTradeSide,
+  } = useHomeContext();
+
+  const tradeSide =
+    selectedToken === 'sol'
+      ? solTradeSide
+      : selectedToken === 'eth'
+      ? ethTradeSide
+      : btcTradeSide;
+
+  const setTradeSide =
+    selectedToken === 'sol'
+      ? setSolTradeSide
+      : selectedToken === 'eth'
+      ? setEthTradeSide
+      : setBtcTradeSide;
 
   const [amountPopupVisible, setAmountModalVisible] = useState(false);
   console.log('amountPopupVisible', amountPopupVisible);
