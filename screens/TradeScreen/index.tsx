@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 
 import {
   Column,
+  PressableOpacity,
   PrimaryButton,
   Row,
   ScreenContainer,
@@ -52,7 +53,7 @@ export const TradeScreen = () => {
       : setBtcTradeSide;
 
   const [amountPopupVisible, setAmountModalVisible] = useState(false);
-  console.log('amountPopupVisible', amountPopupVisible);
+
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
@@ -60,13 +61,13 @@ export const TradeScreen = () => {
         <Column $gap={12} $alignItems='space-between'>
           <Column $gap={8}>
             <Row>
-              <Pressable onPress={() => router.back()}>
+              <PressableOpacity onPress={() => router.back()}>
                 <MaterialIcon
                   name='keyboard-arrow-left'
                   size={32}
                   color={theme.colors.textSecondary}
                 />
-              </Pressable>
+              </PressableOpacity>
               <SegmentContainer>
                 <SegmentControl
                   Svg={MaterialCommunityIcons}

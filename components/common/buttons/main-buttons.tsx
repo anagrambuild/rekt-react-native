@@ -1,5 +1,4 @@
-import { Pressable } from 'react-native';
-
+import { PressableOpacity } from './PressableOpacity';
 import styled, { css, DefaultTheme } from 'styled-components/native';
 
 interface ThemedButtonProps {
@@ -23,7 +22,7 @@ const sharedTextStyles = css`
 `;
 
 // Primary BUTTON
-const StyledPrimaryButton = styled.Pressable`
+const StyledPrimaryButton = styled(PressableOpacity)`
   ${sharedStyles}
   background-color: ${({ theme }: ThemedButtonProps) =>
     theme.colors.textPrimary};
@@ -37,7 +36,7 @@ const SigninButtonText = styled.Text`
 `;
 
 export const PrimaryButton = (
-  props: React.ComponentProps<typeof Pressable>
+  props: React.ComponentProps<typeof PressableOpacity>
 ) => (
   <StyledPrimaryButton {...props}>
     <SigninButtonText>{props.children}</SigninButtonText>
@@ -45,7 +44,7 @@ export const PrimaryButton = (
 );
 
 // LOGIN BUTTON
-const StyledSecondaryButton = styled.Pressable`
+const StyledSecondaryButton = styled(PressableOpacity)`
   ${sharedStyles}/* background-color: ${({ theme }: ThemedButtonProps) =>
     theme.colors.background}; */
 `;
@@ -58,7 +57,7 @@ const SecondaryButtonText = styled.Text`
 `;
 
 export const SecondaryButton = (
-  props: React.ComponentProps<typeof Pressable>
+  props: React.ComponentProps<typeof PressableOpacity>
 ) => (
   <StyledSecondaryButton {...props}>
     <SecondaryButtonText>{props.children}</SecondaryButtonText>

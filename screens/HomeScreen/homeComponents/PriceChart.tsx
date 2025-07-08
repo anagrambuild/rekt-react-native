@@ -52,7 +52,7 @@ export const PriceChart = () => {
   };
 
   const yAxisOffset = findYAxisOffset(data.map((item) => item.value));
-  console.log('yAxisOffset', yAxisOffset);
+
   return (
     <Wrapper>
       <LineChart

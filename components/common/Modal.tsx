@@ -1,4 +1,3 @@
-import React from 'react';
 import { Modal as RNModal } from 'react-native';
 
 import styled, { DefaultTheme } from 'styled-components/native';

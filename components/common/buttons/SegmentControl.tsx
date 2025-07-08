@@ -1,6 +1,5 @@
-import React from 'react';
-
 import { BodyMSecondary } from '../texts';
+import { PressableOpacity } from './PressableOpacity';
 import styled, { DefaultTheme, useTheme } from 'styled-components/native';
 
 interface SegmentControlProps {
@@ -20,7 +19,7 @@ export const SegmentContainer = styled.View<{ theme: DefaultTheme }>`
   padding: 4px;
 `;
 
-const SegmentButton = styled.Pressable<{
+const SegmentButton = styled(PressableOpacity)<{
   selected: boolean;
   theme: DefaultTheme;
 }>`

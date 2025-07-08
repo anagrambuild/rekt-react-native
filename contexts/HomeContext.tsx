@@ -83,10 +83,6 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
     fetchWalletBalance();
   }, []);
 
-  const setLeverage = (val: number) => {
-    _setLeverage(val === 0 ? 1 : val);
-  };
-
   return (
     <HomeContext.Provider
       value={{

@@ -2,6 +2,7 @@ import { PressableProps } from 'react-native';
 
 import MaterialIcon from '@expo/vector-icons/MaterialIcons';
 
+import { PressableOpacity } from './PressableOpacity';
 import styled, { DefaultTheme, useTheme } from 'styled-components/native';
 
 const Container = styled.View`
@@ -13,7 +14,7 @@ const Container = styled.View`
   justify-content: center;
 `;
 
-const StyledPressable = styled.Pressable`
+const StyledPressable = styled(PressableOpacity)`
   background: ${({ theme }: { theme: DefaultTheme }) => theme.colors.secondary};
   border-radius: 100px;
   padding: 12px;

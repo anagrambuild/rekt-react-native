@@ -1,4 +1,4 @@
-import { Body1Secondary } from '@/components';
+import { Body1Secondary, PressableOpacity } from '@/components';
 
 import styled from 'styled-components/native';
 
@@ -16,7 +16,7 @@ export const PresetButton = ({
   );
 };
 
-const Button = styled.Pressable`
+const Button = styled(PressableOpacity)`
   background-color: ${({ theme }: any) => theme.colors.cardEmphasized};
   padding: 12px 24px;
   border-radius: 100px;

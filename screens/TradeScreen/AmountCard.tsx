@@ -1,7 +1,11 @@
-import { Pressable } from 'react-native';
-
 import UsdcIcon from '@/assets/images/app-svgs/usdc.svg';
-import { Body1Secondary, BodyM, Card, IconButton } from '@/components';
+import {
+  Body1Secondary,
+  BodyM,
+  Card,
+  IconButton,
+  PressableOpacity,
+} from '@/components';
 import { Row } from '@/components/common/containers';
 import { useHomeContext } from '@/contexts/HomeContext';
 
@@ -44,7 +48,7 @@ export const AmountCard = ({
   return (
     <Card $padding={8}>
       <Row $gap={8}>
-        <Pressable onPress={() => setAmountModalVisible(true)}>
+        <PressableOpacity onPress={() => setAmountModalVisible(true)}>
           <Row $gap={8} $width='auto'>
             <UsdcIcon />
             <Body1Secondary>{t('Amount')}</Body1Secondary>
@@ -54,7 +58,7 @@ export const AmountCard = ({
               color={theme.colors.textSecondary}
             />
           </Row>
-        </Pressable>
+        </PressableOpacity>
         <Row $gap={12} $width='auto'>
           <IconButton name='remove' onPress={() => setAmount(amount - 1)} />
           <BodyM>{`$${amount}`}</BodyM>

@@ -1,8 +1,14 @@
 import { useEffect, useRef } from 'react';
-import { Pressable, TextInput } from 'react-native';
+import { TextInput } from 'react-native';
 
 import WalletIcon from '@/assets/images/app-svgs/wallet.svg';
-import { BodyMEmphasized, BodyS, Row, ScrollRow } from '@/components';
+import {
+  BodyMEmphasized,
+  BodyS,
+  PressableOpacity,
+  Row,
+  ScrollRow,
+} from '@/components';
 import { Modal } from '@/components/common/Modal';
 import { useHomeContext } from '@/contexts/HomeContext';
 
@@ -60,13 +66,13 @@ export const AmountModal = ({
     <Modal visible={visible} onRequestClose={onClose}>
       <StyledSheetContainer>
         <Row>
-          <Pressable onPress={onClose}>
+          <PressableOpacity onPress={onClose}>
             <MaterialIcon
               name='keyboard-arrow-left'
               size={32}
               color={theme.colors.textSecondary}
             />
-          </Pressable>
+          </PressableOpacity>
         </Row>
         <BodyMEmphasized>{t('Enter amount')}</BodyMEmphasized>
         <StyledInput
@@ -89,7 +95,7 @@ export const AmountModal = ({
           <WalletIcon width={24} height={24} />
           <BodyS>${walletBalance} USDC</BodyS>
         </Row>
-        <ScrollRow $gap={8}>
+        <ScrollRow $gap={8} keyboardShouldPersistTaps='always'>
           <PresetButton value={10} onPress={() => setAmount(10)} />
           <PresetButton value={50} onPress={() => setAmount(50)} />
           <PresetButton value={100} onPress={() => setAmount(100)} />
