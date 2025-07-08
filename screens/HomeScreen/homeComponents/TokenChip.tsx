@@ -18,7 +18,6 @@ const StyledTokenChip = styled.View`
   background-color: ${({ theme }: { theme: DefaultTheme }) =>
     theme.colors.backgroundSecondary};
   padding: 4px 12px;
-  height: 24px;
   border-radius: 12px;
 `;
 
