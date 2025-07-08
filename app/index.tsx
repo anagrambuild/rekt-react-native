@@ -25,9 +25,9 @@ const Index = () => {
 
   return (
     <ScreenContainer
-      $alignItems='stretch'
-      $justifyContent='flex-start'
-      style={{ flex: 1 }}
+      alignItems='stretch'
+      justifyContent='flex-start'
+      contentContainerStyle={{ flex: 1 }}
     >
       <Column
         $width='100%'

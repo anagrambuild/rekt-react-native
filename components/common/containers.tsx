@@ -39,10 +39,12 @@ export const ScreenContainer = ({
   children,
   alignItems = 'center',
   justifyContent = 'space-between',
+  contentContainerStyle,
 }: {
   children: React.ReactNode;
   alignItems?: string;
   justifyContent?: string;
+  contentContainerStyle?: StyleProp<ViewStyle>;
 }) => {
   return (
     <StyledSafeAreaView>
@@ -53,6 +55,7 @@ export const ScreenContainer = ({
           justifyContent: justifyContent,
           alignItems: alignItems,
           minHeight: '90%',
+          ...(contentContainerStyle as any),
         }}
       >
         {children}
