@@ -54,6 +54,10 @@ export const TradeScreen = () => {
 
   const [amountPopupVisible, setAmountModalVisible] = useState(false);
 
+  const handleTrade = () => {
+    router.push('/(tabs)/home/live-trade');
+  };
+
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
@@ -111,7 +115,7 @@ export const TradeScreen = () => {
             <AmountCard setAmountModalVisible={setAmountModalVisible} />
             <SliderCard />
           </Column>
-          <PrimaryButton>
+          <PrimaryButton onPress={handleTrade}>
             {`${tradeSide.charAt(0).toUpperCase()}${tradeSide.slice(
               1
             )} ${selectedToken.toUpperCase()}`}
