@@ -41,25 +41,18 @@ export const HorizontalSlider = ({
       : setBtcLeverage;
 
   const [trackWidth, setTrackWidth] = useState(0);
-  const [max, setMax] = useState(100); // dynamic max
+  const max = isMaxLeverageOn ? 200 : 100;
   const theme = useTheme();
   const steps = isMaxLeverageOn ? 20 : 10;
   const min = 0;
   const thumbWidth = 30; // or your actual thumb size
   const stepSize = (max - min) / steps;
   const n = Math.round((leverage - min) / stepSize);
+  const safeTrackWidth = trackWidth > 0 ? trackWidth : 1;
   const adjustedWidth =
-    (trackWidth - thumbWidth) * (n / steps) + thumbWidth / 2;
+    (safeTrackWidth - thumbWidth) * (n / steps) + thumbWidth / 2;
   const offset = 12;
   const fillWidth = adjustedWidth + offset;
-
-  useEffect(() => {
-    if (isMaxLeverageOn) {
-      setMax(200);
-    } else {
-      setMax(100);
-    }
-  }, [isMaxLeverageOn]);
 
   useEffect(() => {
     if (leverage >= 100 && !isMaxLeverageOn) {
@@ -67,8 +60,21 @@ export const HorizontalSlider = ({
     }
   }, [leverage, isMaxLeverageOn, setLeverage]);
 
+  // Value reset hack: after layout, set to min, then back to real value
+  // this is to get the handle to show in the right place after switching between tokens once leverage is beyond 100
+  // this works for ios but jacks up android
+  // useEffect(() => {
+  //   if (trackWidth > 0) {
+  //     setLeverage(max);
+  //     setTimeout(() => {
+  //       setLeverage(leverage);
+  //     }, 30);
+  //   }
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [trackWidth]);
+
   return (
-    <OuterContainer>
+    <OuterContainer key={selectedToken + '-' + isMaxLeverageOn}>
       {/* Track Background */}
       <TrackBackground
         backgroundColor={theme.colors.card}
@@ -98,6 +104,7 @@ export const HorizontalSlider = ({
         </TicksRow>
         {/* Slider */}
         <StyledSlider
+          key={selectedToken + '-' + isMaxLeverageOn}
           minimumValue={min}
           maximumValue={max}
           step={10}
