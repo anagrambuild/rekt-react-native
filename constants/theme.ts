@@ -2,6 +2,7 @@ import { DarkTheme, DefaultTheme } from '@react-navigation/native';
 
 import {
   activeSegment,
+  amber,
   bg,
   border,
   borderEmphasized,
@@ -54,15 +55,15 @@ import {
   onActiveSegment,
   onPrimary,
   onSecondary,
+  orangeDark,
+  orangeDeep,
   primary,
   primaryBlue,
   primaryGreenDark,
   primaryGreenLight,
-  primaryOrange,
   primaryRedDark,
   primaryRedLight,
   primaryTapped,
-  primaryYellowLight,
   profit,
   profitBg,
   secondary,
@@ -115,7 +116,9 @@ export const lightTheme = {
     gradientOrange,
     gradientGreen,
     gradientGreenGlow,
-    sliderTick: primaryOrange,
+    liquidLine: lightLoss,
+    liquidBorder: lightLoss,
+    liquidBg: lightLossBg,
   },
 };
 
@@ -162,6 +165,8 @@ export const darkTheme = {
     gradientOrange,
     gradientGreen,
     gradientGreenGlow,
-    sliderTick: primaryYellowLight,
+    liquidLine: amber,
+    liquidBorder: orangeDark,
+    liquidBg: orangeDeep,
   },
 };

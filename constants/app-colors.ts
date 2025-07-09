@@ -21,6 +21,9 @@ export const gray900 = '#1A1A1A';
 export const primaryOrange = '#FF6A00';
 export const primaryOrangeLight = '#FFD6B3';
 export const primaryOrangeDark = '#B34700';
+export const amber = '#FBBF24';
+export const orangeDark = '#B93912';
+export const orangeDeep = '#551C0A';
 
 // Blue
 export const primaryBlue = '#0A7EA4';
