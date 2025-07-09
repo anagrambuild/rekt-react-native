@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import Skull from '@/assets/images/app-pngs/skull.png';
+import skull from '@/assets/images/app-pngs/skull.png';
 import {
   BodyM,
   BodyMSecondary,
@@ -57,7 +57,7 @@ export const SliderCard = () => {
               isOn={isMaxLeverageOn}
               icon={
                 <PulsatingContainer>
-                  <Image source={Skull} style={{ width: 30, height: 30 }} />
+                  <Image source={skull} style={{ width: 30, height: 30 }} />
                 </PulsatingContainer>
               }
             />

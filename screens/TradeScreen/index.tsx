@@ -101,7 +101,7 @@ export const TradeScreen = () => {
               ))}
             </ScrollRow>
 
-            <PriceChartCard />
+            <PriceChartCard showLiquidation={true} />
           </Column>
           <Column $gap={4}>
             <AmountCard setAmountModalVisible={setAmountModalVisible} />
