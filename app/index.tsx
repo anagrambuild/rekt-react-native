@@ -3,12 +3,13 @@ import { useEffect } from 'react';
 import RektLogo from '@/assets/images/rekt-logo.svg';
 import {
   Column,
-  LoginButton,
+  PrimaryButton,
   ScreenContainer,
-  SignupButton,
+  SecondaryButton,
   Title1,
 } from '@/components';
 import { useAppContext } from '@/contexts';
+
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
@@ -23,16 +24,26 @@ const Index = () => {
   }, [isLoggedIn]);
 
   return (
-    <ScreenContainer>
-      <RektLogo width={100} height={100} />
-      <Title1>{t('Welcome')}</Title1>
-      <Column>
-        <SignupButton onPress={() => setIsLoggedIn(true)}>
-          {t('Sign up')}
-        </SignupButton>
-        <LoginButton onPress={() => setIsLoggedIn(true)}>
-          {t('Login')}
-        </LoginButton>
+    <ScreenContainer
+      alignItems='stretch'
+      justifyContent='flex-start'
+      contentContainerStyle={{ flex: 1 }}
+    >
+      <Column
+        $width='100%'
+        $justifyContent='space-between'
+        style={{ height: '100%' }}
+      >
+        <RektLogo width={100} height={100} />
+        <Title1>{t('Welcome')}</Title1>
+        <Column>
+          <PrimaryButton onPress={() => setIsLoggedIn(true)}>
+            {t('Sign up')}
+          </PrimaryButton>
+          <SecondaryButton onPress={() => setIsLoggedIn(true)}>
+            {t('Login')}
+          </SecondaryButton>
+        </Column>
       </Column>
     </ScreenContainer>
   );

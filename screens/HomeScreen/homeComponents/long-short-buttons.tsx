@@ -3,12 +3,11 @@ import { ImageBackground, StyleSheet, View } from 'react-native';
 import tile from '@/assets/images/app-pngs/tile.png';
 import WhiteGreenArrow from '@/assets/images/app-svgs/white-green-arrow.svg';
 import WhiteRedArrow from '@/assets/images/app-svgs/white-red-arrow.svg';
+import { PressableOpacity } from '@/components';
 import { Theme } from '@/types/styled';
 
 import { LinearGradient } from 'expo-linear-gradient';
 import styled, { useTheme } from 'styled-components/native';
-
-// TODO - add ScrollView for ScreenContainer
 
 const arrowButtonShared = {
   display: 'flex',
@@ -75,7 +74,7 @@ export const LongArrow = () => {
 };
 
 // Shared styles for the large button
-const LargeButtonContainer = styled.Pressable`
+const LargeButtonContainer = styled(PressableOpacity)`
   border-width: 1px;
   flex: 1;
   border-radius: 16px;

@@ -10,5 +10,10 @@
   "Long": "Long",
   "Short": "Short",
   "Price will go down": "Price will go down",
-  "Price will go up": "Price will go up"
+  "Price will go up": "Price will go up",
+  "Amount": "Amount",
+  "Leverage": "Leverage",
+  "Buying power": "Buying power",
+  "Enter amount": "Enter amount",
+  "Set amount": "Set amount"
 }

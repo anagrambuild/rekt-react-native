@@ -21,6 +21,9 @@ export const gray900 = '#1A1A1A';
 export const primaryOrange = '#FF6A00';
 export const primaryOrangeLight = '#FFD6B3';
 export const primaryOrangeDark = '#B34700';
+export const amber = '#FBBF24';
+export const orangeDark = '#B93912';
+export const orangeDeep = '#551C0A';
 
 // Blue
 export const primaryBlue = '#0A7EA4';
@@ -68,7 +71,8 @@ export const bg = '#09090B';
 export const bgDepressed = black;
 export const card = '#121216';
 export const cardEmphasized = '#19191F';
-export const brand = '#FF8527';
+export const brand = '#FF5527'; // #FF5527
+export const brandDark = '#FF273C';
 export const highEmText = white;
 export const midEmText = gray500;
 export const lowEmText = '#52525B';

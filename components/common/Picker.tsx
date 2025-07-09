@@ -3,6 +3,7 @@ import { FlatList } from 'react-native';
 
 import MaterialIcon from '@expo/vector-icons/MaterialIcons';
 
+import { PressableOpacity } from './buttons';
 import { Modal } from './Modal';
 import { BodyM } from './texts';
 import styled, { DefaultTheme, useTheme } from 'styled-components/native';
@@ -60,7 +61,7 @@ export function Picker<T>({
   );
 }
 
-const Trigger = styled.Pressable`
+const Trigger = styled(PressableOpacity)`
   flex-direction: row;
   align-items: center;
   background-color: ${({ theme }: { theme: DefaultTheme }) =>
@@ -74,7 +75,7 @@ const OptionsList = styled(FlatList as new <T>() => FlatList<PickerOption<T>>)`
   max-height: 300px;
 `;
 
-const Option = styled.Pressable`
+const Option = styled(PressableOpacity)`
   padding: 12px 8px;
   border-bottom-width: 1px;
   border-bottom-color: ${({ theme }: { theme: DefaultTheme }) =>

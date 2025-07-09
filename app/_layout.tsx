@@ -12,6 +12,7 @@ import {
 
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ThemeProvider as StyledThemeProvider } from 'styled-components/native';
 
 // Configure RTL support for languages like Arabic and Hebrew
@@ -34,14 +35,16 @@ export default function RootLayout() {
   }
 
   return (
-    <AppProvider>
-      <HomeProvider>
-        <NavigationThemeProvider value={navTheme}>
-          <StyledThemeProvider theme={styledTheme}>
-            <Stack screenOptions={{ headerShown: false }} />
-          </StyledThemeProvider>
-        </NavigationThemeProvider>
-      </HomeProvider>
-    </AppProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <AppProvider>
+        <HomeProvider>
+          <NavigationThemeProvider value={navTheme}>
+            <StyledThemeProvider theme={styledTheme}>
+              <Stack screenOptions={{ headerShown: false }} />
+            </StyledThemeProvider>
+          </NavigationThemeProvider>
+        </HomeProvider>
+      </AppProvider>
+    </GestureHandlerRootView>
   );
 }

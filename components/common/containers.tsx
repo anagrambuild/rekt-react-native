@@ -23,25 +23,43 @@ const StyledSafeAreaView = styled(SafeAreaView)<StyledSafeAreaViewProps>`
     theme.colors.background};
 `;
 
+const StyledScrollView = styled(ScrollView)<{
+  $padding?: number;
+  $alignItems?: string;
+  $justifyContent?: string;
+  $marginTop?: number;
+}>`
+  width: 100%;
+  flex: 1;
+  padding: ${({ $padding = 0 }: { $padding?: number }) => $padding}px;
+  margin-top: ${({ $marginTop = 0 }: { $marginTop?: number }) => $marginTop}px;
+`;
+
 export const ScreenContainer = ({
   children,
-  alignItems,
+  alignItems = 'center',
   justifyContent = 'space-between',
+  contentContainerStyle,
 }: {
   children: React.ReactNode;
   alignItems?: string;
   justifyContent?: string;
+  contentContainerStyle?: StyleProp<ViewStyle>;
 }) => {
   return (
     <StyledSafeAreaView>
-      <Column
+      <StyledScrollView
         $padding={screenPadding}
-        $alignItems={alignItems}
-        $justifyContent={justifyContent}
-        style={{ flex: 1, marginTop: paddingTop }}
+        $marginTop={paddingTop}
+        contentContainerStyle={{
+          justifyContent: justifyContent,
+          alignItems: alignItems,
+          minHeight: '90%',
+          ...(contentContainerStyle as any),
+        }}
       >
         {children}
-      </Column>
+      </StyledScrollView>
     </StyledSafeAreaView>
   );
 };
@@ -130,7 +148,6 @@ export const ScrollRow = ({
           gap: $gap,
           alignItems: $alignItems,
           padding: $padding,
-          width: '100%',
         },
         $contentContainerStyle,
       ]}
@@ -174,3 +191,11 @@ export const TabIconWithIndicator = ({
     </TabIconContainer>
   );
 };
+
+// Divider
+export const Divider = styled.View`
+  width: 100%;
+  height: 1px;
+  background-color: ${({ theme }: { theme: DefaultTheme }) =>
+    theme.colors.borderLight};
+`;

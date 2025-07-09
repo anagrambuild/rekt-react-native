@@ -5,7 +5,11 @@ import { PriceChart } from './PriceChart';
 import { TokenTab } from './TokenTab';
 import styled from 'styled-components/native';
 
-export const PriceChartCard = () => {
+export const PriceChartCard = ({
+  showLiquidation = false,
+}: {
+  showLiquidation?: boolean;
+}) => {
   const {
     selectedToken,
     setSelectedToken,
@@ -44,7 +48,7 @@ export const PriceChartCard = () => {
             onValueChange={setSelectedTimeframe}
           />
         </PickerContainer>
-        <PriceChart />
+        <PriceChart showLiquidation={showLiquidation} />
       </ChartContainer>
     </Card>
   );
@@ -59,4 +63,5 @@ const PickerContainer = styled.View`
   top: 12px;
   left: 12px;
   z-index: 1;
+  opacity: 0.92;
 `;

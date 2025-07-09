@@ -1,13 +1,10 @@
-import React from 'react';
-import { TouchableOpacity } from 'react-native';
-
 import BtcSelected from '@/assets/images/app-svgs/btc-selected.svg';
 import BtcUnselected from '@/assets/images/app-svgs/btc-unselected.svg';
 import EthSelected from '@/assets/images/app-svgs/eth-selected.svg';
 import EthUnselected from '@/assets/images/app-svgs/eth-unselected.svg';
 import SolSelected from '@/assets/images/app-svgs/sol-selected.svg';
 import SolUnselected from '@/assets/images/app-svgs/sol-unselected.svg';
-import { BodyS } from '@/components';
+import { BodyS, PressableOpacity } from '@/components';
 
 import styled, { DefaultTheme } from 'styled-components/native';
 
@@ -16,7 +13,7 @@ interface TabContainerProps {
   theme: DefaultTheme;
 }
 
-const TabContainer = styled(TouchableOpacity)<TabContainerProps>`
+const TabContainer = styled(PressableOpacity)<TabContainerProps>`
   flex-direction: row;
   background-color: ${({
     selected,
