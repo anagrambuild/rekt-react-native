@@ -73,6 +73,13 @@ export const AmountModal = ({
     onClose();
   };
 
+  const handleAmountChange = (text: string) => {
+    // Allow only numbers with up to 2 decimal places
+    if (/^\d*\.?\d{0,2}$/.test(text)) {
+      setLocalAmount(text);
+    }
+  };
+
   return (
     <Modal visible={visible} onRequestClose={onClose}>
       <StyledSheetContainer>
@@ -89,7 +96,7 @@ export const AmountModal = ({
         <StyledInput
           ref={inputRef}
           value={localAmount}
-          onChangeText={setLocalAmount}
+          onChangeText={handleAmountChange}
           keyboardType='numeric'
           selectionColor={theme.colors.loss}
         />
