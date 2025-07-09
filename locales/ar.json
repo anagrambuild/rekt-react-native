@@ -7,5 +7,13 @@
   "Lost": "خسارة",
   "Got rekt": "مصاب",
   "Long": "طويل",
-  "Short": "قصير"
+  "Short": "قصير",
+  "Price will go down": "سوف ينخفض السعر",
+  "Price will go up": "سوف يرتفع السعر",
+  "Amount": "المبلغ",
+  "Leverage": "الرافعة المالية",
+  "Buying power": "قوة الشراء",
+  "Enter amount": "أدخل المبلغ",
+  "Set amount": "تعيين المبلغ",
+  "Ride the market": "اركب السوق"
 }
