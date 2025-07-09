@@ -58,7 +58,11 @@ export const TradeScreen = () => {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <ScreenContainer>
-        <Column $gap={12} $alignItems='space-between'>
+        <Column
+          $gap={12}
+          $justifyContent='space-between'
+          style={{ height: '100%' }}
+        >
           <Column $gap={8}>
             <Row>
               <PressableOpacity onPress={() => router.back()}>

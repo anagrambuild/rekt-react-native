@@ -7,15 +7,14 @@ Big items
 
 polishing (mismatches from designs)
 
+- animated socials at the top of the screen
 - flame for splash screen
 - add commas for number strings
-- adjust PRICE CHART styles to show wide ranges of numbers and large numbers on y axis like btc prices
 - linear gradient on active tab
-- check with enlarged text and different size devices
-- removed unused colors and theme vars
 - icons for long and short segment control
-- Slider - touch up or make an ArcSlider
-- AmountModal.tsx could be polished especially for android - maybe use bottom up shelf or avoid keyboard view
+- make an ArcSlider
+- HORIZONTAL SLIDER - ios has a bug - going beyond 100 leverage and then switching tokens and coming back the handle is in the wrong position
+- AmountModal.tsx - there is a flicker in the UI when the user tries to add a 3rd digit in the decimal column
 
 WIRING UP REAL DATA
 

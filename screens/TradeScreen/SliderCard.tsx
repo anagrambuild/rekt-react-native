@@ -44,7 +44,23 @@ export const SliderCard = () => {
       ? ethLeverage
       : btcLeverage;
 
-  const [isMaxLeverageOn, setIsMaxLeverageOn] = useState(false);
+  const [isSolMaxLeverageOn, setIsSolMaxLeverageOn] = useState(false);
+  const [isEthMaxLeverageOn, setIsEthMaxLeverageOn] = useState(false);
+  const [isBtcMaxLeverageOn, setIsBtcMaxLeverageOn] = useState(false);
+
+  const isMaxLeverageOn =
+    selectedToken === 'sol'
+      ? isSolMaxLeverageOn
+      : selectedToken === 'eth'
+      ? isEthMaxLeverageOn
+      : isBtcMaxLeverageOn;
+
+  const setIsMaxLeverageOn =
+    selectedToken === 'sol'
+      ? setIsSolMaxLeverageOn
+      : selectedToken === 'eth'
+      ? setIsEthMaxLeverageOn
+      : setIsBtcMaxLeverageOn;
 
   return (
     <Card $padding={16} style={{ gap: 8 }}>
