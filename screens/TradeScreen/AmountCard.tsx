@@ -60,9 +60,15 @@ export const AmountCard = ({
           </Row>
         </PressableOpacity>
         <Row $gap={12} $width='auto'>
-          <IconButton name='remove' onPress={() => setAmount(amount - 1)} />
+          <IconButton
+            name='remove'
+            onPress={() => setAmount(Math.max(0, amount - 1))}
+          />
           <BodyM>{`$${amount}`}</BodyM>
-          <IconButton name='add' onPress={() => setAmount(amount + 1)} />
+          <IconButton
+            name='add'
+            onPress={() => setAmount(Math.max(amount + 1))}
+          />
         </Row>
       </Row>
     </Card>

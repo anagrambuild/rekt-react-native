@@ -54,20 +54,22 @@ export const AmountModal = ({
       ? setEthAmount
       : setBtcAmount;
 
-  const initialAmount = amount;
+  const initialAmount = String(amount);
   const [localAmount, setLocalAmount] = useState(initialAmount);
 
   useEffect(() => {
     if (visible) {
+      setLocalAmount(String(amount)); // Reset localAmount to current amount when modal opens
       const timeout = setTimeout(() => {
         inputRef.current?.focus();
       }, 400);
       return () => clearTimeout(timeout);
     }
-  }, [visible]);
+  }, [visible, amount]);
 
   const onSetAmount = () => {
-    setAmount(localAmount);
+    const parsed = Number(localAmount);
+    setAmount(isNaN(parsed) ? 0 : parsed);
     onClose();
   };
 
@@ -86,7 +88,7 @@ export const AmountModal = ({
         <BodyMEmphasized>{t('Enter amount')}</BodyMEmphasized>
         <StyledInput
           ref={inputRef}
-          value={localAmount.toString()}
+          value={localAmount}
           onChangeText={setLocalAmount}
           keyboardType='numeric'
           selectionColor={theme.colors.loss}
@@ -105,12 +107,12 @@ export const AmountModal = ({
           <BodyS>${walletBalance} USDC</BodyS>
         </Row>
         <ScrollRow $gap={8} keyboardShouldPersistTaps='always'>
-          <PresetButton value={10} onPress={() => setLocalAmount(10)} />
-          <PresetButton value={50} onPress={() => setLocalAmount(50)} />
-          <PresetButton value={100} onPress={() => setLocalAmount(100)} />
-          <PresetButton value={200} onPress={() => setLocalAmount(200)} />
-          <PresetButton value={500} onPress={() => setLocalAmount(500)} />
-          <PresetButton value={1000} onPress={() => setLocalAmount(1000)} />
+          <PresetButton value={10} onPress={() => setLocalAmount('10')} />
+          <PresetButton value={50} onPress={() => setLocalAmount('50')} />
+          <PresetButton value={100} onPress={() => setLocalAmount('100')} />
+          <PresetButton value={200} onPress={() => setLocalAmount('200')} />
+          <PresetButton value={500} onPress={() => setLocalAmount('500')} />
+          <PresetButton value={1000} onPress={() => setLocalAmount('1000')} />
         </ScrollRow>
         <PrimaryButton onPress={onSetAmount}>{t('Set amount')}</PrimaryButton>
       </StyledSheetContainer>
