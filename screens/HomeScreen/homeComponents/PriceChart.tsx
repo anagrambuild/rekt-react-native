@@ -1,12 +1,10 @@
-import React from 'react';
+import { useState } from 'react';
 import { Dimensions, Pressable } from 'react-native';
 
 import rektBomb from '@/assets/images/app-pngs/rekt-bomb.png';
 import FlagIcon from '@/assets/images/app-svgs/flag.svg';
-import { PulsatingContainer } from '@/components';
-import { BodyXSEmphasized } from '@/components/common/texts';
-import { useHomeContext } from '@/contexts';
-import { Trade } from '@/contexts/HomeContext';
+import { BodyXSEmphasized, PulsatingContainer } from '@/components';
+import { Trade, useHomeContext } from '@/contexts';
 
 import {
   btcPriceData,
@@ -15,6 +13,7 @@ import {
   liquidationPrices,
   solPriceData,
 } from '../mockData';
+import { EmojiContainer } from './EmojiContainer';
 import { Image } from 'expo-image';
 import { LineChart } from 'react-native-gifted-charts';
 import styled, { DefaultTheme, useTheme } from 'styled-components/native';
@@ -94,7 +93,7 @@ export const PriceChart = ({
   }
 
   // Toggle state for price/percentage view
-  const [showPercent, setShowPercent] = React.useState(false);
+  const [showPercent, setShowPercent] = useState(false);
   // Mock percentage value
   const mockPercent = 28.2;
 
@@ -235,6 +234,7 @@ export const PriceChart = ({
             </LiquidationLabel>
           </>
         )}
+        {trade && trade.status === 'open' && <EmojiContainer />}
       </ChartContainer>
     </Wrapper>
   );
