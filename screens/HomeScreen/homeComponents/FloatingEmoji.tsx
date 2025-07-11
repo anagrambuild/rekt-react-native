@@ -11,7 +11,7 @@ export const FloatingEmoji = ({
   onDone: () => void;
 }) => {
   // Randomize left position, font size, and initial opacity
-  const left = Math.random() * 280 + 10; // px from left
+  const left = Math.random() * 260 + 30; // px from left
   const fontSize = Math.random() * 16 + 24; // 24-40px
   const initialOpacity = Math.random() * 0.3 + 0.7; // 0.7-1
 
