@@ -10,10 +10,12 @@ const EMOJIS = ['🔥', '💀', '😍', '🤔', '😭'];
 
 interface EmojiContainerProps {
   onEmojiPress?: (emoji: string) => void;
+  isAnimating?: boolean;
 }
 
 export const EmojiContainer: React.FC<EmojiContainerProps> = ({
   onEmojiPress,
+  isAnimating = false,
 }) => {
   const theme = useTheme();
   const [open, setOpen] = useState(false);
@@ -74,6 +76,7 @@ export const EmojiContainer: React.FC<EmojiContainerProps> = ({
         <DefaultEmojiButton
           onPress={() => setOpen(true)}
           accessibilityLabel='Open emoji picker'
+          disabled={isAnimating}
         >
           <EmojiText>😀</EmojiText>
         </DefaultEmojiButton>
@@ -95,14 +98,16 @@ export const EmojiContainer: React.FC<EmojiContainerProps> = ({
           size={14}
           color={theme.colors.textPrimary}
           accessibilityLabel='Close emoji picker'
+          disabled={isAnimating}
         />
         {EMOJIS.map((emoji) => (
           <EmojiButton
             key={emoji}
             onPress={() => {
-              onCloseContainer();
+              onEmojiPress?.(emoji);
             }}
             accessibilityLabel={`Send ${emoji}`}
+            disabled={isAnimating}
           >
             <EmojiText>{emoji}</EmojiText>
           </EmojiButton>
