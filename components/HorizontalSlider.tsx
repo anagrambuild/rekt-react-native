@@ -18,27 +18,30 @@ export const HorizontalSlider = ({
 }) => {
   const {
     selectedToken,
-    solLeverage,
-    ethLeverage,
-    btcLeverage,
-    setSolLeverage,
-    setEthLeverage,
-    setBtcLeverage,
+    solTrade,
+    setSolTrade,
+    ethTrade,
+    setEthTrade,
+    btcTrade,
+    setBtcTrade,
   } = useHomeContext();
 
   const leverage =
     selectedToken === 'sol'
-      ? solLeverage
+      ? solTrade?.leverage ?? 1
       : selectedToken === 'eth'
-      ? ethLeverage
-      : btcLeverage;
+      ? ethTrade?.leverage ?? 1
+      : btcTrade?.leverage ?? 1;
 
-  const setLeverage =
-    selectedToken === 'sol'
-      ? setSolLeverage
-      : selectedToken === 'eth'
-      ? setEthLeverage
-      : setBtcLeverage;
+  const setLeverage = (newLeverage: number) => {
+    if (selectedToken === 'sol') {
+      setSolTrade(solTrade ? { ...solTrade, leverage: newLeverage } : null);
+    } else if (selectedToken === 'eth') {
+      setEthTrade(ethTrade ? { ...ethTrade, leverage: newLeverage } : null);
+    } else {
+      setBtcTrade(btcTrade ? { ...btcTrade, leverage: newLeverage } : null);
+    }
+  };
 
   const [trackWidth, setTrackWidth] = useState(0);
   const max = isMaxLeverageOn ? 200 : 100;
@@ -58,20 +61,23 @@ export const HorizontalSlider = ({
     if (leverage >= 100 && !isMaxLeverageOn) {
       setLeverage(100);
     }
-  }, [leverage, isMaxLeverageOn, setLeverage]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leverage, isMaxLeverageOn]);
 
   // Value reset hack: after layout, set to min, then back to real value
   // this is to get the handle to show in the right place after switching between tokens once leverage is beyond 100
   // this works for ios but jacks up android
-  // useEffect(() => {
-  //   if (trackWidth > 0) {
-  //     setLeverage(max);
-  //     setTimeout(() => {
-  //       setLeverage(leverage);
-  //     }, 30);
-  //   }
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [trackWidth]);
+  useEffect(() => {
+    if (Platform.OS === 'ios') {
+      if (trackWidth > 0) {
+        setLeverage(max);
+        setTimeout(() => {
+          setLeverage(leverage);
+        }, 30);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trackWidth]);
 
   return (
     <OuterContainer key={selectedToken + '-' + isMaxLeverageOn}>
