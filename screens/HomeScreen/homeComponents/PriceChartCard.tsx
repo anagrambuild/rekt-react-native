@@ -18,7 +18,26 @@ export const PriceChartCard = ({
     selectedTimeframe,
     setSelectedTimeframe,
     priceChartTimeframes,
+    solTrade,
+    ethTrade,
+    btcTrade,
   } = useHomeContext();
+
+  // Get the current trade based on selected token
+  const getCurrentTrade = () => {
+    switch (selectedToken) {
+      case 'sol':
+        return solTrade;
+      case 'eth':
+        return ethTrade;
+      case 'btc':
+        return btcTrade;
+      default:
+        return null;
+    }
+  };
+
+  const currentTrade = getCurrentTrade();
 
   return (
     <Card style={{ gap: 4 }}>
@@ -50,7 +69,11 @@ export const PriceChartCard = ({
             onValueChange={setSelectedTimeframe}
           />
         </PickerContainer>
-        <PriceChart showLiquidation={showLiquidation} pnlState={pnlState} />
+        <PriceChart
+          showLiquidation={showLiquidation}
+          pnlState={pnlState}
+          trade={currentTrade}
+        />
       </ChartContainer>
     </Card>
   );
