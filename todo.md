@@ -18,6 +18,7 @@ polishing (mismatches from designs)
   - gradient colors dont exactly match the designs
   - android slider is buggy when you move and let off quickly
 - AmountModal.tsx - there is a flicker in the UI when the user tries to add a 3rd digit in the decimal column
+- PRICE CHART - overflow:hidden causes problems - cuts off the top of labels and dotted lines go beyond the chart to the right
 
 WIRING UP REAL DATA
 

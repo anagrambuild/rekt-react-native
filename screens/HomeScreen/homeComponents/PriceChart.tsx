@@ -19,6 +19,8 @@ import { Image } from 'expo-image';
 import { LineChart } from 'react-native-gifted-charts';
 import styled, { DefaultTheme, useTheme } from 'styled-components/native';
 
+// TODO - overflow hidden problems - rule lines go too far right and top is cut off
+
 export const PriceChart = ({
   showLiquidation = false,
   trade = null,
@@ -281,6 +283,7 @@ const Wrapper = styled.View`
 
 const ChartContainer = styled.View`
   position: relative;
+  /* overflow: hidden; */
 `;
 
 const YAxisLabel = styled.View`
