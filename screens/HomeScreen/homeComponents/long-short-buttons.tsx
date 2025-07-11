@@ -11,8 +11,8 @@ import styled, { useTheme } from 'styled-components/native';
 
 const arrowButtonShared = {
   display: 'flex',
-  width: 44,
-  height: 44,
+  width: ({ $size }: { $size?: number }) => $size || 44,
+  height: ({ $size }: { $size?: number }) => $size || 44,
   justifyContent: 'center',
   alignItems: 'center',
 };
@@ -39,11 +39,11 @@ const InnerShadow = styled.View`
   bottom: 0;
 `;
 
-export const ShortArrow = () => {
+export const ShortArrow = ({ size }: { size?: number }) => {
   const theme = useTheme();
 
   return (
-    <ShortArrowContainer>
+    <ShortArrowContainer $size={size}>
       <GradientBackground
         colors={[theme.colors.background, theme.colors.gradientRed]}
         start={{ x: 0, y: 0 }}
@@ -56,11 +56,11 @@ export const ShortArrow = () => {
   );
 };
 
-export const LongArrow = () => {
+export const LongArrow = ({ size }: { size?: number }) => {
   const theme = useTheme();
 
   return (
-    <ShortArrowContainer>
+    <ShortArrowContainer $size={size}>
       <GradientBackground
         colors={[theme.colors.background, theme.colors.gradientGreen]}
         start={{ x: 0, y: 0 }}

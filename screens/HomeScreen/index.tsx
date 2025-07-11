@@ -98,11 +98,13 @@ export const HomeScreen = () => {
 
         <PriceChartCard showLiquidation={!!isActiveTrade} pnlState={pnlState} />
       </Column>
-      <Gap height={24} />
+      <Gap height={12} />
       <Column $gap={16}>
-        <Row style={{ paddingStart: 16 }}>
-          <Title4>{t('Ride the market')}</Title4>
-        </Row>
+        {!isActiveTrade && (
+          <Row style={{ paddingStart: 16 }}>
+            <Title4>{t('Ride the market')}</Title4>
+          </Row>
+        )}
         {isActiveTrade ? (
           <LiveTradeView trade={trade} />
         ) : (

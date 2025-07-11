@@ -100,7 +100,7 @@ export const HorizontalSlider = ({
   useEffect(() => {
     if (Platform.OS === 'ios') {
       if (trackWidth > 0) {
-        setLeverage(max);
+        setLeverage(min);
         setTimeout(() => {
           setLeverage(leverage);
         }, 30);
