@@ -59,32 +59,27 @@ export const TradeScreen = () => {
   const setTradeSide = (side: 'long' | 'short') => {
     if (trade) {
       setTrade({ ...trade, side });
-    } else {
-      // Set up a new trade with default values
-      setTrade({
-        side,
-        entryPrice: 0, // Will be set on trade
-        amount: 10,
-        leverage: 1,
-        status: 'open',
-      });
     }
   };
 
   const [amountPopupVisible, setAmountModalVisible] = useState(false);
 
+  const entryPrice =
+    selectedToken === 'sol' ? 170 : selectedToken === 'eth' ? 2568 : 109200;
+
+  const mockTrade = {
+    ...trade,
+    side: tradeSide,
+    entryPrice: entryPrice,
+    status: 'open' as const, // <-- fix here
+    amount: trade?.amount ?? 10,
+    leverage: trade?.leverage ?? 1,
+    timestamp: Date.now(),
+  };
+
   const handleTrade = () => {
     // Set the trade for the selected token as active
-    setTrade({
-      ...(trade || {}),
-      side: tradeSide,
-      entryPrice: 100, // TODO: Replace with real price
-      status: 'open',
-      // Keep amount/leverage if already set, else default
-      amount: trade?.amount ?? 10,
-      leverage: trade?.leverage ?? 1,
-      timestamp: Date.now(),
-    });
+    setTrade(mockTrade);
     router.push('/(tabs)');
   };
 

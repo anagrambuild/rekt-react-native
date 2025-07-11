@@ -73,14 +73,6 @@ export const AmountModal = ({
     const parsed = Number(localAmount);
     if (trade) {
       setTrade({ ...trade, amount: isNaN(parsed) ? 0 : parsed });
-    } else {
-      setTrade({
-        side: 'short', // default
-        entryPrice: 0,
-        amount: isNaN(parsed) ? 0 : parsed,
-        leverage: 1,
-        status: 'open',
-      });
     }
     onClose();
   };

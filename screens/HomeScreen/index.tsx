@@ -54,15 +54,8 @@ export const HomeScreen = () => {
   const setTradeSide = (side: 'long' | 'short') => {
     if (trade) {
       setTrade({ ...trade, side });
-    } else {
-      setTrade({
-        side,
-        entryPrice: 0,
-        amount: 10,
-        leverage: 1,
-        status: 'open',
-      });
     }
+    // Do not create a new trade here; only update if one exists
   };
 
   const isActiveTrade = trade && trade.status === 'open';

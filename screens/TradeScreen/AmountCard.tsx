@@ -50,14 +50,6 @@ export const AmountCard = ({
   const setAmount = (newAmount: number) => {
     if (trade) {
       setTrade({ ...trade, amount: newAmount });
-    } else {
-      setTrade({
-        side: 'short', // default
-        entryPrice: 0,
-        amount: newAmount,
-        leverage: 1,
-        status: 'open',
-      });
     }
   };
 

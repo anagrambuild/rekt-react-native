@@ -106,7 +106,7 @@ export const BodyXS = styled.Text`
 
 export const BodyXSEmphasized = styled.Text`
   font-size: 12px;
-  font-family: 'Geist';
+  font-family: 'Geist Mono';
   font-weight: 500;
   color: ${({ theme }: ThemedTextProps) => theme.colors.textPrimary};
 `;

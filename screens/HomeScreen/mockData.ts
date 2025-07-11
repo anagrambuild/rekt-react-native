@@ -65,7 +65,7 @@ export const solPriceData = [
   { value: 169 },
   { value: 168.2 },
   { value: 170 },
-  { value: 169.7 }, // Mixed trend
+  { value: 171.2 }, // Current price should be in range
 ];
 
 export const ethPriceData = [
@@ -75,7 +75,7 @@ export const ethPriceData = [
   { value: 2568 },
   { value: 2566 },
   { value: 2569 },
-  { value: 2563 }, // Mixed trend
+  { value: 2568.45 }, // Current price should be in range
 ];
 
 export const btcPriceData = [
@@ -85,5 +85,19 @@ export const btcPriceData = [
   { value: 108900 },
   { value: 109200 },
   { value: 108950 },
-  { value: 109261 }, // Mixed trend
+  { value: 109200 }, // Current price should be in range
 ];
+
+// Mock liquidation prices - replace with actual liquidation price logic
+export const liquidationPrices = {
+  sol: 169.3,
+  eth: 2564.5,
+  btc: 108800,
+};
+
+// Mock current prices - replace with real-time data
+export const currentPrices = {
+  sol: 169, // Lower than entryPrice 167 for a short, so isProfit true for short
+  eth: 2568.45,
+  btc: 109200,
+};
