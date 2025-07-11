@@ -65,7 +65,7 @@ export const TradeScreen = () => {
   const [amountPopupVisible, setAmountModalVisible] = useState(false);
 
   const entryPrice =
-    selectedToken === 'sol' ? 170 : selectedToken === 'eth' ? 2568 : 109200;
+    selectedToken === 'sol' ? 171 : selectedToken === 'eth' ? 2568 : 109000;
 
   const mockTrade = {
     ...trade,

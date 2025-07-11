@@ -65,7 +65,7 @@ export const solPriceData = [
   { value: 169 },
   { value: 168.2 },
   { value: 170 },
-  { value: 171.2 }, // Current price should be in range
+  { value: 170.5 }, // Current price should be in range
 ];
 
 export const ethPriceData = [
@@ -92,12 +92,12 @@ export const btcPriceData = [
 export const liquidationPrices = {
   sol: 169.3,
   eth: 2564.5,
-  btc: 108800,
+  btc: 108900,
 };
 
 // Mock current prices - replace with real-time data
 export const currentPrices = {
-  sol: 169, // Lower than entryPrice 167 for a short, so isProfit true for short
+  sol: 170.5, // Lower than entryPrice 167 for a short, so isProfit true for short
   eth: 2568.45,
   btc: 109200,
 };

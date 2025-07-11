@@ -1,4 +1,5 @@
-import { Dimensions } from 'react-native';
+import React from 'react';
+import { Dimensions, Pressable } from 'react-native';
 
 import rektBomb from '@/assets/images/app-pngs/rekt-bomb.png';
 import FlagIcon from '@/assets/images/app-svgs/flag.svg';
@@ -18,15 +19,11 @@ import { Image } from 'expo-image';
 import { LineChart } from 'react-native-gifted-charts';
 import styled, { DefaultTheme, useTheme } from 'styled-components/native';
 
-export type PnlState = 'profit' | 'loss' | 'neutral';
-
 export const PriceChart = ({
   showLiquidation = false,
-  pnlState = 'neutral',
   trade = null,
 }: {
   showLiquidation?: boolean;
-  pnlState?: PnlState;
   trade?: Trade | null;
 }) => {
   const theme = useTheme();
@@ -83,18 +80,23 @@ export const PriceChart = ({
       : (trade.side === 'long' && currentPrice > trade.entryPrice) ||
         (trade.side === 'short' && currentPrice < trade.entryPrice);
 
-  // Set chart color based on pnlState
+  // Set chart color based on isProfit
   let chartColor = theme.colors.tint;
   let fillColor = theme.colors.tint;
-  if (trade) {
-    if (pnlState === 'profit') {
+  if (trade && isProfit !== null) {
+    if (isProfit === true) {
       chartColor = theme.colors.profit;
       fillColor = theme.colors.profit;
-    } else if (pnlState === 'loss') {
+    } else if (isProfit === false) {
       chartColor = theme.colors.loss;
       fillColor = theme.colors.loss;
     }
   }
+
+  // Toggle state for price/percentage view
+  const [showPercent, setShowPercent] = React.useState(false);
+  // Mock percentage value
+  const mockPercent = 28.2;
 
   return (
     <Wrapper>
@@ -131,25 +133,38 @@ export const PriceChart = ({
           }
         />
 
-        {/* Custom y-axis labels */}
-        {Array.from({ length: 5 }, (_, i) => {
-          const value = actualMinValue + (actualValueRange * i) / 4;
-          const sectionHeight = (chartHeight - 40) / 4;
-          const yPosition = 20 + (4 - i) * sectionHeight;
-          return (
-            <YAxisLabel
-              key={i}
-              style={{
-                top: yPosition,
-                right: 15,
-              }}
-            >
-              <BodyXSEmphasized style={{ color: theme.colors.textSecondary }}>
-                {value.toFixed(0)}
-              </BodyXSEmphasized>
-            </YAxisLabel>
-          );
-        })}
+        {/* Custom y-axis labels (now pressable as a group) */}
+        <Pressable
+          onPress={() => setShowPercent((prev) => !prev)}
+          style={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            width: 60,
+            height: chartHeight,
+          }}
+          accessibilityRole='button'
+          accessibilityLabel='Toggle price/percentage'
+        >
+          {Array.from({ length: 5 }, (_, i) => {
+            const value = actualMinValue + (actualValueRange * i) / 4;
+            const sectionHeight = (chartHeight - 40) / 4;
+            const yPosition = 20 + (4 - i) * sectionHeight;
+            return (
+              <YAxisLabel
+                key={i}
+                style={{
+                  top: yPosition,
+                  right: 15,
+                }}
+              >
+                <BodyXSEmphasized style={{ color: theme.colors.textSecondary }}>
+                  {value.toFixed(0)}
+                </BodyXSEmphasized>
+              </YAxisLabel>
+            );
+          })}
+        </Pressable>
 
         <CurrentPriceLabel
           style={{
@@ -159,7 +174,14 @@ export const PriceChart = ({
         >
           <CurrentPriceBubble $isProfit={isProfit}>
             <CurrentPriceText style={{ color: theme.colors.background }}>
-              ${currentPrice.toFixed(2)}
+              {/* Toggle between price and percentage */}
+              {trade && showPercent
+                ? isProfit === true
+                  ? `+${mockPercent.toFixed(2)}%`
+                  : isProfit === false
+                  ? `-${mockPercent.toFixed(2)}%`
+                  : `${mockPercent.toFixed(2)}%`
+                : `$${currentPrice.toFixed(2)}`}
             </CurrentPriceText>
           </CurrentPriceBubble>
         </CurrentPriceLabel>
@@ -228,7 +250,6 @@ const Wrapper = styled.View`
 
 const ChartContainer = styled.View`
   position: relative;
-  overflow: hidden;
 `;
 
 const YAxisLabel = styled.View`
