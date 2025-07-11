@@ -35,11 +35,41 @@ export const HorizontalSlider = ({
 
   const setLeverage = (newLeverage: number) => {
     if (selectedToken === 'sol') {
-      setSolTrade(solTrade ? { ...solTrade, leverage: newLeverage } : null);
+      setSolTrade(
+        solTrade
+          ? { ...solTrade, leverage: newLeverage }
+          : {
+              side: 'short',
+              entryPrice: 0,
+              amount: 10,
+              leverage: newLeverage,
+              status: 'closed',
+            }
+      );
     } else if (selectedToken === 'eth') {
-      setEthTrade(ethTrade ? { ...ethTrade, leverage: newLeverage } : null);
+      setEthTrade(
+        ethTrade
+          ? { ...ethTrade, leverage: newLeverage }
+          : {
+              side: 'short',
+              entryPrice: 0,
+              amount: 10,
+              leverage: newLeverage,
+              status: 'closed',
+            }
+      );
     } else {
-      setBtcTrade(btcTrade ? { ...btcTrade, leverage: newLeverage } : null);
+      setBtcTrade(
+        btcTrade
+          ? { ...btcTrade, leverage: newLeverage }
+          : {
+              side: 'short',
+              entryPrice: 0,
+              amount: 10,
+              leverage: newLeverage,
+              status: 'closed',
+            }
+      );
     }
   };
 
