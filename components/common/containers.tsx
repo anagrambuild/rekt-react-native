@@ -49,6 +49,10 @@ export const ScreenContainer = ({
   return (
     <StyledSafeAreaView>
       <StyledScrollView
+        bounces={false} // Disables bouncing on iOS
+        alwaysBounceVertical={false} // Prevents vertical bouncing
+        alwaysBounceHorizontal={false} // Prevents horizontal bouncing (if needed)
+        showsVerticalScrollIndicator={false}
         $padding={screenPadding}
         $marginTop={paddingTop}
         contentContainerStyle={{
