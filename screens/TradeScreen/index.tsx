@@ -29,30 +29,59 @@ export const TradeScreen = () => {
   const theme = useTheme();
   const { t } = useTranslation();
   const {
-    setSolTradeSide,
-    setEthTradeSide,
-    setBtcTradeSide,
     selectedToken,
-    solTradeSide,
-    ethTradeSide,
-    btcTradeSide,
+    solTrade,
+    setSolTrade,
+    ethTrade,
+    setEthTrade,
+    btcTrade,
+    setBtcTrade,
   } = useHomeContext();
 
-  const tradeSide =
+  // Get current trade and setter for selected token
+  const trade =
     selectedToken === 'sol'
-      ? solTradeSide
+      ? solTrade
       : selectedToken === 'eth'
-      ? ethTradeSide
-      : btcTradeSide;
+      ? ethTrade
+      : btcTrade;
 
-  const setTradeSide =
+  const setTrade =
     selectedToken === 'sol'
-      ? setSolTradeSide
+      ? setSolTrade
       : selectedToken === 'eth'
-      ? setEthTradeSide
-      : setBtcTradeSide;
+      ? setEthTrade
+      : setBtcTrade;
+
+  // Default to 'short' if no trade yet
+  const tradeSide = trade?.side ?? 'short';
+
+  const setTradeSide = (side: 'long' | 'short') => {
+    if (trade) {
+      setTrade({ ...trade, side });
+    }
+  };
 
   const [amountPopupVisible, setAmountModalVisible] = useState(false);
+
+  const entryPrice =
+    selectedToken === 'sol' ? 171 : selectedToken === 'eth' ? 2568 : 109000;
+
+  const mockTrade = {
+    ...trade,
+    side: tradeSide,
+    entryPrice: entryPrice,
+    status: 'open' as const, // <-- fix here
+    amount: trade?.amount ?? 10,
+    leverage: trade?.leverage ?? 1,
+    timestamp: Date.now(),
+  };
+
+  const handleTrade = () => {
+    // Set the trade for the selected token as active
+    setTrade(mockTrade);
+    router.push('/(tabs)');
+  };
 
   return (
     <>
@@ -111,7 +140,7 @@ export const TradeScreen = () => {
             <AmountCard setAmountModalVisible={setAmountModalVisible} />
             <SliderCard />
           </Column>
-          <PrimaryButton>
+          <PrimaryButton onPress={handleTrade}>
             {`${tradeSide.charAt(0).toUpperCase()}${tradeSide.slice(
               1
             )} ${selectedToken.toUpperCase()}`}

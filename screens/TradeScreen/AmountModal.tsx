@@ -29,30 +29,32 @@ export const AmountModal = ({
   const theme = useTheme();
   const { t } = useTranslation();
   const {
-    solAmount,
-    setSolAmount,
-    ethAmount,
-    setEthAmount,
-    btcAmount,
-    setBtcAmount,
     selectedToken,
+    solTrade,
+    setSolTrade,
+    ethTrade,
+    setEthTrade,
+    btcTrade,
+    setBtcTrade,
     walletBalance,
   } = useHomeContext();
   const inputRef = useRef<TextInput>(null);
 
-  const amount =
+  const trade =
     selectedToken === 'sol'
-      ? solAmount
+      ? solTrade
       : selectedToken === 'eth'
-      ? ethAmount
-      : btcAmount;
+      ? ethTrade
+      : btcTrade;
 
-  const setAmount =
+  const setTrade =
     selectedToken === 'sol'
-      ? setSolAmount
+      ? setSolTrade
       : selectedToken === 'eth'
-      ? setEthAmount
-      : setBtcAmount;
+      ? setEthTrade
+      : setBtcTrade;
+
+  const amount = trade?.amount ?? 10;
 
   const initialAmount = String(amount);
   const [localAmount, setLocalAmount] = useState(initialAmount);
@@ -69,7 +71,9 @@ export const AmountModal = ({
 
   const onSetAmount = () => {
     const parsed = Number(localAmount);
-    setAmount(isNaN(parsed) ? 0 : parsed);
+    if (trade) {
+      setTrade({ ...trade, amount: isNaN(parsed) ? 0 : parsed });
+    }
     onClose();
   };
 

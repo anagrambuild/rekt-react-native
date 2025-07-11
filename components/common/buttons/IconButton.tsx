@@ -17,7 +17,7 @@ const Container = styled.View`
 const StyledPressable = styled(PressableOpacity)`
   background: ${({ theme }: { theme: DefaultTheme }) => theme.colors.secondary};
   border-radius: 100px;
-  padding: 12px;
+  padding: 10px;
   align-items: center;
   justify-content: center;
 `;

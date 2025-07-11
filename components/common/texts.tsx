@@ -33,6 +33,13 @@ export const Title4 = styled.Text`
   color: ${({ theme }: ThemedTextProps) => theme.colors.textPrimary};
 `;
 
+export const Title5 = styled.Text`
+  font-size: 16px;
+  font-family: 'Unbounded';
+  font-weight: 400;
+  color: ${({ theme }: ThemedTextProps) => theme.colors.textPrimary};
+`;
+
 // Body
 export const Body1 = styled.Text`
   font-size: 18px;
@@ -106,7 +113,7 @@ export const BodyXS = styled.Text`
 
 export const BodyXSEmphasized = styled.Text`
   font-size: 12px;
-  font-family: 'Geist';
+  font-family: 'Geist Mono';
   font-weight: 500;
   color: ${({ theme }: ThemedTextProps) => theme.colors.textPrimary};
 `;
