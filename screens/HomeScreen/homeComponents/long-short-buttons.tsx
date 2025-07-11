@@ -11,8 +11,8 @@ import styled, { useTheme } from 'styled-components/native';
 
 const arrowButtonShared = {
   display: 'flex',
-  width: ({ $size }: { $size?: number }) => $size || 44,
-  height: ({ $size }: { $size?: number }) => $size || 44,
+  width: ({ $size }: { $size?: number }) => `${$size || 44}px`,
+  height: ({ $size }: { $size?: number }) => `${$size || 44}px`,
   justifyContent: 'center',
   alignItems: 'center',
 };
