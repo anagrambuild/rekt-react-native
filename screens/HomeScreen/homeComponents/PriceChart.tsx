@@ -1,34 +1,36 @@
 import { Dimensions } from 'react-native';
 
 import rektBomb from '@/assets/images/app-pngs/rekt-bomb.png';
+import FlagIcon from '@/assets/images/app-svgs/flag.svg';
 import { PulsatingContainer } from '@/components';
 import { BodyXSEmphasized } from '@/components/common/texts';
 import { useHomeContext } from '@/contexts';
+import { Trade } from '@/contexts/HomeContext';
 
-import { btcPriceData, ethPriceData, solPriceData } from '../mockData';
+import {
+  btcPriceData,
+  currentPrices,
+  ethPriceData,
+  liquidationPrices,
+  solPriceData,
+} from '../mockData';
 import { Image } from 'expo-image';
-// https://gifted-charts.web.app/linechart/#animated
 import { LineChart } from 'react-native-gifted-charts';
 import styled, { DefaultTheme, useTheme } from 'styled-components/native';
-
-// Mock liquidation prices - replace with actual liquidation price logic
-const liquidationPrices = {
-  sol: 169.3,
-  eth: 2564.5,
-  btc: 108800,
-};
 
 export type PnlState = 'profit' | 'loss' | 'neutral';
 
 export const PriceChart = ({
   showLiquidation = false,
   pnlState = 'neutral',
+  trade = null,
 }: {
   showLiquidation?: boolean;
   pnlState?: PnlState;
+  trade?: Trade | null;
 }) => {
   const theme = useTheme();
-  const chartHeight = 200; // Define chart height
+  const chartHeight = 200;
   const { selectedToken } = useHomeContext();
 
   const data =
@@ -38,47 +40,60 @@ export const PriceChart = ({
       ? ethPriceData
       : btcPriceData;
 
-  // Use full width minus a few pixels to prevent overflow
-  const chartWidth = Dimensions.get('window').width * 0.9 - 8; // Subtract 8px to prevent overflow
+  const chartWidth = Dimensions.get('window').width * 0.9 - 8;
 
   const findYAxisOffset = (arr: number[]) => {
     if (!arr || arr.length === 0) return undefined;
     return Math.min(...arr);
   };
 
-  // Calculate data values after data is determined
   const dataValues = data.map((item) => item.value);
   const yAxisOffset = findYAxisOffset(dataValues);
+
+  // Get current price for selected token
+  const currentPrice =
+    currentPrices[selectedToken as keyof typeof currentPrices];
 
   // Get liquidation price for current token
   const liquidationPrice =
     liquidationPrices[selectedToken as keyof typeof liquidationPrices];
 
-  // Calculate the position of the liquidation line using the chart's actual range
+  // Calculate the position of lines using the chart's actual range
   const actualMinValue = yAxisOffset || Math.min(...dataValues);
   const actualMaxValue = Math.max(...dataValues);
   const actualValueRange = actualMaxValue - actualMinValue;
 
-  // Simple ratio calculation using the chart's actual displayed range
-  const priceRatio = (liquidationPrice - actualMinValue) / actualValueRange;
+  // Calculate positions for different price lines
+  const calculateLinePosition = (price: number) => {
+    const priceRatio = (price - actualMinValue) / actualValueRange;
+    const topOffset = 20;
+    const bottomOffset = 20;
+    const plotArea = chartHeight - topOffset - bottomOffset;
+    return topOffset + plotArea * (1 - priceRatio);
+  };
 
-  // With stepHeight controlling the chart dimensions, we should need much less padding
-  const topOffset = 20; // Reduced since chart should respect our height
-  const bottomOffset = 20; // Reduced since chart should respect our height
-  const plotArea = chartHeight - topOffset - bottomOffset;
+  const liquidationLineTop = calculateLinePosition(liquidationPrice);
+  const currentPriceLineTop = calculateLinePosition(currentPrice);
+  const entryPriceLineTop = trade ? calculateLinePosition(trade.entryPrice) : 0;
 
-  // Position from top (inverted because chart goes from high to low values top to bottom)
-  const liquidationLineTop = topOffset + plotArea * (1 - priceRatio);
+  // Determine if position is in profit or loss
+  const isProfit =
+    !trade || trade.status !== 'open'
+      ? null
+      : (trade.side === 'long' && currentPrice > trade.entryPrice) ||
+        (trade.side === 'short' && currentPrice < trade.entryPrice);
 
   // Set chart color based on pnlState
   let chartColor = theme.colors.tint;
   let fillColor = theme.colors.tint;
-  if (pnlState === 'profit') {
-    chartColor = theme.colors.profit;
-    fillColor = theme.colors.profit;
-  } else if (pnlState === 'loss') {
-    chartColor = theme.colors.loss;
-    fillColor = theme.colors.loss;
+  if (trade) {
+    if (pnlState === 'profit') {
+      chartColor = theme.colors.profit;
+      fillColor = theme.colors.profit;
+    } else if (pnlState === 'loss') {
+      chartColor = theme.colors.loss;
+      fillColor = theme.colors.loss;
+    }
   }
 
   return (
@@ -116,18 +131,17 @@ export const PriceChart = ({
           }
         />
 
-        {/* Custom y-axis labels overlaid on top of chart with proper spacing */}
+        {/* Custom y-axis labels */}
         {Array.from({ length: 5 }, (_, i) => {
           const value = actualMinValue + (actualValueRange * i) / 4;
-          // Better spacing calculation to match chart sections
-          const sectionHeight = (chartHeight - 40) / 4; // Account for top/bottom padding
-          const yPosition = 20 + (4 - i) * sectionHeight; // Reverse order (top to bottom)
+          const sectionHeight = (chartHeight - 40) / 4;
+          const yPosition = 20 + (4 - i) * sectionHeight;
           return (
             <YAxisLabel
               key={i}
               style={{
                 top: yPosition,
-                right: 15, // Add padding from right edge
+                right: 15,
               }}
             >
               <BodyXSEmphasized style={{ color: theme.colors.textSecondary }}>
@@ -136,9 +150,42 @@ export const PriceChart = ({
             </YAxisLabel>
           );
         })}
+
+        <CurrentPriceLabel
+          style={{
+            top: currentPriceLineTop - 12,
+            right: 15,
+          }}
+        >
+          <CurrentPriceBubble $isProfit={isProfit}>
+            <CurrentPriceText style={{ color: theme.colors.background }}>
+              ${currentPrice.toFixed(2)}
+            </CurrentPriceText>
+          </CurrentPriceBubble>
+        </CurrentPriceLabel>
+
+        {/* Entry Price Line and Label (only show if trade exists) */}
+        {trade && (
+          <>
+            <EntryPriceLabel
+              style={{
+                top: entryPriceLineTop - 10,
+                right: 15,
+              }}
+            >
+              <EntryPriceBubble>
+                <FlagIcon />
+                <EntryPriceText style={{ color: theme.colors.textPrimary }}>
+                  ${trade.entryPrice.toFixed(2)}
+                </EntryPriceText>
+              </EntryPriceBubble>
+            </EntryPriceLabel>
+          </>
+        )}
+
+        {/* Liquidation Line and Label */}
         {showLiquidation && (
           <>
-            {/* Custom liquidation line overlay */}
             <LiquidationLineContainer
               style={{
                 top: liquidationLineTop,
@@ -154,11 +201,10 @@ export const PriceChart = ({
               <LiquidationLine />
             </LiquidationLineContainer>
 
-            {/* Liquidation price label with background */}
             <LiquidationLabel
               style={{
                 top: liquidationLineTop - 10,
-                right: 15, // Align with other labels, more padding from edge
+                right: 15,
               }}
             >
               <LiquidationText style={{ color: theme.colors.textPrimary }}>
@@ -188,12 +234,66 @@ const ChartContainer = styled.View`
 const YAxisLabel = styled.View`
   position: absolute;
   background-color: ${({ theme }: { theme: DefaultTheme }) =>
-    theme.colors.background}80; /* Semi-transparent background */
+    theme.colors.background}80;
   padding: 2px 4px;
   border-radius: 2px;
   z-index: 12;
 `;
 
+const CurrentPriceLabel = styled.View`
+  position: absolute;
+  z-index: 20;
+`;
+
+const CurrentPriceBubble = styled.View<{ $isProfit: boolean | null }>`
+  padding: 4px 8px;
+  border-radius: 12px;
+  background-color: ${({
+    theme,
+    $isProfit,
+  }: {
+    theme: DefaultTheme;
+    $isProfit: boolean | null;
+  }) =>
+    $isProfit === true
+      ? theme.colors.profit
+      : $isProfit === false
+      ? theme.colors.loss
+      : theme.colors.tint};
+`;
+
+const CurrentPriceText = styled.Text`
+  font-size: 11px;
+  font-weight: 600;
+  font-family: 'Geist Mono';
+`;
+
+// Entry Price Styles
+const EntryPriceLabel = styled.View`
+  position: absolute;
+  z-index: 16;
+`;
+
+const EntryPriceBubble = styled.View`
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  border-width: 1px;
+  border-color: ${({ theme }: { theme: DefaultTheme }) =>
+    theme.colors.borderEmphasized};
+  background-color: ${({ theme }: { theme: DefaultTheme }) =>
+    theme.colors.background};
+`;
+
+const EntryPriceText = styled.Text`
+  font-size: 11px;
+  font-weight: 500;
+  font-family: 'Geist Mono';
+`;
+
+// Liquidation Styles (existing)
 const LiquidationLineContainer = styled.View`
   position: absolute;
   flex: 1;
@@ -216,17 +316,17 @@ const LiquidationLine = styled.View`
 const LiquidationLabel = styled.View`
   position: absolute;
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: 12px;
   border-width: 1px;
   border-color: ${({ theme }: { theme: DefaultTheme }) =>
     theme.colors.liquidBorder};
   background-color: ${({ theme }: { theme: DefaultTheme }) =>
     theme.colors.liquidBg};
-  z-index: 13; /* Higher than y-axis labels (12) */
+  z-index: 13;
 `;
 
 const LiquidationText = styled.Text`
   font-size: 12px;
   font-weight: 500;
-  font-family: 'Geist';
+  font-family: 'Geist Mono';
 `;
