@@ -26,6 +26,12 @@ export const HorizontalSlider = ({
     setBtcTrade,
   } = useHomeContext();
 
+  // Map slider value (0-steps) to leverage (1-max)
+  const getLeverageFromSlider = (sliderValue: number) =>
+    sliderValue === 0 ? 1 : sliderValue;
+  const getSliderFromLeverage = (leverage: number) =>
+    leverage === 1 ? 0 : leverage;
+
   const leverage =
     selectedToken === 'sol'
       ? solTrade?.leverage ?? 1
@@ -33,7 +39,8 @@ export const HorizontalSlider = ({
       ? ethTrade?.leverage ?? 1
       : btcTrade?.leverage ?? 1;
 
-  const setLeverage = (newLeverage: number) => {
+  const setLeverage = (sliderValue: number) => {
+    const newLeverage = getLeverageFromSlider(sliderValue);
     if (selectedToken === 'sol') {
       setSolTrade(
         solTrade
@@ -77,10 +84,12 @@ export const HorizontalSlider = ({
   const max = isMaxLeverageOn ? 200 : 100;
   const theme = useTheme();
   const steps = isMaxLeverageOn ? 20 : 10;
-  const min = 0;
+  const min = 0; // slider min is 0, but represents leverage 1
   const thumbWidth = 30; // or your actual thumb size
-  const stepSize = (max - min) / steps;
-  const n = Math.round((leverage - min) / stepSize);
+  const stepSize = (max - 0) / steps;
+  // Map leverage to slider value for position
+  const sliderValue = getSliderFromLeverage(leverage);
+  const n = Math.round((sliderValue - min) / stepSize);
   const safeTrackWidth = trackWidth > 0 ? trackWidth : 1;
   const adjustedWidth =
     (safeTrackWidth - thumbWidth) * (n / steps) + thumbWidth / 2;
@@ -88,7 +97,11 @@ export const HorizontalSlider = ({
   const fillWidth = adjustedWidth + offset;
 
   useEffect(() => {
-    if (leverage >= 100 && !isMaxLeverageOn) {
+    // If leverage is below 1, force to 1
+    if (leverage < 1) {
+      setLeverage(0);
+    }
+    if (leverage > 100 && !isMaxLeverageOn) {
       setLeverage(100);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -144,7 +157,7 @@ export const HorizontalSlider = ({
           minimumValue={min}
           maximumValue={max}
           step={10}
-          value={leverage}
+          value={sliderValue}
           onValueChange={setLeverage}
           minimumTrackTintColor='transparent'
           maximumTrackTintColor='transparent'

@@ -14,6 +14,7 @@ import {
   solPriceData,
 } from '../mockData';
 import { EmojiContainer } from './EmojiContainer';
+import { FloatingEmoji } from './FloatingEmoji';
 import { Image } from 'expo-image';
 import { LineChart } from 'react-native-gifted-charts';
 import styled, { DefaultTheme, useTheme } from 'styled-components/native';
@@ -28,6 +29,19 @@ export const PriceChart = ({
   const theme = useTheme();
   const chartHeight = 200;
   const { selectedToken } = useHomeContext();
+
+  // Floating emoji reactions state
+  const [reactions, setReactions] = useState<{ id: string; emoji: string }[]>(
+    []
+  );
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  // Handler to add a new floating emoji
+  const handleEmojiReaction = (emoji: string) => {
+    const id = Math.random().toString(36).substr(2, 9);
+    setReactions((prev) => [...prev, { id, emoji }]);
+    setIsAnimating(true);
+  };
 
   const data =
     selectedToken === 'sol'
@@ -234,7 +248,24 @@ export const PriceChart = ({
             </LiquidationLabel>
           </>
         )}
-        {trade && trade.status === 'open' && <EmojiContainer />}
+        {trade && trade.status === 'open' && (
+          <EmojiContainer
+            onEmojiPress={handleEmojiReaction}
+            isAnimating={isAnimating}
+          />
+        )}
+        {/* Floating emoji reactions */}
+        {reactions.map(({ id, emoji }) => (
+          <FloatingEmoji
+            key={id}
+            emoji={emoji}
+            chartHeight={chartHeight}
+            onDone={() => {
+              setReactions((prev) => prev.filter((r) => r.id !== id));
+              setIsAnimating(false);
+            }}
+          />
+        ))}
       </ChartContainer>
     </Wrapper>
   );
