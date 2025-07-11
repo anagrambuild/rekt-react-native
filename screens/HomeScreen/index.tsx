@@ -16,6 +16,8 @@ import {
   ShortButton,
   TokenChip,
 } from './homeComponents';
+import { LiveTradeView } from './homeComponents/LiveTradeView';
+import type { PnlState } from './homeComponents/PriceChart';
 import { perpSocials, tokens } from './mockData';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -23,15 +25,53 @@ import { useTranslation } from 'react-i18next';
 export const HomeScreen = () => {
   const { t } = useTranslation();
   const router = useRouter();
-  const { setSolTradeSide, setEthTradeSide, setBtcTradeSide, selectedToken } =
-    useHomeContext();
+  const {
+    selectedToken,
+    solTrade,
+    setSolTrade,
+    ethTrade,
+    setEthTrade,
+    btcTrade,
+    setBtcTrade,
+  } = useHomeContext();
 
-  const setTradeSide =
+  // Get current trade and setter for selected token
+  const trade =
     selectedToken === 'sol'
-      ? setSolTradeSide
+      ? solTrade
       : selectedToken === 'eth'
-      ? setEthTradeSide
-      : setBtcTradeSide;
+      ? ethTrade
+      : btcTrade;
+
+  const setTrade =
+    selectedToken === 'sol'
+      ? setSolTrade
+      : selectedToken === 'eth'
+      ? setEthTrade
+      : setBtcTrade;
+
+  // Default to 'short' if no trade yet
+  const setTradeSide = (side: 'long' | 'short') => {
+    if (trade) {
+      setTrade({ ...trade, side });
+    } else {
+      setTrade({
+        side,
+        entryPrice: 0,
+        amount: 10,
+        leverage: 1,
+        status: 'open',
+      });
+    }
+  };
+
+  const isActiveTrade = trade && trade.status === 'open';
+
+  // Mock PnL state: profit for long, loss for short, neutral if no trade
+  let pnlState: PnlState = 'neutral';
+  if (isActiveTrade) {
+    pnlState = trade.side === 'long' ? 'profit' : 'loss';
+  }
 
   return (
     <ScreenContainer>
@@ -63,31 +103,35 @@ export const HomeScreen = () => {
           </ScrollRow>
         </Column>
 
-        <PriceChartCard />
+        <PriceChartCard showLiquidation={!!isActiveTrade} pnlState={pnlState} />
       </Column>
       <Gap height={24} />
       <Column $gap={16}>
         <Row style={{ paddingStart: 16 }}>
           <Title4>{t('Ride the market')}</Title4>
         </Row>
-        <Row $padding={0}>
-          <ShortButton
-            onPress={() => {
-              setTradeSide('short');
-              router.push('/trade');
-            }}
-            title={t('Short')}
-            subtitle={t('Price will go down')}
-          />
-          <LongButton
-            onPress={() => {
-              setTradeSide('long');
-              router.push('/trade');
-            }}
-            title={t('Long')}
-            subtitle={t('Price will go up')}
-          />
-        </Row>
+        {isActiveTrade ? (
+          <LiveTradeView trade={trade} />
+        ) : (
+          <Row $padding={0}>
+            <ShortButton
+              onPress={() => {
+                setTradeSide('short');
+                router.push('/trade');
+              }}
+              title={t('Short')}
+              subtitle={t('Price will go down')}
+            />
+            <LongButton
+              onPress={() => {
+                setTradeSide('long');
+                router.push('/trade');
+              }}
+              title={t('Long')}
+              subtitle={t('Price will go up')}
+            />
+          </Row>
+        )}
       </Column>
     </ScreenContainer>
   );
