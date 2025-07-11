@@ -29,33 +29,63 @@ export const TradeScreen = () => {
   const theme = useTheme();
   const { t } = useTranslation();
   const {
-    setSolTradeSide,
-    setEthTradeSide,
-    setBtcTradeSide,
     selectedToken,
-    solTradeSide,
-    ethTradeSide,
-    btcTradeSide,
+    solTrade,
+    setSolTrade,
+    ethTrade,
+    setEthTrade,
+    btcTrade,
+    setBtcTrade,
   } = useHomeContext();
 
-  const tradeSide =
+  // Get current trade and setter for selected token
+  const trade =
     selectedToken === 'sol'
-      ? solTradeSide
+      ? solTrade
       : selectedToken === 'eth'
-      ? ethTradeSide
-      : btcTradeSide;
+      ? ethTrade
+      : btcTrade;
 
-  const setTradeSide =
+  const setTrade =
     selectedToken === 'sol'
-      ? setSolTradeSide
+      ? setSolTrade
       : selectedToken === 'eth'
-      ? setEthTradeSide
-      : setBtcTradeSide;
+      ? setEthTrade
+      : setBtcTrade;
+
+  // Default to 'short' if no trade yet
+  const tradeSide = trade?.side ?? 'short';
+
+  const setTradeSide = (side: 'long' | 'short') => {
+    if (trade) {
+      setTrade({ ...trade, side });
+    } else {
+      // Set up a new trade with default values
+      setTrade({
+        side,
+        entryPrice: 0, // Will be set on trade
+        amount: 10,
+        leverage: 1,
+        status: 'open',
+      });
+    }
+  };
 
   const [amountPopupVisible, setAmountModalVisible] = useState(false);
 
   const handleTrade = () => {
-    router.push('/(tabs)/home/live-trade');
+    // Set the trade for the selected token as active
+    setTrade({
+      ...(trade || {}),
+      side: tradeSide,
+      entryPrice: 100, // TODO: Replace with real price
+      status: 'open',
+      // Keep amount/leverage if already set, else default
+      amount: trade?.amount ?? 10,
+      leverage: trade?.leverage ?? 1,
+      timestamp: Date.now(),
+    });
+    router.push('/(tabs)/home');
   };
 
   return (

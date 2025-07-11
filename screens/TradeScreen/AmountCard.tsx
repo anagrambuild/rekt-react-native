@@ -22,28 +22,44 @@ export const AmountCard = ({
   const { t } = useTranslation();
   const theme = useTheme();
   const {
-    setSolAmount,
-    setEthAmount,
-    setBtcAmount,
     selectedToken,
-    solAmount,
-    ethAmount,
-    btcAmount,
+    solTrade,
+    setSolTrade,
+    ethTrade,
+    setEthTrade,
+    btcTrade,
+    setBtcTrade,
   } = useHomeContext();
 
-  const amount =
+  const trade =
     selectedToken === 'sol'
-      ? solAmount
+      ? solTrade
       : selectedToken === 'eth'
-      ? ethAmount
-      : btcAmount;
+      ? ethTrade
+      : btcTrade;
 
-  const setAmount =
+  const setTrade =
     selectedToken === 'sol'
-      ? setSolAmount
+      ? setSolTrade
       : selectedToken === 'eth'
-      ? setEthAmount
-      : setBtcAmount;
+      ? setEthTrade
+      : setBtcTrade;
+
+  const amount = trade?.amount ?? 10;
+
+  const setAmount = (newAmount: number) => {
+    if (trade) {
+      setTrade({ ...trade, amount: newAmount });
+    } else {
+      setTrade({
+        side: 'short', // default
+        entryPrice: 0,
+        amount: newAmount,
+        leverage: 1,
+        status: 'open',
+      });
+    }
+  };
 
   return (
     <Card $padding={8}>

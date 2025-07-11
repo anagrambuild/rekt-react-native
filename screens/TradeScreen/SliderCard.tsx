@@ -20,29 +20,21 @@ import { useTranslation } from 'react-i18next';
 
 export const SliderCard = () => {
   const { t } = useTranslation();
-  const {
-    selectedToken,
-    solAmount,
-    ethAmount,
-    btcAmount,
-    solLeverage,
-    ethLeverage,
-    btcLeverage,
-  } = useHomeContext();
+  const { selectedToken, solTrade, ethTrade, btcTrade } = useHomeContext();
 
   const amount =
     selectedToken === 'sol'
-      ? solAmount
+      ? solTrade?.amount ?? 10
       : selectedToken === 'eth'
-      ? ethAmount
-      : btcAmount;
+      ? ethTrade?.amount ?? 10
+      : btcTrade?.amount ?? 10;
 
   const leverage =
     selectedToken === 'sol'
-      ? solLeverage
+      ? solTrade?.leverage ?? 1
       : selectedToken === 'eth'
-      ? ethLeverage
-      : btcLeverage;
+      ? ethTrade?.leverage ?? 1
+      : btcTrade?.leverage ?? 1;
 
   const [isSolMaxLeverageOn, setIsSolMaxLeverageOn] = useState(false);
   const [isEthMaxLeverageOn, setIsEthMaxLeverageOn] = useState(false);
