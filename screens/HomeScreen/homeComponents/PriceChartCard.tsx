@@ -1,16 +1,14 @@
 import { Card, Picker, ScrollRow } from '@/components';
 import { useHomeContext } from '@/contexts';
 
-import { PnlState, PriceChart } from './PriceChart';
+import { PriceChart } from './PriceChart';
 import { TokenTab } from './TokenTab';
 import styled from 'styled-components/native';
 
 export const PriceChartCard = ({
   showLiquidation = false,
-  pnlState = 'neutral',
 }: {
   showLiquidation?: boolean;
-  pnlState?: PnlState;
 }) => {
   const {
     selectedToken,
@@ -69,11 +67,7 @@ export const PriceChartCard = ({
             onValueChange={setSelectedTimeframe}
           />
         </PickerContainer>
-        <PriceChart
-          showLiquidation={showLiquidation}
-          pnlState={pnlState}
-          trade={currentTrade}
-        />
+        <PriceChart showLiquidation={showLiquidation} trade={currentTrade} />
       </ChartContainer>
     </Card>
   );

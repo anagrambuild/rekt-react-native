@@ -17,7 +17,6 @@ import {
   TokenChip,
 } from './homeComponents';
 import { LiveTradeView } from './homeComponents/LiveTradeView';
-import type { PnlState } from './homeComponents/PriceChart';
 import { perpSocials, tokens } from './mockData';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -60,12 +59,6 @@ export const HomeScreen = () => {
 
   const isActiveTrade = trade && trade.status === 'open';
 
-  // Mock PnL state: profit for long, loss for short, neutral if no trade
-  let pnlState: PnlState = 'neutral';
-  if (isActiveTrade) {
-    pnlState = trade.side === 'long' ? 'profit' : 'loss';
-  }
-
   return (
     <ScreenContainer>
       <Column $gap={16}>
@@ -96,7 +89,7 @@ export const HomeScreen = () => {
           </ScrollRow>
         </Column>
 
-        <PriceChartCard showLiquidation={!!isActiveTrade} pnlState={pnlState} />
+        <PriceChartCard showLiquidation={!!isActiveTrade} />
       </Column>
       <Gap height={12} />
       <Column $gap={16}>
@@ -128,6 +121,7 @@ export const HomeScreen = () => {
           </Row>
         )}
       </Column>
+      <Gap height={4} />
     </ScreenContainer>
   );
 };
