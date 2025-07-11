@@ -5,38 +5,11 @@ import { PulsatingContainer } from '@/components';
 import { BodyXSEmphasized } from '@/components/common/texts';
 import { useHomeContext } from '@/contexts';
 
+import { btcPriceData, ethPriceData, solPriceData } from '../mockData';
 import { Image } from 'expo-image';
 // https://gifted-charts.web.app/linechart/#animated
 import { LineChart } from 'react-native-gifted-charts';
 import styled, { DefaultTheme, useTheme } from 'styled-components/native';
-
-const solData = [
-  { value: 167 },
-  { value: 168 },
-  { value: 169 },
-  { value: 170 },
-  { value: 170.5 },
-  { value: 171 },
-  { value: 171.2 },
-];
-const ethData = [
-  { value: 2563 },
-  { value: 2565 },
-  { value: 2566 },
-  { value: 2567 },
-  { value: 2568 },
-  { value: 2569 },
-  { value: 2564 },
-];
-const btcData = [
-  { value: 109250 },
-  { value: 109258 },
-  { value: 108966 },
-  { value: 108824 },
-  { value: 108682 },
-  { value: 108640 },
-  { value: 109261 },
-];
 
 // Mock liquidation prices - replace with actual liquidation price logic
 const liquidationPrices = {
@@ -45,10 +18,14 @@ const liquidationPrices = {
   btc: 108800,
 };
 
+export type PnlState = 'profit' | 'loss' | 'neutral';
+
 export const PriceChart = ({
   showLiquidation = false,
+  pnlState = 'neutral',
 }: {
   showLiquidation?: boolean;
+  pnlState?: PnlState;
 }) => {
   const theme = useTheme();
   const chartHeight = 200; // Define chart height
@@ -56,10 +33,10 @@ export const PriceChart = ({
 
   const data =
     selectedToken === 'sol'
-      ? solData
+      ? solPriceData
       : selectedToken === 'eth'
-      ? ethData
-      : btcData;
+      ? ethPriceData
+      : btcPriceData;
 
   // Use full width minus a few pixels to prevent overflow
   const chartWidth = Dimensions.get('window').width * 0.9 - 8; // Subtract 8px to prevent overflow
@@ -93,6 +70,17 @@ export const PriceChart = ({
   // Position from top (inverted because chart goes from high to low values top to bottom)
   const liquidationLineTop = topOffset + plotArea * (1 - priceRatio);
 
+  // Set chart color based on pnlState
+  let chartColor = theme.colors.tint;
+  let fillColor = theme.colors.tint;
+  if (pnlState === 'profit') {
+    chartColor = theme.colors.profit;
+    fillColor = theme.colors.profit;
+  } else if (pnlState === 'loss') {
+    chartColor = theme.colors.loss;
+    fillColor = theme.colors.loss;
+  }
+
   return (
     <Wrapper>
       <ChartContainer>
@@ -101,9 +89,9 @@ export const PriceChart = ({
           isAnimated
           animationDuration={1200}
           areaChart
-          color={theme.colors.tint}
+          color={chartColor}
           thickness={2}
-          startFillColor={theme.colors.tint}
+          startFillColor={fillColor}
           endFillColor={theme.colors.background}
           startOpacity={0.2}
           endOpacity={0.01}
@@ -142,7 +130,7 @@ export const PriceChart = ({
                 right: 15, // Add padding from right edge
               }}
             >
-              <BodyXSEmphasized style={{ color: theme.colors.tint }}>
+              <BodyXSEmphasized style={{ color: theme.colors.textSecondary }}>
                 {value.toFixed(0)}
               </BodyXSEmphasized>
             </YAxisLabel>

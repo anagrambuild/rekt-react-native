@@ -56,3 +56,34 @@ export const perpSocials: {
     earningMultiple: null,
   },
 ];
+
+// Realistic mock price data for charts
+export const solPriceData = [
+  { value: 167 },
+  { value: 168 },
+  { value: 167.5 },
+  { value: 169 },
+  { value: 168.2 },
+  { value: 170 },
+  { value: 169.7 }, // Mixed trend
+];
+
+export const ethPriceData = [
+  { value: 2565 },
+  { value: 2567 },
+  { value: 2564 },
+  { value: 2568 },
+  { value: 2566 },
+  { value: 2569 },
+  { value: 2563 }, // Mixed trend
+];
+
+export const btcPriceData = [
+  { value: 109250 },
+  { value: 109100 },
+  { value: 109300 },
+  { value: 108900 },
+  { value: 109200 },
+  { value: 108950 },
+  { value: 109261 }, // Mixed trend
+];
