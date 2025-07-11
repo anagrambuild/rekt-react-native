@@ -19,7 +19,7 @@ const Index = () => {
   // Function to check if user is logged in and redirect
   useEffect(() => {
     if (isLoggedIn) {
-      router.replace('/(tabs)/home');
+      router.replace('/(tabs)');
     }
   }, [isLoggedIn]);
 

@@ -85,7 +85,7 @@ export const TradeScreen = () => {
       leverage: trade?.leverage ?? 1,
       timestamp: Date.now(),
     });
-    router.push('/(tabs)/home');
+    router.push('/(tabs)');
   };
 
   return (

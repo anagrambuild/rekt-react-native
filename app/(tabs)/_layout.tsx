@@ -21,10 +21,9 @@ export default function TabLayout() {
         headerShown: false,
         tabBarIconStyle: { marginTop: 0 },
       }}
-      initialRouteName='home'
     >
       <Tabs.Screen
-        name='home'
+        name='index'
         options={{
           title: '',
           tabBarIcon: ({ focused }) => (
