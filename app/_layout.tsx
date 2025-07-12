@@ -3,6 +3,7 @@ import { I18nManager } from 'react-native';
 import { darkTheme, lightTheme } from '@/constants/theme';
 import { AppProvider, HomeProvider } from '@/contexts';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { queryClient } from '@/utils';
 
 import {
   DarkTheme,
@@ -10,6 +11,7 @@ import {
   ThemeProvider as NavigationThemeProvider,
 } from '@react-navigation/native';
 
+import { QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -35,16 +37,18 @@ export default function RootLayout() {
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <AppProvider>
-        <HomeProvider>
-          <NavigationThemeProvider value={navTheme}>
-            <StyledThemeProvider theme={styledTheme}>
-              <Stack screenOptions={{ headerShown: false }} />
-            </StyledThemeProvider>
-          </NavigationThemeProvider>
-        </HomeProvider>
-      </AppProvider>
-    </GestureHandlerRootView>
+    <QueryClientProvider client={queryClient}>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <AppProvider>
+          <HomeProvider>
+            <NavigationThemeProvider value={navTheme}>
+              <StyledThemeProvider theme={styledTheme}>
+                <Stack screenOptions={{ headerShown: false }} />
+              </StyledThemeProvider>
+            </NavigationThemeProvider>
+          </HomeProvider>
+        </AppProvider>
+      </GestureHandlerRootView>
+    </QueryClientProvider>
   );
 }
