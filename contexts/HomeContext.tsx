@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import { useTokenPricesQuery, TokenPrice, SupportedToken } from '@/utils';
+
+import { SupportedToken, TokenPrice, useTokenPricesQuery } from '@/utils';
 
 // Trade type for active trades
 export type TradeStatus = 'open' | 'closed';
@@ -62,10 +63,10 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
   const [walletBalance, setWalletBalance] = useState<number>(0);
 
   // Fetch token prices using React Query
-  const { 
-    data: tokenPrices, 
-    isLoading: isPricesLoading, 
-    error: pricesError 
+  const {
+    data: tokenPrices,
+    isLoading: isPricesLoading,
+    error: pricesError,
   } = useTokenPricesQuery(['sol', 'eth', 'btc'], {
     refetchOnWindowFocus: false,
     refetchOnMount: true,

@@ -1,15 +1,21 @@
-import { useQuery, useMutation, UseQueryOptions, UseMutationOptions } from '@tanstack/react-query';
+import {
+  useMutation,
+  UseMutationOptions,
+  useQuery,
+  UseQueryOptions,
+} from '@tanstack/react-query';
+
+import {
+  ChartDataPoint,
+  fetchHistoricalData,
+  fetchSingleTokenPrice,
+  fetchTokenPrices,
+  SupportedTimeframe,
+  SupportedToken,
+  TokenPrice,
+} from './backendApi';
 import { queryClient } from './queryClient';
 import { queryKeys } from './queryKeys';
-import { 
-  fetchTokenPrices, 
-  fetchSingleTokenPrice, 
-  fetchHistoricalData,
-  SupportedToken, 
-  TokenPrice, 
-  ChartDataPoint,
-  SupportedTimeframe 
-} from './coinGeckoApi';
 
 // Generic API fetch function
 export const fetchApi = async <T>(
@@ -88,7 +94,7 @@ export const useTradeMutation = (
   options?: UseMutationOptions<any, Error, any>
 ) => {
   return useMutation({
-    mutationFn: (tradeData: any) => 
+    mutationFn: (tradeData: any) =>
       fetchApi('/api/trades', {
         method: 'POST',
         body: JSON.stringify(tradeData),
@@ -129,7 +135,10 @@ export const getCachedPriceData = (symbol: string) => {
 // CoinGecko-specific hooks
 export const useTokenPricesQuery = (
   tokens: SupportedToken[] = ['sol', 'eth', 'btc'],
-  options?: Omit<UseQueryOptions<Record<SupportedToken, TokenPrice>, Error>, 'queryKey' | 'queryFn'>
+  options?: Omit<
+    UseQueryOptions<Record<SupportedToken, TokenPrice>, Error>,
+    'queryKey' | 'queryFn'
+  >
 ) => {
   return useQuery({
     queryKey: ['tokenPrices', ...tokens],
@@ -166,7 +175,10 @@ export const prefetchAllTokenPrices = () => {
 export const useHistoricalDataQuery = (
   token: SupportedToken,
   timeframe: SupportedTimeframe,
-  options?: Omit<UseQueryOptions<ChartDataPoint[], Error>, 'queryKey' | 'queryFn'>
+  options?: Omit<
+    UseQueryOptions<ChartDataPoint[], Error>,
+    'queryKey' | 'queryFn'
+  >
 ) => {
   return useQuery({
     queryKey: ['historicalData', token, timeframe],
