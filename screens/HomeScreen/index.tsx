@@ -1,3 +1,5 @@
+import PointsIcon from '@/assets/images/app-svgs/points.svg';
+import UsdcIcon from '@/assets/images/app-svgs/usdc.svg';
 import RektLogo from '@/assets/images/rekt-logo.svg';
 import {
   Column,
@@ -17,7 +19,7 @@ import {
   TokenChip,
 } from './homeComponents';
 import { LiveTradeView } from './homeComponents/LiveTradeView';
-import { perpSocials, tokens } from './mockData';
+import { perpSocials } from './mockData';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
@@ -66,13 +68,8 @@ export const HomeScreen = () => {
           <Row>
             <RektLogo width={60} height={60} />
             <Row $justifyContent='flex-end' $gap={16} $width='auto'>
-              {tokens.map((token) => (
-                <TokenChip
-                  key={token.id}
-                  imgSrc={token.imgSrc}
-                  value={token.value}
-                />
-              ))}
+              <TokenChip Icon={PointsIcon} value='58K' />
+              <TokenChip Icon={UsdcIcon} value='69000' />
             </Row>
           </Row>
 

@@ -1,17 +1,9 @@
-import diamond from '@/assets/images/mock-pngs/diamond.png';
 import goldPfp from '@/assets/images/mock-pngs/gold-pfp.png';
 import greenPfp from '@/assets/images/mock-pngs/green-pfp.png';
 import orangePfp from '@/assets/images/mock-pngs/orange-pfp.png';
 import pinkPfp from '@/assets/images/mock-pngs/pink-pfp.png';
-import usdc from '@/assets/images/mock-pngs/usdc.png';
 
 import type { PerpPosition } from './homeComponents/PerpSocialChip';
-
-// mock data for tokens at top of screen
-export const tokens = [
-  { id: 0, imgSrc: diamond, value: '58K' },
-  { id: 1, imgSrc: usdc, value: '69000' },
-];
 
 export const perpSocials: {
   id: number;
