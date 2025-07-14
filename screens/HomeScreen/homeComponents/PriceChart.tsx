@@ -5,12 +5,12 @@ import rektBomb from '@/assets/images/app-pngs/rekt-bomb.png';
 import FlagIcon from '@/assets/images/app-svgs/flag.svg';
 import { BodyXSEmphasized, PulsatingContainer } from '@/components';
 import { Trade, useHomeContext } from '@/contexts';
-import { 
-  useHistoricalDataQuery, 
-  SupportedToken, 
-  SupportedTimeframe,
+import {
+  calculatePriceChange,
   getCurrentPriceFromHistorical,
-  calculatePriceChange 
+  SupportedTimeframe,
+  SupportedToken,
+  useHistoricalDataQuery,
 } from '@/utils';
 
 import { liquidationPrices } from '../mockData';
@@ -34,12 +34,12 @@ export const PriceChart = ({
   const { selectedToken, selectedTimeframe, tokenPrices } = useHomeContext();
 
   // Fetch historical chart data
-  const { 
-    data: historicalData, 
-    isLoading: isChartLoading, 
-    error: chartError 
+  const {
+    data: historicalData,
+    isLoading: isChartLoading,
+    error: chartError,
   } = useHistoricalDataQuery(
-    selectedToken as SupportedToken, 
+    selectedToken as SupportedToken,
     selectedTimeframe as SupportedTimeframe
   );
 
@@ -65,12 +65,13 @@ export const PriceChart = ({
     return Math.min(...arr);
   };
 
-  const dataValues = data.map((item) => item.value);
+  const dataValues = data.map((item: { value: number }) => item.value);
   const yAxisOffset = findYAxisOffset(dataValues);
 
   // Get current price from real-time data or historical data
-  const currentPrice = tokenPrices?.[selectedToken as SupportedToken]?.current_price || 
-                      getCurrentPriceFromHistorical(data);
+  const currentPrice =
+    tokenPrices?.[selectedToken as SupportedToken]?.current_price ||
+    getCurrentPriceFromHistorical(data);
 
   // Calculate price change percentage
   const { changePercent } = calculatePriceChange(data);
@@ -124,7 +125,13 @@ export const PriceChart = ({
   if (isChartLoading || data.length === 0) {
     return (
       <Wrapper>
-        <ChartContainer style={{ height: chartHeight, justifyContent: 'center', alignItems: 'center' }}>
+        <ChartContainer
+          style={{
+            height: chartHeight,
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
           <BodyXSEmphasized style={{ color: theme.colors.textSecondary }}>
             Loading chart data...
           </BodyXSEmphasized>
@@ -137,7 +144,13 @@ export const PriceChart = ({
   if (chartError) {
     return (
       <Wrapper>
-        <ChartContainer style={{ height: chartHeight, justifyContent: 'center', alignItems: 'center' }}>
+        <ChartContainer
+          style={{
+            height: chartHeight,
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
           <BodyXSEmphasized style={{ color: theme.colors.textSecondary }}>
             Failed to load chart data
           </BodyXSEmphasized>
