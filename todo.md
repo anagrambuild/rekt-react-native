@@ -26,7 +26,6 @@ WIRING UP REAL DATA
 
 Liam's feedback:
 
-- images at top for points and usdc are blurry
 - Could we add haptic feedback to the slider so that every time that you go, the phone buzzes a little bit also, can we control the like intensity of the feedback the vibrant so I’m thinking you know maybe we have an increase by 10% every time it goes up or something like that
   Same with adding and subtracting funds
 
