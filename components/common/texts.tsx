@@ -181,3 +181,10 @@ export const BodyXSMonoEmphasized = styled.Text`
   font-weight: 500;
   color: ${({ theme }: ThemedTextProps) => theme.colors.textPrimary};
 `;
+
+export const BodyXSMonoSecondary = styled.Text`
+  font-size: 12px;
+  font-family: 'Geist Mono';
+  font-weight: 400;
+  color: ${({ theme }: ThemedTextProps) => theme.colors.midEmText};
+`;
