@@ -13,7 +13,7 @@ export const Title1 = styled.Text`
 `;
 
 export const Title2 = styled.Text`
-  font-size: 24px;
+  font-size: 22px;
   font-family: 'Unbounded';
   font-weight: 400;
   color: ${({ theme }: ThemedTextProps) => theme.colors.textPrimary};
