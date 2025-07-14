@@ -1,12 +1,7 @@
-import { ScreenContainer } from '@/components/common/containers';
-import { Title1 } from '@/components/common/texts';
+import { ProfileScreen } from '@/screens';
 
 const Profile = () => {
-  return (
-    <ScreenContainer>
-      <Title1>Profile</Title1>
-    </ScreenContainer>
-  );
+  return <ProfileScreen />;
 };
 
 export default Profile;
