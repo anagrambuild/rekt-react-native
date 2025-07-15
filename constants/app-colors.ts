@@ -78,7 +78,7 @@ export const midEmText = gray500;
 export const lowEmText = '#52525B';
 export const profitBg = '#002418';
 export const profit = '#07F1A3';
-export const lossBg = '#311048';
+export const lossBg = '#311408';
 export const loss = '#EF4444'; // #FF4444
 export const primary = white;
 export const primaryTapped = '#F4F4F5';
@@ -101,7 +101,7 @@ export const tabActive = '#151519';
 // --- Light Theme Colors (to match dark theme variables) ---
 export const lightBg = white; // #FFFFFF
 export const lightBgDepressed = gray100; // #F5F5F5
-export const lightCard = gray100; // #F5F5F5
+export const lightCard = gray200; // #F5F5F5
 export const lightCardEmphasized = gray200; // #E0E0E0
 export const lightBrand = brand; // #FF8527
 export const lightHighEmText = bg; // #09090B

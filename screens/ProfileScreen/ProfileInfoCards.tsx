@@ -55,17 +55,7 @@ export const ProfileInfoCards = () => {
               >
                 {userMockData.percentage.toLocaleString()}%
               </Body1>
-              <PnL $isProfit={userMockData.isProfit}>
-                <BodySSecondary
-                  style={{
-                    color: userMockData.isProfit
-                      ? theme.colors.profit
-                      : theme.colors.loss,
-                  }}
-                >
-                  {userMockData.isProfit ? 'P' : 'L'}
-                </BodySSecondary>
-              </PnL>
+              <PnL isProfit={userMockData.isProfit} />
             </Row>
           </Column>
         </Card>
@@ -101,9 +91,11 @@ export const ProfileInfoCards = () => {
   );
 };
 
-const PnL = styled.View`
+const PnLContainer = styled.View`
   align-items: center;
   justify-content: center;
+  width: ${iconSize}px;
+  height: ${iconSize}px;
   background-color: ${({
     theme,
     $isProfit,
@@ -111,7 +103,28 @@ const PnL = styled.View`
     theme: DefaultTheme;
     $isProfit: boolean;
   }) => ($isProfit ? theme.colors.profitBg : theme.colors.lossBg)};
-  width: ${iconSize}px;
-  height: ${iconSize}px;
+  border-color: ${({
+    theme,
+    $isProfit,
+  }: {
+    theme: DefaultTheme;
+    $isProfit: boolean;
+  }) => ($isProfit ? theme.colors.borderProfit : theme.colors.borderLoss)};
+  border-width: 1px;
   border-radius: ${iconSize / 2}px;
 `;
+
+export const PnL = ({ isProfit }: { isProfit: boolean }) => {
+  const theme = useTheme();
+  return (
+    <PnLContainer $isProfit={isProfit}>
+      <BodySSecondary
+        style={{
+          color: isProfit ? theme.colors.profit : theme.colors.loss,
+        }}
+      >
+        {isProfit ? 'P' : 'L'}
+      </BodySSecondary>
+    </PnLContainer>
+  );
+};
