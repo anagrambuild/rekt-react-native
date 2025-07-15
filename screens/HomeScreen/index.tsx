@@ -11,6 +11,8 @@ import {
 } from '@/components';
 import { useHomeContext } from '@/contexts';
 
+import { usePreventRemove } from '@react-navigation/native';
+
 import {
   LongButton,
   PerpSocialChip,
@@ -35,6 +37,8 @@ export const HomeScreen = () => {
     btcTrade,
     setBtcTrade,
   } = useHomeContext();
+
+  usePreventRemove(true, () => {});
 
   // Get current trade and setter for selected token
   const trade =

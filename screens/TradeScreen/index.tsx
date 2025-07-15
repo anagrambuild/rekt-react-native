@@ -80,7 +80,7 @@ export const TradeScreen = () => {
   const handleTrade = () => {
     // Set the trade for the selected token as active
     setTrade(mockTrade);
-    router.push('/(tabs)');
+    router.replace('/');
   };
 
   return (
