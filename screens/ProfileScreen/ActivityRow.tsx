@@ -12,7 +12,13 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useTheme } from 'styled-components/native';
 
-export const ActivityRow = () => {
+export const ActivityRow = ({
+  view,
+  setView,
+}: {
+  view: 'trades' | 'minigame';
+  setView: (view: 'trades' | 'minigame') => void;
+}) => {
   const { t } = useTranslation();
   const theme = useTheme();
   return (
@@ -36,8 +42,16 @@ export const ActivityRow = () => {
         </Card>
       </Row>
       <SegmentContainer>
-        <SegmentControl Svg={TradeIcon} selected={true} onPress={() => {}} />
-        <SegmentControl Svg={DiceIcon} selected={false} onPress={() => {}} />
+        <SegmentControl
+          Svg={TradeIcon}
+          selected={view === 'trades'}
+          onPress={() => setView('trades')}
+        />
+        <SegmentControl
+          Svg={DiceIcon}
+          selected={view === 'minigame'}
+          onPress={() => setView('minigame')}
+        />
       </SegmentContainer>
     </Row>
   );

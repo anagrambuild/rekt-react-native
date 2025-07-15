@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { FlatList, Platform, SafeAreaView } from 'react-native';
 
 import { Column, Gap, PressableOpacity, Row, Title2 } from '@/components';
@@ -6,6 +7,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
 import { ActivityRow } from './ActivityRow';
 import { Avatar } from './Avatar';
+import { NoActivity } from './NoActivity';
 import { ProfileHeader } from './ProfileHeader';
 import { ProfileInfoCards } from './ProfileInfoCards';
 import { tradeActivityMockData, userMockData } from './profileMockData';
@@ -17,6 +19,8 @@ const paddingTop = Platform.OS === 'ios' ? 0 : 30;
 
 export const ProfileScreen = () => {
   const theme = useTheme();
+  const [view, setView] = useState<'trades' | 'minigame'>('trades');
+
   const handleLinkPress = () => {
     console.log('link');
   };
@@ -25,7 +29,7 @@ export const ProfileScreen = () => {
     <SafeAreaView style={{ flex: 1 }}>
       <Column
         $padding={screenPadding}
-        style={{ marginTop: paddingTop, flex: 1, paddingBottom: 0 }}
+        style={{ marginTop: paddingTop, flex: 1, paddingBottom: 4 }}
       >
         <ProfileHeader />
         <Gap height={12} />
@@ -43,18 +47,22 @@ export const ProfileScreen = () => {
           </Row>
           <ProfileInfoCards />
           <Gap height={2} />
-          <ActivityRow />
-          <FlatList
-            data={tradeActivityMockData}
-            keyExtractor={(_, idx) => idx.toString()}
-            renderItem={({ item }) => <TradeActivityCard {...item} />}
-            contentContainerStyle={{
-              gap: 4,
-              paddingBottom: 12,
-            }}
-            style={{ width: '100%' }}
-            showsVerticalScrollIndicator={false}
-          />
+          <ActivityRow view={view} setView={setView} />
+          {view === 'trades' ? (
+            <FlatList
+              data={tradeActivityMockData}
+              keyExtractor={(_, idx) => idx.toString()}
+              renderItem={({ item }) => <TradeActivityCard {...item} />}
+              contentContainerStyle={{
+                gap: 4,
+                paddingBottom: 12,
+              }}
+              style={{ width: '100%' }}
+              showsVerticalScrollIndicator={false}
+            />
+          ) : (
+            <NoActivity />
+          )}
         </Column>
       </Column>
     </SafeAreaView>

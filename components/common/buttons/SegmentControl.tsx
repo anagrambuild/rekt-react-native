@@ -17,6 +17,9 @@ export const SegmentContainer = styled.View<{ theme: DefaultTheme }>`
     theme.colors.segmentedControl};
   border-radius: 100px;
   padding: 1px;
+  border-bottom-width: 1px;
+  border-bottom-color: ${({ theme }: { theme: DefaultTheme }) =>
+    theme.colors.border};
 `;
 
 const SegmentButton = styled(PressableOpacity)<{
