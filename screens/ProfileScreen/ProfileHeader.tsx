@@ -2,6 +2,7 @@ import SettingsSlider from '@/assets/images/app-svgs/settings-slider.svg';
 import { PressableOpacity, Row, Title2 } from '@/components';
 
 import { EditButton } from './EditButton';
+import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 export const ProfileHeader = () => {
@@ -12,7 +13,7 @@ export const ProfileHeader = () => {
   };
 
   const handleSettingsPress = () => {
-    console.log('settings');
+    router.push('/settings');
   };
   return (
     <Row>
