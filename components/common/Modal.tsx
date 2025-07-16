@@ -35,14 +35,16 @@ export const Modal: React.FC<ModalProps> = ({
         style={{ flex: 1 }}
       >
         <Backdrop onPress={onRequestClose} testID='modal-backdrop' />
-        <ContentContainer>
-          <GestureDetector gesture={flingDownGesture}>
-            <HandleContainer>
-              {Platform.OS === 'ios' && <Handle />}
-            </HandleContainer>
-          </GestureDetector>
-          {children}
-        </ContentContainer>
+        <BottomSheetContainer>
+          <ContentContainer>
+            <GestureDetector gesture={flingDownGesture}>
+              <HandleContainer>
+                {Platform.OS === 'ios' && <Handle />}
+              </HandleContainer>
+            </GestureDetector>
+            {children}
+          </ContentContainer>
+        </BottomSheetContainer>
       </KeyboardAvoidingView>
     </RNModal>
   );
@@ -60,17 +62,22 @@ const Backdrop = styled.Pressable`
   z-index: 1;
 `;
 
+const BottomSheetContainer = styled.View`
+  flex: 1;
+  justify-content: flex-end;
+`;
+
 const ContentContainer = styled.View`
-  position: absolute;
-  top: 30%;
+  width: 100%;
   background-color: ${({ theme }: { theme: DefaultTheme }) =>
     theme.colors.onPrimary};
-  border-radius: 16px;
+  border-radius: 16px 16px 0 0;
   padding: 6px 24px 24px 24px;
   z-index: 2;
   border-top-width: 1px;
   border-top-color: ${({ theme }: { theme: DefaultTheme }) =>
     theme.colors.border};
+  align-self: center;
 `;
 
 const HandleContainer = styled.View`
@@ -78,10 +85,11 @@ const HandleContainer = styled.View`
   align-self: center;
   justify-content: center;
   height: 24px;
+  margin-bottom: 12px;
 `;
 
 const Handle = styled.View`
-  width: 60px;
+  width: 40px;
   height: 4px;
   background-color: ${({ theme }: { theme: DefaultTheme }) =>
     theme.colors.border};
