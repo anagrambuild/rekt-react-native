@@ -1,5 +1,10 @@
 import { KeyboardAvoidingView, Modal as RNModal, Platform } from 'react-native';
 
+import {
+  Directions,
+  Gesture,
+  GestureDetector,
+} from 'react-native-gesture-handler';
 import styled, { DefaultTheme } from 'styled-components/native';
 
 interface ModalProps {
@@ -13,10 +18,15 @@ export const Modal: React.FC<ModalProps> = ({
   onRequestClose,
   children,
 }) => {
+  const flingDownGesture = Gesture.Fling()
+    .runOnJS(true)
+    .direction(Directions.DOWN)
+    .onStart(() => onRequestClose());
+
   return (
     <RNModal
       transparent
-      animationType='fade'
+      animationType='slide'
       visible={visible}
       onRequestClose={onRequestClose}
     >
@@ -25,7 +35,14 @@ export const Modal: React.FC<ModalProps> = ({
         style={{ flex: 1 }}
       >
         <Backdrop onPress={onRequestClose} testID='modal-backdrop' />
-        <ContentContainer>{children}</ContentContainer>
+        <ContentContainer>
+          <GestureDetector gesture={flingDownGesture}>
+            <HandleContainer>
+              {Platform.OS === 'ios' && <Handle />}
+            </HandleContainer>
+          </GestureDetector>
+          {children}
+        </ContentContainer>
       </KeyboardAvoidingView>
     </RNModal>
   );
@@ -49,9 +66,24 @@ const ContentContainer = styled.View`
   background-color: ${({ theme }: { theme: DefaultTheme }) =>
     theme.colors.onPrimary};
   border-radius: 16px;
-  padding: 24px;
+  padding: 6px 24px 24px 24px;
   z-index: 2;
   border-top-width: 1px;
   border-top-color: ${({ theme }: { theme: DefaultTheme }) =>
     theme.colors.border};
+`;
+
+const HandleContainer = styled.View`
+  width: 100%;
+  align-self: center;
+  justify-content: center;
+  height: 24px;
+`;
+
+const Handle = styled.View`
+  width: 60px;
+  height: 4px;
+  background-color: ${({ theme }: { theme: DefaultTheme }) =>
+    theme.colors.border};
+  align-self: center;
 `;
