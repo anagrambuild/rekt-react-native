@@ -6,7 +6,6 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 
 import {
   DarkTheme,
-  DefaultTheme,
   ThemeProvider as NavigationThemeProvider,
 } from '@react-navigation/native';
 
@@ -21,7 +20,8 @@ I18nManager.swapLeftAndRightInRTL(true);
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-  const navTheme = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
+  // const navTheme = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
+  const navTheme = DarkTheme;
   const styledTheme = colorScheme === 'dark' ? darkTheme : lightTheme;
 
   const [fontsLoaded] = useFonts({
