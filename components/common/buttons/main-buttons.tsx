@@ -21,7 +21,7 @@ const sharedTextStyles = css`
   font-size: 18px;
 `;
 
-// Primary BUTTON
+// PRIMARY BUTTON
 const StyledPrimaryButton = styled(PressableOpacity)`
   ${sharedStyles}
   background-color: ${({ theme }: ThemedButtonProps) =>
@@ -43,23 +43,36 @@ export const PrimaryButton = (
   </StyledPrimaryButton>
 );
 
-// LOGIN BUTTON
-const StyledTertiaryButton = styled(PressableOpacity)`
-  ${sharedStyles}/* background-color: ${({ theme }: ThemedButtonProps) =>
-    theme.colors.background}; */
+// SECONDARY BUTTON
+const StyledSecondaryButton = styled(PressableOpacity)`
+  ${sharedStyles}
+  background-color: ${({ theme }: ThemedButtonProps) => theme.colors.secondary};
 `;
 
-const TertiaryButtonText = styled.Text`
+const SecondaryButtonText = styled.Text`
   color: ${({ theme }: ThemedButtonTextProps) => theme.colors.textPrimary};
   font-family: 'Geist';
   font-weight: 400;
   ${sharedTextStyles}
 `;
 
+export const SecondaryButton = (
+  props: React.ComponentProps<typeof PressableOpacity>
+) => (
+  <StyledSecondaryButton {...props}>
+    <SecondaryButtonText>{props.children}</SecondaryButtonText>
+  </StyledSecondaryButton>
+);
+
+// LOGIN BUTTON
+const StyledTertiaryButton = styled(PressableOpacity)`
+  ${sharedStyles}
+`;
+
 export const TertiaryButton = (
   props: React.ComponentProps<typeof PressableOpacity>
 ) => (
   <StyledTertiaryButton {...props}>
-    <TertiaryButtonText>{props.children}</TertiaryButtonText>
+    <SecondaryButtonText>{props.children}</SecondaryButtonText>
   </StyledTertiaryButton>
 );
