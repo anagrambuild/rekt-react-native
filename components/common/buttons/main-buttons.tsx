@@ -44,22 +44,22 @@ export const PrimaryButton = (
 );
 
 // LOGIN BUTTON
-const StyledSecondaryButton = styled(PressableOpacity)`
+const StyledTertiaryButton = styled(PressableOpacity)`
   ${sharedStyles}/* background-color: ${({ theme }: ThemedButtonProps) =>
     theme.colors.background}; */
 `;
 
-const SecondaryButtonText = styled.Text`
+const TertiaryButtonText = styled.Text`
   color: ${({ theme }: ThemedButtonTextProps) => theme.colors.textPrimary};
   font-family: 'Geist';
   font-weight: 400;
   ${sharedTextStyles}
 `;
 
-export const SecondaryButton = (
+export const TertiaryButton = (
   props: React.ComponentProps<typeof PressableOpacity>
 ) => (
-  <StyledSecondaryButton {...props}>
-    <SecondaryButtonText>{props.children}</SecondaryButtonText>
-  </StyledSecondaryButton>
+  <StyledTertiaryButton {...props}>
+    <TertiaryButtonText>{props.children}</TertiaryButtonText>
+  </StyledTertiaryButton>
 );

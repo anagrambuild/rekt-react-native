@@ -33,3 +33,4 @@ Liam's feedback:
 
 - Profile screen
   - add video instead of plus button for avatar upload
+  - profile modal - add a fling gesture to close it
