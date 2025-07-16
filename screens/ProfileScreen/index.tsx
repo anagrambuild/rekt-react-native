@@ -7,6 +7,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
 import { ActivityRow } from './ActivityRow';
 import { Avatar } from './Avatar';
+import { EditProfileModal } from './EditProfileModal';
 import { NoActivity } from './NoActivity';
 import { ProfileHeader } from './ProfileHeader';
 import { ProfileInfoCards } from './ProfileInfoCards';
@@ -17,21 +18,30 @@ import { useTheme } from 'styled-components/native';
 const screenPadding = 20;
 const paddingTop = Platform.OS === 'ios' ? 0 : 30;
 
+const userData = {
+  username: userMockData.username,
+  imgSrc: userMockData.imgSrc,
+};
+
 export const ProfileScreen = () => {
   const theme = useTheme();
   const [view, setView] = useState<'trades' | 'minigame'>('trades');
+  const [isEditProfileModalVisible, setIsEditProfileModalVisible] =
+    useState(false);
 
   const handleLinkPress = () => {
     console.log('link');
   };
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <Column
         $padding={screenPadding}
         style={{ marginTop: paddingTop, flex: 1, paddingBottom: 4 }}
       >
-        <ProfileHeader />
+        <ProfileHeader
+          setIsEditProfileModalVisible={setIsEditProfileModalVisible}
+        />
         <Gap height={12} />
         <Column $gap={12} style={{ flex: 1 }}>
           <Avatar imgSrc={userMockData.imgSrc} />
@@ -65,6 +75,13 @@ export const ProfileScreen = () => {
           )}
         </Column>
       </Column>
+      {isEditProfileModalVisible && (
+        <EditProfileModal
+          visible={isEditProfileModalVisible}
+          onRequestClose={() => setIsEditProfileModalVisible(false)}
+          user={userData}
+        />
+      )}
     </SafeAreaView>
   );
 };

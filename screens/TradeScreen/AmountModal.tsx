@@ -135,7 +135,7 @@ const StyledSheetContainer = styled.View<any>`
   flex: 1;
   align-items: center;
   justify-content: center;
-  background-color: ${(props: any) => props.theme.colors.backgroundSecondary};
+  background-color: ${(props: any) => props.theme.colors.onPrimary};
   padding: 12px 0px 0px 0px;
   gap: 16px;
 `;

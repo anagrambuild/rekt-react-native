@@ -5,11 +5,15 @@ import { EditButton } from './EditButton';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
-export const ProfileHeader = () => {
+export const ProfileHeader = ({
+  setIsEditProfileModalVisible,
+}: {
+  setIsEditProfileModalVisible: (visible: boolean) => void;
+}) => {
   const { t } = useTranslation();
 
   const handleEditPress = () => {
-    console.log('edit');
+    setIsEditProfileModalVisible(true);
   };
 
   const handleSettingsPress = () => {
