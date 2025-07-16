@@ -90,6 +90,7 @@ module.exports = {
         },
       ],
       'expo-localization',
+      'expo-video',
     ],
     experiments: {
       typedRoutes: true,
