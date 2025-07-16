@@ -1,14 +1,8 @@
-import { PressableOpacity } from '@/components';
-
 import { Image } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import styled, { DefaultTheme } from 'styled-components/native';
 
 export const Avatar = ({ imgSrc }: { imgSrc: any }) => {
-  const onUploadPress = () => {
-    console.log('upload');
-  };
-
   // Create the video player, set to loop and play automatically
   const player = useVideoPlayer(
     require('@/assets/videos/add-pfp.mp4'),
@@ -21,14 +15,12 @@ export const Avatar = ({ imgSrc }: { imgSrc: any }) => {
   return (
     <AvatarContainer>
       <AvatarImage source={imgSrc} />
-      <UploadButtonContainer>
-        <PressableOpacity onPress={onUploadPress}>
-          <VideoView
-            player={player}
-            style={{ width: 32, height: 32, borderRadius: 16 }}
-          />
-        </PressableOpacity>
-      </UploadButtonContainer>
+      <BadgeContainer>
+        <VideoView
+          player={player}
+          style={{ width: 32, height: 32, borderRadius: 16 }}
+        />
+      </BadgeContainer>
     </AvatarContainer>
   );
 };
@@ -48,7 +40,7 @@ const AvatarImage = styled(Image)`
   border-radius: ${imgSize / 2}px;
 `;
 
-const UploadButtonContainer = styled.View`
+const BadgeContainer = styled.View`
   position: absolute;
   bottom: 0;
   right: -8px;
