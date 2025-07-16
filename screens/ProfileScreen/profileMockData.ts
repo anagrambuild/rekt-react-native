@@ -3,7 +3,7 @@ import avatar from '@/assets/images/app-pngs/avatar.png';
 import type { TradeActivityCardProps } from './TradeActivityCard';
 
 export const userMockData = {
-  username: '@liamdig',
+  username: 'liamdig',
   imgSrc: avatar,
   balance: 28500,
   points: 72000,

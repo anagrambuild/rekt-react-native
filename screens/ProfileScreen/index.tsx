@@ -46,7 +46,7 @@ export const ProfileScreen = () => {
         <Column $gap={12} style={{ flex: 1 }}>
           <Avatar imgSrc={userMockData.imgSrc} />
           <Row $gap={6} $alignItems='center' $width='auto'>
-            <Title2>{userMockData.username}</Title2>
+            <Title2>{`@${userMockData.username}`}</Title2>
             <PressableOpacity onPress={handleLinkPress}>
               <MaterialCommunityIcons
                 name='link-variant'

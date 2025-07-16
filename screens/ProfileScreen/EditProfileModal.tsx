@@ -1,14 +1,14 @@
-import { Image } from 'react-native';
+import { useState } from 'react';
+import { Image, Keyboard } from 'react-native';
 
 import { Modal, PressableOpacity } from '@/components';
 import {
   PrimaryButton,
-  TertiaryButton,
+  SecondaryButton,
 } from '@/components/common/buttons/main-buttons';
 import { Card } from '@/components/common/Card';
 import { Column, Gap, Row } from '@/components/common/containers';
 import {
-  BodyM,
   BodyMSecondary,
   BodyS,
   BodySEmphasized,
@@ -39,9 +39,20 @@ export const EditProfileModal = ({
   user: User;
 }) => {
   const theme = useTheme();
+  const [username, setUsername] = useState(user.username);
+
+  const handleSave = () => {
+    onSave?.();
+    onRequestClose();
+  };
+
+  const handleClose = () => {
+    setUsername(user.username);
+    onRequestClose();
+  };
 
   return (
-    <Modal visible={visible} onRequestClose={onRequestClose}>
+    <Modal visible={visible} onRequestClose={handleClose}>
       <Column $gap={24} $alignItems='flex-start'>
         <Row $gap={12} $justifyContent='flex-start'>
           <MaterialIcon
@@ -100,17 +111,28 @@ export const EditProfileModal = ({
                 {t('Only letters & numbers allowed')}
               </BodyMSecondary>
               <Row $gap={8} $alignItems='center'>
-                <BodyM>@</BodyM>
-                <BodyM>{user.username}</BodyM>
+                <StyledInputContainer>
+                  <StyleAt>@</StyleAt>
+                  <StyledInput
+                    value={username}
+                    onChangeText={setUsername}
+                    placeholder={t('Enter your username')}
+                    returnKeyType='done'
+                    onSubmitEditing={() => Keyboard.dismiss()}
+                  />
+                </StyledInputContainer>
               </Row>
             </Column>
           </Card>
         </Column>
-        <Gap height={8} />
-        <PrimaryButton onPress={onSave || (() => {})}>
-          {t('Save changes')}
-        </PrimaryButton>
-        <TertiaryButton onPress={onRequestClose}>{t('Cancel')}</TertiaryButton>
+        <Column $gap={8}>
+          <PrimaryButton onPress={handleSave}>
+            {t('Save changes')}
+          </PrimaryButton>
+          <SecondaryButton onPress={onRequestClose}>
+            {t('Cancel')}
+          </SecondaryButton>
+        </Column>
       </Column>
     </Modal>
   );
@@ -124,4 +146,29 @@ const Button = styled(PressableOpacity)`
   background-color: ${(props: any) => props.theme.colors.secondary};
   padding: 6px 12px;
   border-radius: 100px;
+`;
+
+const StyledInputContainer = styled.View`
+  position: relative;
+  width: 100%;
+`;
+
+const StyledInput = styled.TextInput`
+  font-family: 'Geist';
+  font-size: 16px;
+  font-weight: 400;
+  color: ${({ theme }: any) => theme.colors.textPrimary};
+  background-color: ${({ theme }: any) => theme.colors.field};
+  width: 100%;
+  padding: 12px 16px 12px 24px;
+  border-radius: 12px;
+  height: 48px;
+`;
+
+const StyleAt = styled.Text`
+  position: absolute;
+  left: 0;
+  top: 16px;
+  color: ${({ theme }: any) => theme.colors.textSecondary};
+  z-index: 1;
 `;

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { TextInput } from 'react-native';
 
 import WalletIcon from '@/assets/images/app-svgs/wallet.svg';
@@ -58,16 +58,6 @@ export const AmountModal = ({
 
   const initialAmount = String(amount);
   const [localAmount, setLocalAmount] = useState(initialAmount);
-
-  useEffect(() => {
-    if (visible) {
-      setLocalAmount(String(amount)); // Reset localAmount to current amount when modal opens
-      const timeout = setTimeout(() => {
-        inputRef.current?.focus();
-      }, 400);
-      return () => clearTimeout(timeout);
-    }
-  }, [visible, amount]);
 
   const onSetAmount = () => {
     const parsed = Number(localAmount);
@@ -132,7 +122,6 @@ export const AmountModal = ({
 };
 
 const StyledSheetContainer = styled.View<any>`
-  flex: 1;
   align-items: center;
   justify-content: center;
   background-color: ${(props: any) => props.theme.colors.onPrimary};
