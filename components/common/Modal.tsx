@@ -46,11 +46,12 @@ const Backdrop = styled.Pressable`
 const ContentContainer = styled.View`
   position: absolute;
   top: 30%;
-  left: 20px;
-  right: 20px;
   background-color: ${({ theme }: { theme: DefaultTheme }) =>
-    theme.colors.backgroundSecondary};
+    theme.colors.onPrimary};
   border-radius: 16px;
-  padding: 16px;
+  padding: 24px;
   z-index: 2;
+  border-top-width: 1px;
+  border-top-color: ${({ theme }: { theme: DefaultTheme }) =>
+    theme.colors.border};
 `;
