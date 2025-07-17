@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Image, Keyboard } from 'react-native';
+import { Alert, Image, Keyboard } from 'react-native';
 
 import { Modal, PressableOpacity } from '@/components';
 import {
@@ -14,10 +14,11 @@ import {
   BodySEmphasized,
   Title4,
 } from '@/components/common/texts';
+import { useImagePicker } from '@/hooks';
 
 import MaterialIcon from '@expo/vector-icons/MaterialIcons';
 
-import { t } from 'i18next';
+import { useTranslation } from 'react-i18next';
 import styled, { useTheme } from 'styled-components/native';
 
 interface User {
@@ -30,16 +31,20 @@ export const EditProfileModal = ({
   onRequestClose,
   onSave,
   onRemoveImage,
+  onUploadImage,
   user,
 }: {
   visible: boolean;
   onRequestClose: () => void;
   onSave?: () => void;
   onRemoveImage?: () => void;
+  onUploadImage?: (imageUri: string) => void;
   user: User;
 }) => {
   const theme = useTheme();
+  const { t } = useTranslation();
   const [username, setUsername] = useState(user.username);
+  const { takePhoto, pickFromLibrary, isLoading } = useImagePicker();
 
   const handleSave = () => {
     onSave?.();
@@ -50,6 +55,32 @@ export const EditProfileModal = ({
     setUsername(user.username);
     onRequestClose();
   };
+
+  const handleImageUpload = () => {
+    Alert.alert(t('Upload'), '', [
+      {
+        text: t('Take photo'),
+        onPress: async () => {
+          const result = await takePhoto();
+          if (result) {
+            onUploadImage?.(result.uri);
+          }
+        },
+      },
+      {
+        text: t('Choose from library'),
+        onPress: async () => {
+          const result = await pickFromLibrary();
+          if (result) {
+            onUploadImage?.(result.uri);
+          }
+        },
+      },
+      { text: t('Cancel'), style: 'cancel' },
+    ]);
+  };
+
+  const hasImage = user.imgSrc && user.imgSrc !== '' && user.imgSrc !== null;
 
   return (
     <Modal visible={visible} onRequestClose={handleClose}>
@@ -74,20 +105,35 @@ export const EditProfileModal = ({
                 <BodyS>{t('Profile picture')}</BodyS>
                 <BodyMSecondary>{t('Max. size 5MB')}</BodyMSecondary>
                 <Gap height={12} />
-                <Button onPress={onRemoveImage || (() => {})}>
-                  <MaterialIcon
-                    name='delete-outline'
-                    size={16}
-                    color={theme.colors.onSecondary}
-                  />
-                  <BodySEmphasized>{t('Remove')}</BodySEmphasized>
-                </Button>
+                {hasImage ? (
+                  <Button onPress={onRemoveImage || (() => {})}>
+                    <MaterialIcon
+                      name='delete-outline'
+                      size={16}
+                      color={theme.colors.onSecondary}
+                    />
+                    <BodySEmphasized>{t('Remove')}</BodySEmphasized>
+                  </Button>
+                ) : (
+                  <Button onPress={handleImageUpload} disabled={isLoading}>
+                    <MaterialIcon
+                      name='upload'
+                      size={16}
+                      color={theme.colors.onSecondary}
+                    />
+                    <BodySEmphasized>
+                      {isLoading ? '...' : t('Upload')}
+                    </BodySEmphasized>
+                  </Button>
+                )}
               </Column>
               <Image
                 source={
-                  typeof user.imgSrc === 'string'
-                    ? { uri: user.imgSrc }
-                    : user.imgSrc
+                  hasImage
+                    ? typeof user.imgSrc === 'string'
+                      ? { uri: user.imgSrc }
+                      : user.imgSrc
+                    : require('@/assets/images/app-pngs/avatar.png')
                 }
                 style={{
                   width: 64,
@@ -138,14 +184,18 @@ export const EditProfileModal = ({
   );
 };
 
-const Button = styled(PressableOpacity)`
+const Button = styled(PressableOpacity)<{ disabled?: boolean }>`
   flex-direction: row;
   align-items: center;
   justify-content: center;
   gap: 4px;
-  background-color: ${(props: any) => props.theme.colors.secondary};
+  background-color: ${(props: any) =>
+    props.disabled
+      ? props.theme.colors.secondary + '80'
+      : props.theme.colors.secondary};
   padding: 6px 12px;
   border-radius: 100px;
+  opacity: ${(props: any) => (props.disabled ? 0.6 : 1)};
 `;
 
 const StyledInputContainer = styled.View`

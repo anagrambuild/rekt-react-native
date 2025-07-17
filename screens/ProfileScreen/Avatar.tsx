@@ -3,6 +3,7 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 import styled, { DefaultTheme } from 'styled-components/native';
 
 export const Avatar = ({ imgSrc }: { imgSrc: any }) => {
+  const hasImage = imgSrc && imgSrc !== '' && imgSrc !== null;
   // Create the video player, set to loop and play automatically
   const player = useVideoPlayer(
     require('@/assets/videos/add-pfp.mp4'),
@@ -14,7 +15,11 @@ export const Avatar = ({ imgSrc }: { imgSrc: any }) => {
 
   return (
     <AvatarContainer>
-      <AvatarImage source={imgSrc} />
+      <AvatarImage
+        source={
+          hasImage ? imgSrc : require('@/assets/images/app-pngs/avatar.png')
+        }
+      />
       <BadgeContainer>
         <VideoView
           player={player}

@@ -1,10 +1,10 @@
-import avatar from '@/assets/images/app-pngs/avatar.png';
+import mockPfp from '@/assets/images/mock-pngs/green-pfp.png';
 
 import type { TradeActivityCardProps } from './TradeActivityCard';
 
 export const userMockData = {
   username: 'liamdig',
-  imgSrc: avatar,
+  imgSrc: mockPfp,
   balance: 28500,
   points: 72000,
   isProfit: true,
