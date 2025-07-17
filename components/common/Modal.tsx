@@ -36,14 +36,14 @@ export const Modal: React.FC<ModalProps> = ({
       >
         <Backdrop onPress={onRequestClose} testID='modal-backdrop' />
         <BottomSheetContainer>
-          <ContentContainer>
-            <GestureDetector gesture={flingDownGesture}>
+          <GestureDetector gesture={flingDownGesture}>
+            <ContentContainer>
               <HandleContainer>
                 {Platform.OS === 'ios' && <Handle />}
               </HandleContainer>
-            </GestureDetector>
-            {children}
-          </ContentContainer>
+              {children}
+            </ContentContainer>
+          </GestureDetector>
         </BottomSheetContainer>
       </KeyboardAvoidingView>
     </RNModal>
