@@ -326,13 +326,3 @@ const DataCard = styled(Card)`
   align-items: flex-start;
   gap: 8px;
 `;
-
-const DollarIcon = styled.View`
-  width: 16px;
-  height: 16px;
-  border-radius: 8px;
-  background-color: ${({ theme }: { theme: DefaultTheme }) =>
-    theme.colors.secondary};
-  justify-content: center;
-  align-items: center;
-`;
