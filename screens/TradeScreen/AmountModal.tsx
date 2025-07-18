@@ -5,15 +5,12 @@ import WalletIcon from '@/assets/images/app-svgs/wallet.svg';
 import {
   BodyMEmphasized,
   BodyS,
-  PressableOpacity,
   PrimaryButton,
   Row,
   ScrollRow,
 } from '@/components';
 import { Modal } from '@/components/common/Modal';
 import { useHomeContext } from '@/contexts/HomeContext';
-
-import MaterialIcon from '@expo/vector-icons/MaterialIcons';
 
 import { PresetButton } from './PresetButton';
 import { useTranslation } from 'react-i18next';
@@ -77,15 +74,6 @@ export const AmountModal = ({
   return (
     <Modal visible={visible} onRequestClose={onClose}>
       <StyledSheetContainer>
-        <Row>
-          <PressableOpacity onPress={onClose}>
-            <MaterialIcon
-              name='keyboard-arrow-left'
-              size={32}
-              color={theme.colors.textSecondary}
-            />
-          </PressableOpacity>
-        </Row>
         <BodyMEmphasized>{t('Enter amount')}</BodyMEmphasized>
         <StyledInput
           ref={inputRef}
