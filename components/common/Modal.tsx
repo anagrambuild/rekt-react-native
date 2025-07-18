@@ -1,11 +1,14 @@
 import { KeyboardAvoidingView, Modal as RNModal, Platform } from 'react-native';
 
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+
+import { PressableOpacity } from './buttons';
 import {
   Directions,
   Gesture,
   GestureDetector,
 } from 'react-native-gesture-handler';
-import styled, { DefaultTheme } from 'styled-components/native';
+import styled, { DefaultTheme, useTheme } from 'styled-components/native';
 
 interface ModalProps {
   visible: boolean;
@@ -18,6 +21,7 @@ export const Modal: React.FC<ModalProps> = ({
   onRequestClose,
   children,
 }) => {
+  const theme = useTheme();
   const flingDownGesture = Gesture.Fling()
     .runOnJS(true)
     .direction(Directions.DOWN)
@@ -39,7 +43,17 @@ export const Modal: React.FC<ModalProps> = ({
           <GestureDetector gesture={flingDownGesture}>
             <ContentContainer>
               <HandleContainer>
-                {Platform.OS === 'ios' && <Handle />}
+                {Platform.OS === 'ios' ? (
+                  <Handle />
+                ) : (
+                  <PressableOpacity onPress={onRequestClose}>
+                    <MaterialIcons
+                      name='close'
+                      size={18}
+                      color={theme.colors.textSecondary}
+                    />
+                  </PressableOpacity>
+                )}
               </HandleContainer>
               {children}
             </ContentContainer>
