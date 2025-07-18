@@ -1,7 +1,7 @@
 import { I18nManager } from 'react-native';
 
 import { darkTheme, lightTheme } from '@/constants/theme';
-import { AppProvider, HomeProvider } from '@/contexts';
+import { AppProvider } from '@/contexts';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
 import {
@@ -37,13 +37,11 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <AppProvider>
-        <HomeProvider>
-          <NavigationThemeProvider value={navTheme}>
-            <StyledThemeProvider theme={styledTheme}>
-              <Stack screenOptions={{ headerShown: false }} />
-            </StyledThemeProvider>
-          </NavigationThemeProvider>
-        </HomeProvider>
+        <NavigationThemeProvider value={navTheme}>
+          <StyledThemeProvider theme={styledTheme}>
+            <Stack screenOptions={{ headerShown: false }} />
+          </StyledThemeProvider>
+        </NavigationThemeProvider>
       </AppProvider>
     </GestureHandlerRootView>
   );

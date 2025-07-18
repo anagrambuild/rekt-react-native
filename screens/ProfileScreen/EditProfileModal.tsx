@@ -14,6 +14,7 @@ import {
   BodySEmphasized,
   Title4,
 } from '@/components/common/texts';
+import { useProfileContext } from '@/contexts';
 import { useImagePicker } from '@/hooks';
 
 import MaterialIcon from '@expo/vector-icons/MaterialIcons';
@@ -21,29 +22,20 @@ import MaterialIcon from '@expo/vector-icons/MaterialIcons';
 import { useTranslation } from 'react-i18next';
 import styled, { useTheme } from 'styled-components/native';
 
-interface User {
-  username: string;
-  imgSrc: string | number;
-}
-
 export const EditProfileModal = ({
   visible,
   onRequestClose,
   onSave,
-  onRemoveImage,
-  onUploadImage,
-  user,
 }: {
   visible: boolean;
   onRequestClose: () => void;
   onSave?: () => void;
-  onRemoveImage?: () => void;
-  onUploadImage?: (imageUri: string) => void;
-  user: User;
 }) => {
   const theme = useTheme();
   const { t } = useTranslation();
-  const [username, setUsername] = useState(user.username);
+  const { userData, handleImageUpload, handleImageRemoval } =
+    useProfileContext();
+  const [username, setUsername] = useState(userData.username);
   const { takePhoto, pickFromLibrary, isLoading } = useImagePicker();
 
   const handleSave = () => {
@@ -52,18 +44,18 @@ export const EditProfileModal = ({
   };
 
   const handleClose = () => {
-    setUsername(user.username);
+    setUsername(userData.username);
     onRequestClose();
   };
 
-  const handleImageUpload = () => {
+  const handleImageUploadModal = () => {
     Alert.alert(t('Upload'), '', [
       {
         text: t('Take photo'),
         onPress: async () => {
           const result = await takePhoto();
           if (result) {
-            onUploadImage?.(result.uri);
+            handleImageUpload(result.uri);
           }
         },
       },
@@ -72,7 +64,7 @@ export const EditProfileModal = ({
         onPress: async () => {
           const result = await pickFromLibrary();
           if (result) {
-            onUploadImage?.(result.uri);
+            handleImageUpload(result.uri);
           }
         },
       },
@@ -80,7 +72,8 @@ export const EditProfileModal = ({
     ]);
   };
 
-  const hasImage = user.imgSrc && user.imgSrc !== '' && user.imgSrc !== null;
+  const hasImage =
+    userData.imgSrc && userData.imgSrc !== '' && userData.imgSrc !== null;
 
   return (
     <Modal visible={visible} onRequestClose={handleClose}>
@@ -106,7 +99,7 @@ export const EditProfileModal = ({
                 <BodyMSecondary>{t('Max. size 5MB')}</BodyMSecondary>
                 <Gap height={12} />
                 {hasImage ? (
-                  <Button onPress={onRemoveImage || (() => {})}>
+                  <Button onPress={handleImageRemoval}>
                     <MaterialIcon
                       name='delete-outline'
                       size={16}
@@ -115,7 +108,7 @@ export const EditProfileModal = ({
                     <BodySEmphasized>{t('Remove')}</BodySEmphasized>
                   </Button>
                 ) : (
-                  <Button onPress={handleImageUpload} disabled={isLoading}>
+                  <Button onPress={handleImageUploadModal} disabled={isLoading}>
                     <MaterialIcon
                       name='upload'
                       size={16}
@@ -130,9 +123,9 @@ export const EditProfileModal = ({
               <Image
                 source={
                   hasImage
-                    ? typeof user.imgSrc === 'string'
-                      ? { uri: user.imgSrc }
-                      : user.imgSrc
+                    ? typeof userData.imgSrc === 'string'
+                      ? { uri: userData.imgSrc }
+                      : userData.imgSrc
                     : require('@/assets/images/app-pngs/avatar.png')
                 }
                 style={{
