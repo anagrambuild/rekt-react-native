@@ -9,12 +9,18 @@ interface ThemedButtonTextProps {
   theme: DefaultTheme;
 }
 
+interface ButtonProps extends React.ComponentProps<typeof PressableOpacity> {
+  icon?: React.ReactNode;
+}
+
 const sharedStyles = css`
   padding: 14px 32px;
   border-radius: 100px;
   align-items: center;
   justify-content: center;
   width: 100%;
+  flex-direction: row;
+  gap: 8px;
 `;
 
 const sharedTextStyles = css`
@@ -28,18 +34,17 @@ const StyledPrimaryButton = styled(PressableOpacity)`
     theme.colors.textPrimary};
 `;
 
-const SigninButtonText = styled.Text`
+const PrimaryButtonText = styled.Text`
   color: ${({ theme }: ThemedButtonTextProps) => theme.colors.background};
   font-family: 'Geist';
   font-weight: 400;
   ${sharedTextStyles}
 `;
 
-export const PrimaryButton = (
-  props: React.ComponentProps<typeof PressableOpacity>
-) => (
+export const PrimaryButton = ({ icon, children, ...props }: ButtonProps) => (
   <StyledPrimaryButton {...props}>
-    <SigninButtonText>{props.children}</SigninButtonText>
+    {icon}
+    <PrimaryButtonText>{children}</PrimaryButtonText>
   </StyledPrimaryButton>
 );
 
@@ -56,11 +61,10 @@ const SecondaryButtonText = styled.Text`
   ${sharedTextStyles}
 `;
 
-export const SecondaryButton = (
-  props: React.ComponentProps<typeof PressableOpacity>
-) => (
+export const SecondaryButton = ({ icon, children, ...props }: ButtonProps) => (
   <StyledSecondaryButton {...props}>
-    <SecondaryButtonText>{props.children}</SecondaryButtonText>
+    {icon}
+    <SecondaryButtonText>{children}</SecondaryButtonText>
   </StyledSecondaryButton>
 );
 
