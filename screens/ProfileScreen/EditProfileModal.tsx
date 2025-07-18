@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Alert, Image, Keyboard } from 'react-native';
 
-import { Modal, PressableOpacity } from '@/components';
 import {
+  Modal,
+  PressableOpacity,
   PrimaryButton,
   SecondaryButton,
-} from '@/components/common/buttons/main-buttons';
+} from '@/components';
 import { Card } from '@/components/common/Card';
 import { Column, Gap, Row } from '@/components/common/containers';
 import {

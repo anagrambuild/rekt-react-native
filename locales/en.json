@@ -57,5 +57,10 @@
   "This app needs access to your camera to let you take profile pictures.": "This app needs access to your camera to let you take profile pictures.",
   "This app needs access to your microphone for video recording features.": "This app needs access to your microphone for video recording features.",
   "Allow $(PRODUCT_NAME) to access your camera": "Allow $(PRODUCT_NAME) to access your camera",
-  "Allow $(PRODUCT_NAME) to access your microphone": "Allow $(PRODUCT_NAME) to access your microphone"
+  "Allow $(PRODUCT_NAME) to access your microphone": "Allow $(PRODUCT_NAME) to access your microphone",
+  "Invested": "Invested",
+  "Entry": "Entry",
+  "Exit": "Exit",
+  "Trade again": "Trade again",
+  "Share": "Share"
 }

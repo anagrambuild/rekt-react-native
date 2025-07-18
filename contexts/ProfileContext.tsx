@@ -1,7 +1,10 @@
 import { createContext, useContext, useState } from 'react';
 import { Alert } from 'react-native';
 
-import { userMockData } from '@/screens/ProfileScreen/profileMockData';
+import {
+  DetailedTradeData,
+  userMockData,
+} from '@/screens/ProfileScreen/profileMockData';
 
 import { useTranslation } from 'react-i18next';
 
@@ -15,6 +18,10 @@ interface ProfileContextType {
   setView: (view: 'trades' | 'minigame') => void;
   isEditProfileModalVisible: boolean;
   setIsEditProfileModalVisible: (visible: boolean) => void;
+  isTradeActivityModalVisible: boolean;
+  setIsTradeActivityModalVisible: (visible: boolean) => void;
+  selectedTrade: DetailedTradeData | null;
+  setSelectedTrade: (trade: DetailedTradeData | null) => void;
   userImage: string | number;
   setUserImage: (image: string | number) => void;
   userData: User;
@@ -28,6 +35,10 @@ export const ProfileContext = createContext<ProfileContextType>({
   setView: () => {},
   isEditProfileModalVisible: false,
   setIsEditProfileModalVisible: () => {},
+  isTradeActivityModalVisible: false,
+  setIsTradeActivityModalVisible: () => {},
+  selectedTrade: null,
+  setSelectedTrade: () => {},
   userImage: '',
   setUserImage: () => {},
   userData: { username: '', imgSrc: '' },
@@ -49,6 +60,11 @@ export const ProfileProvider = ({
   const [view, setView] = useState<'trades' | 'minigame'>('trades');
   const [isEditProfileModalVisible, setIsEditProfileModalVisible] =
     useState(false);
+  const [isTradeActivityModalVisible, setIsTradeActivityModalVisible] =
+    useState(false);
+  const [selectedTrade, setSelectedTrade] = useState<DetailedTradeData | null>(
+    null
+  );
   const [userImage, setUserImage] = useState<string | number>(
     userMockData.imgSrc
   );
@@ -100,6 +116,10 @@ export const ProfileProvider = ({
         setView,
         isEditProfileModalVisible,
         setIsEditProfileModalVisible,
+        isTradeActivityModalVisible,
+        setIsTradeActivityModalVisible,
+        selectedTrade,
+        setSelectedTrade,
         userImage,
         setUserImage,
         userData,

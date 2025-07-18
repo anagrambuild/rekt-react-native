@@ -11,7 +11,8 @@ import { EditProfileModal } from './EditProfileModal';
 import { NoActivity } from './NoActivity';
 import { ProfileHeader } from './ProfileHeader';
 import { ProfileInfoCards } from './ProfileInfoCards';
-import { tradeActivityMockData } from './profileMockData';
+import { detailedTradeData } from './profileMockData';
+import { TradeActivityModal } from './TradeAcivityModal';
 import { TradeActivityCard } from './TradeActivityCard';
 import { useTheme } from 'styled-components/native';
 
@@ -25,10 +26,19 @@ export const ProfileScreen = () => {
     setView,
     isEditProfileModalVisible,
     setIsEditProfileModalVisible,
+    isTradeActivityModalVisible,
+    setIsTradeActivityModalVisible,
+    setSelectedTrade,
     userImage,
     userData,
     handleLinkPress,
   } = useProfileContext();
+
+  const handleTradePress = (index: number) => {
+    const selectedTrade = detailedTradeData[index];
+    setSelectedTrade(selectedTrade);
+    setIsTradeActivityModalVisible(true);
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
@@ -57,9 +67,13 @@ export const ProfileScreen = () => {
           <ActivityRow view={view} setView={setView} />
           {view === 'trades' ? (
             <FlatList
-              data={tradeActivityMockData}
+              data={detailedTradeData}
               keyExtractor={(_, idx) => idx.toString()}
-              renderItem={({ item }) => <TradeActivityCard {...item} />}
+              renderItem={({ item, index }) => (
+                <PressableOpacity onPress={() => handleTradePress(index)}>
+                  <TradeActivityCard {...item} />
+                </PressableOpacity>
+              )}
               contentContainerStyle={{
                 gap: 4,
                 paddingBottom: 12,
@@ -78,6 +92,7 @@ export const ProfileScreen = () => {
           onRequestClose={() => setIsEditProfileModalVisible(false)}
         />
       )}
+      {isTradeActivityModalVisible && <TradeActivityModal />}
     </SafeAreaView>
   );
 };
