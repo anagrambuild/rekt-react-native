@@ -9,6 +9,7 @@ import { ActivityRow } from './ActivityRow';
 import { Avatar } from './Avatar';
 import { EditProfileModal } from './EditProfileModal';
 import { NoActivity } from './NoActivity';
+import { OnOffRampModal } from './OnOffRampModal';
 import { ProfileHeader } from './ProfileHeader';
 import { ProfileInfoCards } from './ProfileInfoCards';
 import { detailedTradeData } from './profileMockData';
@@ -32,6 +33,7 @@ export const ProfileScreen = () => {
     userImage,
     userData,
     handleLinkPress,
+    isOnOffRampModalVisible,
   } = useProfileContext();
 
   const handleTradePress = (index: number) => {
@@ -93,6 +95,7 @@ export const ProfileScreen = () => {
         />
       )}
       {isTradeActivityModalVisible && <TradeActivityModal />}
+      {isOnOffRampModalVisible && <OnOffRampModal />}
     </SafeAreaView>
   );
 };

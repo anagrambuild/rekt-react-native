@@ -62,5 +62,14 @@
   "Entry": "Entry",
   "Exit": "Exit",
   "Trade again": "Trade again",
-  "Share": "Share"
+  "Share": "Share",
+  "Your balance": "Your balance",
+  "Earn 5% APY on your balance": "Earn 5% APY on your balance",
+  "Put your idle dollars to work": "Put your idle dollars to work",
+  "Deposit funds": "Deposit funds",
+  "Transfer-in": "Transfer-in",
+  "From Solana wallet": "From Solana wallet",
+  "Card or Apple pay": "Card or Apple pay",
+  "Instant and secure payment": "Instant and secure payment",
+  "Withdraw": "Withdraw"
 }

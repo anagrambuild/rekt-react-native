@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 export interface User {
   username: string;
   imgSrc: string | number;
+  balance: number;
 }
 
 interface ProfileContextType {
@@ -28,6 +29,8 @@ interface ProfileContextType {
   handleImageUpload: (imageUri: string) => Promise<void>;
   handleImageRemoval: () => Promise<void>;
   handleLinkPress: () => void;
+  isOnOffRampModalVisible: boolean;
+  setIsOnOffRampModalVisible: (visible: boolean) => void;
 }
 
 export const ProfileContext = createContext<ProfileContextType>({
@@ -41,10 +44,12 @@ export const ProfileContext = createContext<ProfileContextType>({
   setSelectedTrade: () => {},
   userImage: '',
   setUserImage: () => {},
-  userData: { username: '', imgSrc: '' },
+  userData: { username: '', imgSrc: '', balance: 0 },
   handleImageUpload: async () => {},
   handleImageRemoval: async () => {},
   handleLinkPress: () => {},
+  isOnOffRampModalVisible: false,
+  setIsOnOffRampModalVisible: () => {},
 });
 
 export const useProfileContext = () => {
@@ -68,10 +73,12 @@ export const ProfileProvider = ({
   const [userImage, setUserImage] = useState<string | number>(
     userMockData.imgSrc
   );
+  const [isOnOffRampModalVisible, setIsOnOffRampModalVisible] = useState(false);
 
   const userData: User = {
     username: userMockData.username,
     imgSrc: userImage,
+    balance: userMockData.balance,
   };
 
   const handleLinkPress = () => {
@@ -126,6 +133,8 @@ export const ProfileProvider = ({
         handleImageUpload,
         handleImageRemoval,
         handleLinkPress,
+        isOnOffRampModalVisible,
+        setIsOnOffRampModalVisible,
       }}
     >
       {children}

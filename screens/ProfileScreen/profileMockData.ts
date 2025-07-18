@@ -5,7 +5,7 @@ import type { TradeActivityCardProps } from './TradeActivityCard';
 export const userMockData = {
   username: 'liamdig',
   imgSrc: mockPfp,
-  balance: 28500,
+  balance: 2850,
   points: 72000,
   isProfit: true,
   percentage: 28.5,

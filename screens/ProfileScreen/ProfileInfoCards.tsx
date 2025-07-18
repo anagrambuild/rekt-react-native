@@ -9,6 +9,7 @@ import {
   PressableOpacity,
   Row,
 } from '@/components';
+import { useProfileContext } from '@/contexts';
 
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
@@ -18,22 +19,30 @@ import styled, { DefaultTheme, useTheme } from 'styled-components/native';
 
 const iconSize = 20;
 const borderRadius = 8;
+
 export const ProfileInfoCards = () => {
   const { t } = useTranslation();
   const theme = useTheme();
+  const { setIsOnOffRampModalVisible } = useProfileContext();
   return (
     <Column $gap={6}>
-      <Card>
-        <Column $alignItems='flex-start' $padding={16} $gap={8}>
-          <BodyXSMonoSecondary>
-            {t('Balance').toUpperCase()}
-          </BodyXSMonoSecondary>
-          <Row $gap={6} $width='auto'>
-            <Body1>{userMockData.balance.toLocaleString()}</Body1>
-            <UsdcIcon width={iconSize} height={iconSize} />
-          </Row>
-        </Column>
-      </Card>
+      <PressableOpacity
+        style={{ width: '100%' }}
+        onPress={() => setIsOnOffRampModalVisible(true)}
+      >
+        <Card>
+          <Column $alignItems='flex-start' $padding={16} $gap={8}>
+            <BodyXSMonoSecondary>
+              {t('Balance').toUpperCase()}
+            </BodyXSMonoSecondary>
+            <Row $gap={6} $width='auto'>
+              <Body1>{userMockData.balance.toLocaleString()}</Body1>
+              <UsdcIcon width={iconSize} height={iconSize} />
+            </Row>
+          </Column>
+        </Card>
+      </PressableOpacity>
+
       <Row
         $gap={8}
         $padding={0}
