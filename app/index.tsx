@@ -5,7 +5,7 @@ import {
   Column,
   PrimaryButton,
   ScreenContainer,
-  SecondaryButton,
+  TertiaryButton,
   Title1,
 } from '@/components';
 import { useAppContext } from '@/contexts';
@@ -40,9 +40,9 @@ const Index = () => {
           <PrimaryButton onPress={() => setIsLoggedIn(true)}>
             {t('Sign up')}
           </PrimaryButton>
-          <SecondaryButton onPress={() => setIsLoggedIn(true)}>
+          <TertiaryButton onPress={() => setIsLoggedIn(true)}>
             {t('Login')}
-          </SecondaryButton>
+          </TertiaryButton>
         </Column>
       </Column>
     </ScreenContainer>

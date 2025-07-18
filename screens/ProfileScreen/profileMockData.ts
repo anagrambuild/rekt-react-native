@@ -1,0 +1,136 @@
+import mockPfp from '@/assets/images/mock-pngs/green-pfp.png';
+
+import type { TradeActivityCardProps } from './TradeActivityCard';
+
+export const userMockData = {
+  username: 'liamdig',
+  imgSrc: mockPfp,
+  balance: 28500,
+  points: 72000,
+  isProfit: true,
+  percentage: 28.5,
+};
+
+export interface DetailedTradeData extends TradeActivityCardProps {
+  entryPrice: number;
+  exitPrice: number;
+  entryTime: string;
+  exitTime: string;
+  duration: string;
+  profitAmount: number;
+}
+
+export const detailedTradeData: DetailedTradeData[] = [
+  {
+    type: 'long',
+    symbol: 'sol',
+    amount: 20,
+    leverage: 50,
+    percentage: 8.25,
+    isProfit: true,
+    entryPrice: 120.29,
+    exitPrice: 130.23,
+    entryTime: 'JAN 21, 2025 2:30 PM',
+    exitTime: 'JAN 21, 2025 2:33 PM',
+    duration: '3 MINS',
+    profitAmount: 80.0,
+  },
+  {
+    type: 'short',
+    symbol: 'btc',
+    amount: 100,
+    leverage: 2,
+    percentage: 10,
+    isProfit: true,
+    entryPrice: 45000,
+    exitPrice: 40500,
+    entryTime: 'JAN 20, 2025 1:15 PM',
+    exitTime: 'JAN 20, 2025 1:45 PM',
+    duration: '30 MINS',
+    profitAmount: 1000.0,
+  },
+  {
+    type: 'long',
+    symbol: 'eth',
+    amount: 250,
+    leverage: 3,
+    percentage: -5,
+    isProfit: false,
+    entryPrice: 2800,
+    exitPrice: 2660,
+    entryTime: 'JAN 19, 2025 3:20 PM',
+    exitTime: 'JAN 19, 2025 3:35 PM',
+    duration: '15 MINS',
+    profitAmount: -125.0,
+  },
+  {
+    type: 'short',
+    symbol: 'sol',
+    amount: 75,
+    leverage: 5,
+    percentage: 22,
+    isProfit: true,
+    entryPrice: 110.5,
+    exitPrice: 86.19,
+    entryTime: 'JAN 18, 2025 11:00 AM',
+    exitTime: 'JAN 18, 2025 11:12 AM',
+    duration: '12 MINS',
+    profitAmount: 165.0,
+  },
+  {
+    type: 'long',
+    symbol: 'btc',
+    amount: 180,
+    leverage: 1,
+    percentage: -8,
+    isProfit: false,
+    entryPrice: 42000,
+    exitPrice: 38640,
+    entryTime: 'JAN 17, 2025 9:30 AM',
+    exitTime: 'JAN 17, 2025 10:00 AM',
+    duration: '30 MINS',
+    profitAmount: -144.0,
+  },
+  {
+    type: 'short',
+    symbol: 'eth',
+    amount: 320,
+    leverage: 4,
+    percentage: 15,
+    isProfit: true,
+    entryPrice: 2600,
+    exitPrice: 2210,
+    entryTime: 'JAN 16, 2025 2:45 PM',
+    exitTime: 'JAN 16, 2025 3:00 PM',
+    duration: '15 MINS',
+    profitAmount: 480.0,
+  },
+  {
+    type: 'long',
+    symbol: 'sol',
+    amount: 60,
+    leverage: 2,
+    percentage: -3,
+    isProfit: false,
+    entryPrice: 125.0,
+    exitPrice: 121.25,
+    entryTime: 'JAN 15, 2025 4:10 PM',
+    exitTime: 'JAN 15, 2025 4:15 PM',
+    duration: '5 MINS',
+    profitAmount: -18.0,
+  },
+  {
+    type: 'short',
+    symbol: 'btc',
+    amount: 210,
+    leverage: 3,
+    percentage: 18,
+    isProfit: true,
+    entryPrice: 44000,
+    exitPrice: 36080,
+    entryTime: 'JAN 14, 2025 12:30 PM',
+    exitTime: 'JAN 14, 2025 1:00 PM',
+    duration: '30 MINS',
+    profitAmount: 378.0,
+  },
+];

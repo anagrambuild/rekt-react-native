@@ -1,13 +1,9 @@
-import { ImageSourcePropType } from 'react-native';
-
 import { BodyMSecondary } from '@/components';
 
-import { Image } from 'expo-image';
 import styled, { DefaultTheme } from 'styled-components/native';
 
 const Container = styled.View`
   flex-direction: row;
-  align-items: center;
   gap: 4px;
 `;
 
@@ -17,29 +13,20 @@ const StyledTokenChip = styled.View`
   gap: 4px;
   background-color: ${({ theme }: { theme: DefaultTheme }) =>
     theme.colors.backgroundSecondary};
-  padding: 4px 12px;
-  border-radius: 12px;
+  padding: 2px 12px 4px 0;
+  border-radius: 8px;
 `;
 
 interface TokenChipProps {
-  imgSrc: ImageSourcePropType;
+  Icon: React.ComponentType<{ width?: number; height?: number }>;
   value: string;
 }
 
-export const TokenChip = ({ imgSrc, value }: TokenChipProps) => {
+export const TokenChip = ({ Icon, value }: TokenChipProps) => {
   return (
     <Container>
-      <Image
-        source={imgSrc}
-        style={{
-          width: 28,
-          height: 28,
-          position: 'absolute',
-          left: -12,
-          zIndex: 1,
-        }}
-      />
-      <StyledTokenChip style={{ paddingStart: 20 }}>
+      <StyledTokenChip>
+        <Icon width={28} height={28} />
         <BodyMSecondary>{value}</BodyMSecondary>
       </StyledTokenChip>
     </Container>

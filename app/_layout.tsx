@@ -1,12 +1,11 @@
 import { I18nManager } from 'react-native';
 
 import { darkTheme, lightTheme } from '@/constants/theme';
-import { AppProvider, HomeProvider } from '@/contexts';
+import { AppProvider } from '@/contexts';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
 import {
   DarkTheme,
-  DefaultTheme,
   ThemeProvider as NavigationThemeProvider,
 } from '@react-navigation/native';
 
@@ -21,7 +20,8 @@ I18nManager.swapLeftAndRightInRTL(true);
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-  const navTheme = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
+  // const navTheme = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
+  const navTheme = DarkTheme;
   const styledTheme = colorScheme === 'dark' ? darkTheme : lightTheme;
 
   const [fontsLoaded] = useFonts({
@@ -37,13 +37,11 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <AppProvider>
-        <HomeProvider>
-          <NavigationThemeProvider value={navTheme}>
-            <StyledThemeProvider theme={styledTheme}>
-              <Stack screenOptions={{ headerShown: false }} />
-            </StyledThemeProvider>
-          </NavigationThemeProvider>
-        </HomeProvider>
+        <NavigationThemeProvider value={navTheme}>
+          <StyledThemeProvider theme={styledTheme}>
+            <Stack screenOptions={{ headerShown: false }} />
+          </StyledThemeProvider>
+        </NavigationThemeProvider>
       </AppProvider>
     </GestureHandlerRootView>
   );

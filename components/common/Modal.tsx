@@ -1,6 +1,14 @@
 import { KeyboardAvoidingView, Modal as RNModal, Platform } from 'react-native';
 
-import styled, { DefaultTheme } from 'styled-components/native';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+
+import { PressableOpacity } from './buttons';
+import {
+  Directions,
+  Gesture,
+  GestureDetector,
+} from 'react-native-gesture-handler';
+import styled, { DefaultTheme, useTheme } from 'styled-components/native';
 
 interface ModalProps {
   visible: boolean;
@@ -13,10 +21,16 @@ export const Modal: React.FC<ModalProps> = ({
   onRequestClose,
   children,
 }) => {
+  const theme = useTheme();
+  const flingDownGesture = Gesture.Fling()
+    .runOnJS(true)
+    .direction(Directions.DOWN)
+    .onStart(() => onRequestClose());
+
   return (
     <RNModal
       transparent
-      animationType='fade'
+      animationType='slide'
       visible={visible}
       onRequestClose={onRequestClose}
     >
@@ -25,7 +39,26 @@ export const Modal: React.FC<ModalProps> = ({
         style={{ flex: 1 }}
       >
         <Backdrop onPress={onRequestClose} testID='modal-backdrop' />
-        <ContentContainer>{children}</ContentContainer>
+        <BottomSheetContainer>
+          <GestureDetector gesture={flingDownGesture}>
+            <ContentContainer>
+              <HandleContainer>
+                {Platform.OS === 'ios' ? (
+                  <Handle />
+                ) : (
+                  <PressableOpacity onPress={onRequestClose}>
+                    <MaterialIcons
+                      name='close'
+                      size={18}
+                      color={theme.colors.textSecondary}
+                    />
+                  </PressableOpacity>
+                )}
+              </HandleContainer>
+              {children}
+            </ContentContainer>
+          </GestureDetector>
+        </BottomSheetContainer>
       </KeyboardAvoidingView>
     </RNModal>
   );
@@ -43,14 +76,36 @@ const Backdrop = styled.Pressable`
   z-index: 1;
 `;
 
+const BottomSheetContainer = styled.View`
+  flex: 1;
+  justify-content: flex-end;
+`;
+
 const ContentContainer = styled.View`
-  position: absolute;
-  top: 30%;
-  left: 20px;
-  right: 20px;
+  width: 100%;
   background-color: ${({ theme }: { theme: DefaultTheme }) =>
-    theme.colors.backgroundSecondary};
-  border-radius: 16px;
-  padding: 16px;
+    theme.colors.onPrimary};
+  border-radius: 16px 16px 0 0;
+  padding: 6px 24px 24px 24px;
   z-index: 2;
+  border-top-width: 1px;
+  border-top-color: ${({ theme }: { theme: DefaultTheme }) =>
+    theme.colors.border};
+  align-self: center;
+`;
+
+const HandleContainer = styled.View`
+  width: 100%;
+  align-self: center;
+  justify-content: center;
+  height: 24px;
+  margin-bottom: 12px;
+`;
+
+const Handle = styled.View`
+  width: 40px;
+  height: 4px;
+  background-color: ${({ theme }: { theme: DefaultTheme }) =>
+    theme.colors.border};
+  align-self: center;
 `;

@@ -9,44 +9,49 @@ interface ThemedButtonTextProps {
   theme: DefaultTheme;
 }
 
+interface ButtonProps extends React.ComponentProps<typeof PressableOpacity> {
+  icon?: React.ReactNode;
+}
+
 const sharedStyles = css`
   padding: 14px 32px;
   border-radius: 100px;
   align-items: center;
   justify-content: center;
   width: 100%;
+  flex-direction: row;
+  gap: 8px;
 `;
 
 const sharedTextStyles = css`
   font-size: 18px;
 `;
 
-// Primary BUTTON
+// PRIMARY BUTTON
 const StyledPrimaryButton = styled(PressableOpacity)`
   ${sharedStyles}
   background-color: ${({ theme }: ThemedButtonProps) =>
     theme.colors.textPrimary};
 `;
 
-const SigninButtonText = styled.Text`
+const PrimaryButtonText = styled.Text`
   color: ${({ theme }: ThemedButtonTextProps) => theme.colors.background};
   font-family: 'Geist';
   font-weight: 400;
   ${sharedTextStyles}
 `;
 
-export const PrimaryButton = (
-  props: React.ComponentProps<typeof PressableOpacity>
-) => (
+export const PrimaryButton = ({ icon, children, ...props }: ButtonProps) => (
   <StyledPrimaryButton {...props}>
-    <SigninButtonText>{props.children}</SigninButtonText>
+    {icon}
+    <PrimaryButtonText>{children}</PrimaryButtonText>
   </StyledPrimaryButton>
 );
 
-// LOGIN BUTTON
+// SECONDARY BUTTON
 const StyledSecondaryButton = styled(PressableOpacity)`
-  ${sharedStyles}/* background-color: ${({ theme }: ThemedButtonProps) =>
-    theme.colors.background}; */
+  ${sharedStyles}
+  background-color: ${({ theme }: ThemedButtonProps) => theme.colors.secondary};
 `;
 
 const SecondaryButtonText = styled.Text`
@@ -56,10 +61,22 @@ const SecondaryButtonText = styled.Text`
   ${sharedTextStyles}
 `;
 
-export const SecondaryButton = (
+export const SecondaryButton = ({ icon, children, ...props }: ButtonProps) => (
+  <StyledSecondaryButton {...props}>
+    {icon}
+    <SecondaryButtonText>{children}</SecondaryButtonText>
+  </StyledSecondaryButton>
+);
+
+// LOGIN BUTTON
+const StyledTertiaryButton = styled(PressableOpacity)`
+  ${sharedStyles}
+`;
+
+export const TertiaryButton = (
   props: React.ComponentProps<typeof PressableOpacity>
 ) => (
-  <StyledSecondaryButton {...props}>
+  <StyledTertiaryButton {...props}>
     <SecondaryButtonText>{props.children}</SecondaryButtonText>
-  </StyledSecondaryButton>
+  </StyledTertiaryButton>
 );

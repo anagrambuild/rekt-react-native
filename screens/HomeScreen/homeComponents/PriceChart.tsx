@@ -3,7 +3,7 @@ import { Dimensions, Pressable } from 'react-native';
 
 import rektBomb from '@/assets/images/app-pngs/rekt-bomb.png';
 import FlagIcon from '@/assets/images/app-svgs/flag.svg';
-import { BodyXSEmphasized, PulsatingContainer } from '@/components';
+import { BodyXSMonoEmphasized, PulsatingContainer } from '@/components';
 import { Trade, useHomeContext } from '@/contexts';
 
 import {
@@ -173,9 +173,11 @@ export const PriceChart = ({
                   right: 15,
                 }}
               >
-                <BodyXSEmphasized style={{ color: theme.colors.textSecondary }}>
+                <BodyXSMonoEmphasized
+                  style={{ color: theme.colors.textSecondary }}
+                >
                   {value.toFixed(0)}
-                </BodyXSEmphasized>
+                </BodyXSMonoEmphasized>
               </YAxisLabel>
             );
           })}

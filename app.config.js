@@ -90,6 +90,23 @@ module.exports = {
         },
       ],
       'expo-localization',
+      'expo-video',
+      [
+        'expo-image-picker',
+        {
+          photosPermission: 'This app needs access to your photo library to let you select and share profile pictures.',
+          cameraPermission: 'This app needs access to your camera to let you take profile pictures.',
+          microphonePermission: 'This app needs access to your microphone for video recording features.',
+        },
+      ],
+      [
+        'expo-camera',
+        {
+          cameraPermission: 'Allow $(PRODUCT_NAME) to access your camera',
+          microphonePermission: 'Allow $(PRODUCT_NAME) to access your microphone',
+          recordAudioAndroid: true,
+        },
+      ],
     ],
     experiments: {
       typedRoutes: true,

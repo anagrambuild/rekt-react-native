@@ -5,7 +5,7 @@ import styled, { DefaultTheme, useTheme } from 'styled-components/native';
 interface SegmentControlProps {
   Svg: React.ComponentType<any>;
   svgProps?: Record<string, any>;
-  label: string;
+  label?: string;
   selected: boolean;
   onPress?: () => void;
 }
@@ -16,7 +16,10 @@ export const SegmentContainer = styled.View<{ theme: DefaultTheme }>`
   background-color: ${({ theme }: { theme: DefaultTheme }) =>
     theme.colors.segmentedControl};
   border-radius: 100px;
-  padding: 4px;
+  padding: 1px;
+  border-bottom-width: 1px;
+  border-bottom-color: ${({ theme }: { theme: DefaultTheme }) =>
+    theme.colors.border};
 `;
 
 const SegmentButton = styled(PressableOpacity)<{
@@ -94,7 +97,7 @@ export const SegmentControl: React.FC<SegmentControlProps> = ({
       ]}
     >
       <Svg color={svgColor} size={20} {...svgProps} />
-      <SegmentLabel $selected={selected}>{label}</SegmentLabel>
+      {label && <SegmentLabel $selected={selected}>{label}</SegmentLabel>}
     </SegmentButton>
   );
 };

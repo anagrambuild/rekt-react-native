@@ -1,19 +1,16 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { TextInput } from 'react-native';
 
 import WalletIcon from '@/assets/images/app-svgs/wallet.svg';
 import {
   BodyMEmphasized,
   BodyS,
-  PressableOpacity,
   PrimaryButton,
   Row,
   ScrollRow,
 } from '@/components';
 import { Modal } from '@/components/common/Modal';
 import { useHomeContext } from '@/contexts/HomeContext';
-
-import MaterialIcon from '@expo/vector-icons/MaterialIcons';
 
 import { PresetButton } from './PresetButton';
 import { useTranslation } from 'react-i18next';
@@ -59,16 +56,6 @@ export const AmountModal = ({
   const initialAmount = String(amount);
   const [localAmount, setLocalAmount] = useState(initialAmount);
 
-  useEffect(() => {
-    if (visible) {
-      setLocalAmount(String(amount)); // Reset localAmount to current amount when modal opens
-      const timeout = setTimeout(() => {
-        inputRef.current?.focus();
-      }, 400);
-      return () => clearTimeout(timeout);
-    }
-  }, [visible, amount]);
-
   const onSetAmount = () => {
     const parsed = Number(localAmount);
     if (trade) {
@@ -87,15 +74,6 @@ export const AmountModal = ({
   return (
     <Modal visible={visible} onRequestClose={onClose}>
       <StyledSheetContainer>
-        <Row>
-          <PressableOpacity onPress={onClose}>
-            <MaterialIcon
-              name='keyboard-arrow-left'
-              size={32}
-              color={theme.colors.textSecondary}
-            />
-          </PressableOpacity>
-        </Row>
         <BodyMEmphasized>{t('Enter amount')}</BodyMEmphasized>
         <StyledInput
           ref={inputRef}
@@ -132,10 +110,9 @@ export const AmountModal = ({
 };
 
 const StyledSheetContainer = styled.View<any>`
-  flex: 1;
   align-items: center;
   justify-content: center;
-  background-color: ${(props: any) => props.theme.colors.backgroundSecondary};
+  background-color: ${(props: any) => props.theme.colors.onPrimary};
   padding: 12px 0px 0px 0px;
   gap: 16px;
 `;
