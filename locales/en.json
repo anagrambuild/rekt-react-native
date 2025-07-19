@@ -71,5 +71,14 @@
   "From Solana wallet": "From Solana wallet",
   "Card or Apple pay": "Card or Apple pay",
   "Instant and secure payment": "Instant and secure payment",
-  "Withdraw": "Withdraw"
+  "Withdraw": "Withdraw",
+  "Send USDC to this address on Solana": "Send USDC to this address on Solana",
+  "It can take up to a couple minutes to process.": "It can take up to a couple minutes to process.",
+  "Deposit address": "Deposit address",
+  "I have transferred": "I have transferred",
+  "Close": "Close",
+  "Thank you for depositing.": "Thank you for depositing.",
+  "It can take up to a couple minutes to process. Contact support if you run into any issues.": "It can take up to a couple minutes to process. Contact support if you run into any issues.",
+  "Contact Support": "Contact Support",
+  "Done": "Done"
 }
