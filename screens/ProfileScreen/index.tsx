@@ -16,6 +16,7 @@ import { detailedTradeData } from './profileMockData';
 import { TradeActivityModal } from './TradeAcivityModal';
 import { TradeActivityCard } from './TradeActivityCard';
 import { useTheme } from 'styled-components/native';
+import { Toast } from 'toastify-react-native';
 
 const screenPadding = 20;
 const paddingTop = Platform.OS === 'ios' ? 0 : 30;
@@ -32,7 +33,6 @@ export const ProfileScreen = () => {
     setSelectedTrade,
     userImage,
     userData,
-    handleLinkPress,
     isOnOffRampModalVisible,
   } = useProfileContext();
 
@@ -40,6 +40,10 @@ export const ProfileScreen = () => {
     const selectedTrade = detailedTradeData[index];
     setSelectedTrade(selectedTrade);
     setIsTradeActivityModalVisible(true);
+  };
+
+  const handleLinkPress = async () => {
+    Toast.success('Link pressed');
   };
 
   return (

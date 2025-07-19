@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Alert, Platform } from 'react-native';
 
 import UsdcIcon from '@/assets/images/app-svgs/usdc.svg';
 import WalletSecondaryIcon from '@/assets/images/app-svgs/wallet-secondary.svg';
@@ -25,6 +26,7 @@ import Octicons from '@expo/vector-icons/Octicons';
 import * as Clipboard from 'expo-clipboard';
 import { useTranslation } from 'react-i18next';
 import styled, { DefaultTheme, useTheme } from 'styled-components/native';
+import { Toast } from 'toastify-react-native';
 
 const address = '2iJwJUr8y8hepoFzZUTqhci52S1xnJPuFjAzT1VQBsst';
 
@@ -44,10 +46,23 @@ export const TransferIn = ({
 
   const copyToClipboard = async () => {
     await Clipboard.setStringAsync(address);
+
+    if (Platform.OS === 'android') {
+      Toast.show({
+        text1: t('Address copied to clipboard'),
+        type: 'success',
+        backgroundColor: theme.colors.card,
+        textColor: theme.colors.textPrimary,
+        progressBarColor: theme.colors.profit,
+        iconColor: theme.colors.profit,
+      });
+    } else {
+      Alert.alert(t('Address copied to clipboard'));
+    }
   };
 
   return (
-    <Column $gap={16} $alignItems='center' $padding={8}>
+    <Column $gap={16} $alignItems='center' $padding={4}>
       {/* Header Section */}
       <IconContainer onPress={handleBack}>
         <MaterialIcon
@@ -136,7 +151,7 @@ export const TransferIn = ({
 };
 
 const IconContainer = styled(PressableOpacity)`
-  padding: 16px 16px 0 0;
+  padding: 0px 16px 0 0;
   align-items: flex-start;
   width: 100%;
 `;

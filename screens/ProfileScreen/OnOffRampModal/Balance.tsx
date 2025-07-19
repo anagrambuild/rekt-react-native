@@ -1,6 +1,6 @@
 import coinIcon from '@/assets/images/app-pngs/coin.png';
 import UsdcIcon from '@/assets/images/app-svgs/usdc.svg';
-import WalletIcon from '@/assets/images/app-svgs/wallet.svg';
+import WalletSecondaryIcon from '@/assets/images/app-svgs/wallet-secondary.svg';
 import {
   BodyMEmphasized,
   BodyMSecondary,
@@ -45,7 +45,7 @@ export const Balance = ({
       {/* Header Section */}
       <Column $justifyContent='space-between' $alignItems='flex-start' $gap={8}>
         <IconContainer>
-          <WalletIcon
+          <WalletSecondaryIcon
             width={20}
             height={20}
             color={theme.colors.textSecondary}
