@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 
 import { highFireUrl, lowFireUrl, midFireUrl } from '@/assets/videos';
@@ -22,6 +22,7 @@ import { PriceChartCard } from '../HomeScreen/PriceChartCard';
 import { AmountCard } from './AmountCard';
 import { AmountModal } from './AmountModal';
 import { SliderCard } from './SliderCard';
+import * as Haptics from 'expo-haptics';
 import { router, Stack } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useTranslation } from 'react-i18next';
@@ -93,6 +94,21 @@ export const TradeScreen = () => {
   } else if (leverage > 50) {
     videoLevel = 'mid';
   }
+
+  // Haptic feedback on leverage increase
+  const prevLeverageRef = useRef(leverage);
+  useEffect(() => {
+    if (leverage > prevLeverageRef.current) {
+      if (leverage > 100) {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      } else if (leverage > 50) {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      } else {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
+    }
+    prevLeverageRef.current = leverage;
+  }, [leverage]);
 
   // Always call all three hooks
   const lowPlayer = useVideoPlayer(lowFireUrl, (player) => {
