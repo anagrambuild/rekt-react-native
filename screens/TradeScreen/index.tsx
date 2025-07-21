@@ -16,8 +16,9 @@ import { useHomeContext } from '@/contexts/HomeContext';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import MaterialIcon from '@expo/vector-icons/MaterialIcons';
 
-import { PerpSocialChip, PriceChartCard } from '../HomeScreen/homeComponents';
 import { perpSocials } from '../HomeScreen/mockData';
+import { PerpSocialChip } from '../HomeScreen/PerpSocialChip';
+import { PriceChartCard } from '../HomeScreen/PriceChartCard';
 import { AmountCard } from './AmountCard';
 import { AmountModal } from './AmountModal';
 import { SliderCard } from './SliderCard';
