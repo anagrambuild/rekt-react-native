@@ -13,6 +13,7 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ThemeProvider as StyledThemeProvider } from 'styled-components/native';
+import ToastManager from 'toastify-react-native';
 
 // Configure RTL support for languages like Arabic and Hebrew
 I18nManager.allowRTL(true);
@@ -40,6 +41,16 @@ export default function RootLayout() {
         <NavigationThemeProvider value={navTheme}>
           <StyledThemeProvider theme={styledTheme}>
             <Stack screenOptions={{ headerShown: false }} />
+            <ToastManager
+              position='top'
+              offsetTop={100}
+              useModal={true}
+              theme='dark'
+              backgroundColor={styledTheme.colors.card}
+              textColor={styledTheme.colors.textPrimary}
+              progressBarColor={styledTheme.colors.profit}
+              iconColor={styledTheme.colors.profit}
+            />
           </StyledThemeProvider>
         </NavigationThemeProvider>
       </AppProvider>

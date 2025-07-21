@@ -4,20 +4,19 @@ import BtcUnselected from '@/assets/images/app-svgs/btc-unselected.svg';
 import EthUnselected from '@/assets/images/app-svgs/eth-unselected.svg';
 import SolUnselected from '@/assets/images/app-svgs/sol-unselected.svg';
 import UsdcIcon from '@/assets/images/app-svgs/usdc.svg';
-import { Modal } from '@/components';
-import {
-  PrimaryButton,
-  SecondaryButton,
-} from '@/components/common/buttons/main-buttons';
-import { Card } from '@/components/common/Card';
-import { Column, Row } from '@/components/common/containers';
 import {
   Body1,
   BodyM,
   BodyS,
   BodyXSMono,
   BodyXSMonoSecondary,
-} from '@/components/common/texts';
+  Card,
+  Column,
+  Modal,
+  PrimaryButton,
+  Row,
+  SecondaryButton,
+} from '@/components';
 import { useHomeContext, useProfileContext } from '@/contexts';
 
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';

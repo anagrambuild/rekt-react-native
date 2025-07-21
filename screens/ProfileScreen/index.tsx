@@ -9,12 +9,14 @@ import { ActivityRow } from './ActivityRow';
 import { Avatar } from './Avatar';
 import { EditProfileModal } from './EditProfileModal';
 import { NoActivity } from './NoActivity';
+import { OnOffRampModal } from './OnOffRampModal';
 import { ProfileHeader } from './ProfileHeader';
 import { ProfileInfoCards } from './ProfileInfoCards';
 import { detailedTradeData } from './profileMockData';
 import { TradeActivityModal } from './TradeAcivityModal';
 import { TradeActivityCard } from './TradeActivityCard';
 import { useTheme } from 'styled-components/native';
+import { Toast } from 'toastify-react-native';
 
 const screenPadding = 20;
 const paddingTop = Platform.OS === 'ios' ? 0 : 30;
@@ -31,13 +33,17 @@ export const ProfileScreen = () => {
     setSelectedTrade,
     userImage,
     userData,
-    handleLinkPress,
+    isOnOffRampModalVisible,
   } = useProfileContext();
 
   const handleTradePress = (index: number) => {
     const selectedTrade = detailedTradeData[index];
     setSelectedTrade(selectedTrade);
     setIsTradeActivityModalVisible(true);
+  };
+
+  const handleLinkPress = async () => {
+    Toast.success('Link pressed');
   };
 
   return (
@@ -93,6 +99,7 @@ export const ProfileScreen = () => {
         />
       )}
       {isTradeActivityModalVisible && <TradeActivityModal />}
+      {isOnOffRampModalVisible && <OnOffRampModal />}
     </SafeAreaView>
   );
 };

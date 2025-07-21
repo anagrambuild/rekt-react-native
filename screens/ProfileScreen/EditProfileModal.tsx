@@ -2,19 +2,18 @@ import { useState } from 'react';
 import { Alert, Image, Keyboard } from 'react-native';
 
 import {
-  Modal,
-  PressableOpacity,
-  PrimaryButton,
-  SecondaryButton,
-} from '@/components';
-import { Card } from '@/components/common/Card';
-import { Column, Gap, Row } from '@/components/common/containers';
-import {
   BodyMSecondary,
   BodyS,
-  BodySEmphasized,
+  Card,
+  Column,
+  Gap,
+  Modal,
+  ModalIconButton,
+  PrimaryButton,
+  Row,
+  SecondaryButton,
   Title4,
-} from '@/components/common/texts';
+} from '@/components';
 import { useProfileContext } from '@/contexts';
 import { useImagePicker } from '@/hooks';
 
@@ -100,25 +99,32 @@ export const EditProfileModal = ({
                 <BodyMSecondary>{t('Max. size 5MB')}</BodyMSecondary>
                 <Gap height={12} />
                 {hasImage ? (
-                  <Button onPress={handleImageRemoval}>
-                    <MaterialIcon
-                      name='delete-outline'
-                      size={16}
-                      color={theme.colors.onSecondary}
-                    />
-                    <BodySEmphasized>{t('Remove')}</BodySEmphasized>
-                  </Button>
+                  <ModalIconButton
+                    onPress={handleImageRemoval}
+                    icon={
+                      <MaterialIcon
+                        name='delete-outline'
+                        size={16}
+                        color={theme.colors.onSecondary}
+                      />
+                    }
+                  >
+                    {t('Remove')}
+                  </ModalIconButton>
                 ) : (
-                  <Button onPress={handleImageUploadModal} disabled={isLoading}>
-                    <MaterialIcon
-                      name='upload'
-                      size={16}
-                      color={theme.colors.onSecondary}
-                    />
-                    <BodySEmphasized>
-                      {isLoading ? '...' : t('Upload')}
-                    </BodySEmphasized>
-                  </Button>
+                  <ModalIconButton
+                    onPress={handleImageUploadModal}
+                    disabled={isLoading}
+                    icon={
+                      <MaterialIcon
+                        name='upload'
+                        size={16}
+                        color={theme.colors.onSecondary}
+                      />
+                    }
+                  >
+                    {isLoading ? '...' : t('Upload')}
+                  </ModalIconButton>
                 )}
               </Column>
               <Image
@@ -177,20 +183,6 @@ export const EditProfileModal = ({
     </Modal>
   );
 };
-
-const Button = styled(PressableOpacity)<{ disabled?: boolean }>`
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  background-color: ${(props: any) =>
-    props.disabled
-      ? props.theme.colors.secondary + '80'
-      : props.theme.colors.secondary};
-  padding: 6px 12px;
-  border-radius: 100px;
-  opacity: ${(props: any) => (props.disabled ? 0.6 : 1)};
-`;
 
 const StyledInputContainer = styled.View`
   position: relative;
