@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Platform } from 'react-native';
+import { Alert, Linking, Platform } from 'react-native';
 
 import UsdcIcon from '@/assets/images/app-svgs/usdc.svg';
 import WalletSecondaryIcon from '@/assets/images/app-svgs/wallet-secondary.svg';
@@ -61,6 +61,10 @@ export const TransferIn = ({
     }
   };
 
+  const onContactSupport = () => {
+    Linking.openURL('mailto:timknapp12@gmail.com');
+  };
+
   return (
     <Column $gap={16} $alignItems='center' $padding={4}>
       {/* Header Section */}
@@ -92,7 +96,7 @@ export const TransferIn = ({
           </BodyMSecondary>
 
           {/* APY Section */}
-          <Card $padding={16} style={{ gap: 8 }}>
+          <Card $padding={8} style={{ gap: 8 }}>
             <Row $justifyContent='space-between'>
               <Row $gap={8} $width='auto'>
                 <WalletSecondaryIcon
@@ -104,7 +108,10 @@ export const TransferIn = ({
                   {t('Deposit address').toUpperCase()}
                 </BodyXSMonoSecondary>
               </Row>
-              <PressableOpacity onPress={copyToClipboard}>
+              <PressableOpacity
+                style={{ padding: 10 }}
+                onPress={copyToClipboard}
+              >
                 <Octicons
                   name='copy'
                   size={16}
@@ -140,7 +147,9 @@ export const TransferIn = ({
               'It can take up to a couple minutes to process. Contact support if you run into any issues.'
             )}
           </BodyMSecondary>
-          <SecondaryButton>{t('Contact Support')}</SecondaryButton>
+          <SecondaryButton onPress={onContactSupport}>
+            {t('Contact Support')}
+          </SecondaryButton>
           <TertiaryButton onPress={() => setIsOnOffRampModalVisible(false)}>
             {t('Done')}
           </TertiaryButton>
@@ -183,6 +192,6 @@ const AddressContainer = styled.View`
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 4px;
+  padding: 16px 8px;
   border-radius: 12px;
 `;

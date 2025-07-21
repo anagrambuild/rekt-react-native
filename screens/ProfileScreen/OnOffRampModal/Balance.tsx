@@ -37,7 +37,8 @@ export const Balance = ({
     setView('transfer');
   };
   const goToCard = () => {
-    setView('card');
+    // setView('card');
+    console.log('go to card');
   };
 
   return (
