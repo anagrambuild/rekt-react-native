@@ -6,13 +6,13 @@ import redArrow from '@/assets/images/app-pngs/red-arrow.png';
 import rektBomb from '@/assets/images/app-pngs/rekt-bomb.png';
 import wonCash from '@/assets/images/app-pngs/won-cash.png';
 import FireIcon from '@/assets/images/app-svgs/fire.svg';
-
 import {
   BodyMSecondary,
   BodySSecondary,
   Column,
   Row,
-} from '../../../components/common';
+} from '@/components/common';
+
 import { Image } from 'expo-image';
 import { useTranslation } from 'react-i18next';
 import styled, { DefaultTheme, useTheme } from 'styled-components/native';

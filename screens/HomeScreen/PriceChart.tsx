@@ -6,15 +6,15 @@ import FlagIcon from '@/assets/images/app-svgs/flag.svg';
 import { BodyXSMonoEmphasized, PulsatingContainer } from '@/components';
 import { Trade, useHomeContext } from '@/contexts';
 
+import { EmojiContainer } from './EmojiContainer';
+import { FloatingEmoji } from './FloatingEmoji';
 import {
   btcPriceData,
   currentPrices,
   ethPriceData,
   liquidationPrices,
   solPriceData,
-} from '../mockData';
-import { EmojiContainer } from './EmojiContainer';
-import { FloatingEmoji } from './FloatingEmoji';
+} from './mockData';
 import { Image } from 'expo-image';
 import { LineChart } from 'react-native-gifted-charts';
 import styled, { DefaultTheme, useTheme } from 'styled-components/native';

@@ -13,8 +13,8 @@ import {
 import { useHomeContext } from '@/contexts';
 import { Trade } from '@/contexts/HomeContext';
 
-import { liquidationPrices } from '../mockData';
 import { LongArrow, ShortArrow } from './long-short-buttons';
+import { liquidationPrices } from './mockData';
 import { Image } from 'expo-image';
 import { useTranslation } from 'react-i18next';
 import styled, { DefaultTheme, useTheme } from 'styled-components/native';
