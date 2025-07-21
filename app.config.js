@@ -83,9 +83,6 @@ module.exports = {
       [
         'expo-splash-screen',
         {
-          image: './assets/images/rekt-logo.png',
-          imageWidth: 200,
-          resizeMode: 'contain',
           backgroundColor: '#000000',
         },
       ],
@@ -94,16 +91,20 @@ module.exports = {
       [
         'expo-image-picker',
         {
-          photosPermission: 'This app needs access to your photo library to let you select and share profile pictures.',
-          cameraPermission: 'This app needs access to your camera to let you take profile pictures.',
-          microphonePermission: 'This app needs access to your microphone for video recording features.',
+          photosPermission:
+            'This app needs access to your photo library to let you select and share profile pictures.',
+          cameraPermission:
+            'This app needs access to your camera to let you take profile pictures.',
+          microphonePermission:
+            'This app needs access to your microphone for video recording features.',
         },
       ],
       [
         'expo-camera',
         {
           cameraPermission: 'Allow $(PRODUCT_NAME) to access your camera',
-          microphonePermission: 'Allow $(PRODUCT_NAME) to access your microphone',
+          microphonePermission:
+            'Allow $(PRODUCT_NAME) to access your microphone',
           recordAudioAndroid: true,
         },
       ],

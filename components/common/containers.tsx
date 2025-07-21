@@ -1,10 +1,4 @@
-import {
-  Platform,
-  SafeAreaView,
-  ScrollView,
-  StyleProp,
-  ViewStyle,
-} from 'react-native';
+import { Platform, ScrollView, StyleProp, ViewStyle } from 'react-native';
 
 import styled, { DefaultTheme } from 'styled-components/native';
 
@@ -14,9 +8,9 @@ interface StyledSafeAreaViewProps {
 }
 
 const screenPadding = 20;
-const paddingTop = Platform.OS === 'ios' ? 0 : 30;
+const paddingTop = Platform.OS === 'ios' ? 30 : 20;
 
-const StyledSafeAreaView = styled(SafeAreaView)<StyledSafeAreaViewProps>`
+const StyledSafeAreaView = styled.View<StyledSafeAreaViewProps>`
   flex: 1;
   width: 100%;
   background-color: ${({ theme }: StyledSafeAreaViewProps) =>
@@ -40,11 +34,13 @@ export const ScreenContainer = ({
   alignItems = 'center',
   justifyContent = 'space-between',
   contentContainerStyle,
+  noPadding = false,
 }: {
   children: React.ReactNode;
   alignItems?: string;
   justifyContent?: string;
   contentContainerStyle?: StyleProp<ViewStyle>;
+  noPadding?: boolean;
 }) => {
   return (
     <StyledSafeAreaView>
@@ -53,8 +49,8 @@ export const ScreenContainer = ({
         alwaysBounceVertical={false} // Prevents vertical bouncing
         alwaysBounceHorizontal={false} // Prevents horizontal bouncing (if needed)
         showsVerticalScrollIndicator={false}
-        $padding={screenPadding}
-        $marginTop={paddingTop}
+        $padding={noPadding ? 0 : screenPadding}
+        $marginTop={noPadding ? 0 : paddingTop}
         contentContainerStyle={{
           justifyContent: justifyContent,
           alignItems: alignItems,

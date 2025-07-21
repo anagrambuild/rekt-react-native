@@ -67,8 +67,8 @@ export const gradientGreen = '#00ED82';
 export const gradientGreenGlow = '#23F350';
 
 // --- Designer's Dark Theme Colors ---
-export const bg = '#09090B';
-export const bgDepressed = black;
+export const bg = black;
+export const bgDepressed = '#09090B';
 export const card = '#121216';
 export const cardEmphasized = '#19191F';
 export const brand = '#FF5527'; // #FF5527
