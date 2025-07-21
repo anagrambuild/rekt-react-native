@@ -1,27 +1,17 @@
 import PointsIcon from '@/assets/images/app-svgs/points.svg';
 import UsdcIcon from '@/assets/images/app-svgs/usdc.svg';
 import RektLogo from '@/assets/images/rekt-logo.svg';
-import {
-  Column,
-  Gap,
-  Row,
-  ScreenContainer,
-  ScrollRow,
-  Title4,
-} from '@/components';
-import { useHomeContext } from '@/contexts';
 
 import { usePreventRemove } from '@react-navigation/native';
 
-import {
-  LongButton,
-  PerpSocialChip,
-  PriceChartCard,
-  ShortButton,
-  TokenChip,
-} from './homeComponents';
-import { LiveTradeView } from './homeComponents/LiveTradeView';
+import { Column, Gap, Row, ScreenContainer, Title4 } from '../../components';
+import { useHomeContext } from '../../contexts';
+import { AnimatedBannerRow } from './AnimatedBannerRow';
+import { LiveTradeView } from './LiveTradeView';
+import { LongButton, ShortButton } from './long-short-buttons';
 import { perpSocials } from './mockData';
+import { PriceChartCard } from './PriceChartCard';
+import { TokenChip } from './TokenChip';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
@@ -77,17 +67,7 @@ export const HomeScreen = () => {
             </Row>
           </Row>
 
-          <ScrollRow contentContainerStyle={{ gap: 16 }}>
-            {perpSocials.map((perpSocial) => (
-              <PerpSocialChip
-                key={perpSocial.id}
-                imgSrc={perpSocial.imgSrc}
-                position={perpSocial.position}
-                meta={perpSocial.meta}
-                earningMultiple={perpSocial.earningMultiple}
-              />
-            ))}
-          </ScrollRow>
+          <AnimatedBannerRow items={perpSocials} />
         </Column>
 
         <PriceChartCard showLiquidation={!!isActiveTrade} />
