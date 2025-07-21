@@ -80,12 +80,6 @@ module.exports = {
     },
     plugins: [
       'expo-router',
-      [
-        'expo-splash-screen',
-        {
-          backgroundColor: '#000000',
-        },
-      ],
       'expo-localization',
       'expo-video',
       [
@@ -109,6 +103,9 @@ module.exports = {
         },
       ],
     ],
+    splash: {
+      backgroundColor: '#000000',
+    },
     experiments: {
       typedRoutes: true,
     },
