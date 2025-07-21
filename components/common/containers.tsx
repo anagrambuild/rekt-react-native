@@ -3,17 +3,17 @@ import { Platform, ScrollView, StyleProp, ViewStyle } from 'react-native';
 import styled, { DefaultTheme } from 'styled-components/native';
 
 // Screen Container
-interface StyledSafeAreaViewProps {
+interface StyledAreaViewProps {
   theme: DefaultTheme;
 }
 
 const screenPadding = 20;
 const paddingTop = Platform.OS === 'ios' ? 30 : 20;
 
-const StyledSafeAreaView = styled.View<StyledSafeAreaViewProps>`
+const StyledAreaView = styled.View<StyledAreaViewProps>`
   flex: 1;
   width: 100%;
-  background-color: ${({ theme }: StyledSafeAreaViewProps) =>
+  background-color: ${({ theme }: StyledAreaViewProps) =>
     theme.colors.background};
 `;
 
@@ -34,16 +34,18 @@ export const ScreenContainer = ({
   alignItems = 'center',
   justifyContent = 'space-between',
   contentContainerStyle,
+  style,
   noPadding = false,
 }: {
   children: React.ReactNode;
   alignItems?: string;
   justifyContent?: string;
   contentContainerStyle?: StyleProp<ViewStyle>;
+  style?: StyleProp<ViewStyle>;
   noPadding?: boolean;
 }) => {
   return (
-    <StyledSafeAreaView>
+    <StyledAreaView style={style}>
       <StyledScrollView
         bounces={false} // Disables bouncing on iOS
         alwaysBounceVertical={false} // Prevents vertical bouncing
@@ -60,7 +62,7 @@ export const ScreenContainer = ({
       >
         {children}
       </StyledScrollView>
-    </StyledSafeAreaView>
+    </StyledAreaView>
   );
 };
 

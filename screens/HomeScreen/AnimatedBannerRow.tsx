@@ -61,6 +61,5 @@ const BannerRowContainer = styled(View)`
   width: 100%;
   overflow: hidden;
   margin: 12px 0;
-  min-height: 56px;
   justify-content: center;
 `;
