@@ -3,7 +3,7 @@ import greenPfp from '@/assets/images/mock-pngs/green-pfp.png';
 import orangePfp from '@/assets/images/mock-pngs/orange-pfp.png';
 import pinkPfp from '@/assets/images/mock-pngs/pink-pfp.png';
 
-import type { PerpPosition } from './homeComponents/PerpSocialChip';
+import type { PerpPosition } from './PerpSocialChip';
 
 export const perpSocials: {
   id: number;

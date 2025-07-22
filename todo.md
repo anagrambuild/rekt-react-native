@@ -32,5 +32,4 @@ Liam's feedback:
   - don't allow swipeback on screens - refactor home tabs/stack
 
 - Profile screen
-  - add video instead of plus button for avatar upload
   - profile modal - add a fling gesture to close it
