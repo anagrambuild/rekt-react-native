@@ -100,11 +100,11 @@ export const TradeScreen = () => {
   useEffect(() => {
     if (leverage > prevLeverageRef.current) {
       if (leverage > 100) {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       } else if (leverage > 50) {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       } else {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
     }
     prevLeverageRef.current = leverage;
@@ -134,82 +134,97 @@ export const TradeScreen = () => {
   }
 
   return (
-    <View style={{ flex: 1, position: 'relative' }}>
-      {/* Only render the active video */}
+    <>
+      {/* Render the background video absolutely at the bottom half of the screen */}
       <VideoView
         player={player}
         style={{
-          width: '100%',
-          height: '50%',
-          zIndex: -1,
           position: 'absolute',
           left: 0,
-          bottom: 0,
           right: 0,
+          bottom: 0,
+          width: '100%',
+          height: '50%',
         }}
+        pointerEvents='none'
       />
-      <Stack.Screen options={{ headerShown: false }} />
-      <ScreenContainer
-        // alignItems='stretch'
-        // justifyContent='flex-start'
-        style={{ height: '100%', backgroundColor: 'transparent' }}
-        noPadding
-        contentContainerStyle={{ position: 'relative' }}
-      >
-        <Column $padding={16} $gap={12} style={{ height: '100%' }}>
-          <Column>
-            <Row>
-              <PressableOpacity onPress={() => router.back()}>
-                <MaterialIcon
-                  name='keyboard-arrow-left'
-                  size={32}
-                  color={theme.colors.textSecondary}
-                />
-              </PressableOpacity>
-              <SegmentContainer>
-                <SegmentControl
-                  Svg={MaterialCommunityIcons}
-                  svgProps={{
-                    name: 'arrow-bottom-right-thin-circle-outline',
-                  }}
-                  label={t('Short')}
-                  selected={tradeSide === 'short'}
-                  onPress={() => setTradeSide('short')}
-                />
-                <SegmentControl
-                  Svg={MaterialCommunityIcons}
-                  svgProps={{ name: 'arrow-top-right-thin-circle-outline' }}
-                  label={t('Long')}
-                  selected={tradeSide === 'long'}
-                  onPress={() => setTradeSide('long')}
-                />
-              </SegmentContainer>
-              <View style={{ width: 32 }} />
-            </Row>
+      <View style={{ flex: 1, position: 'relative' }}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <ScreenContainer
+          style={{ height: '100%', backgroundColor: 'transparent' }}
+          noPadding
+          contentContainerStyle={{
+            position: 'relative',
+            paddingBottom: 80,
+            marginTop: 50,
+          }}
+        >
+          <Column $padding={16} $gap={12} style={{ height: '100%' }}>
+            <Column>
+              <Row>
+                <PressableOpacity onPress={() => router.back()}>
+                  <MaterialIcon
+                    name='keyboard-arrow-left'
+                    size={32}
+                    color={theme.colors.textSecondary}
+                  />
+                </PressableOpacity>
+                <SegmentContainer>
+                  <SegmentControl
+                    Svg={MaterialCommunityIcons}
+                    svgProps={{
+                      name: 'arrow-bottom-right-thin-circle-outline',
+                    }}
+                    label={t('Short')}
+                    selected={tradeSide === 'short'}
+                    onPress={() => setTradeSide('short')}
+                  />
+                  <SegmentControl
+                    Svg={MaterialCommunityIcons}
+                    svgProps={{ name: 'arrow-top-right-thin-circle-outline' }}
+                    label={t('Long')}
+                    selected={tradeSide === 'long'}
+                    onPress={() => setTradeSide('long')}
+                  />
+                </SegmentContainer>
+                <View style={{ width: 32 }} />
+              </Row>
 
-            <AnimatedBannerRow items={perpSocials} />
+              <AnimatedBannerRow items={perpSocials} />
 
-            <PriceChartCard showLiquidation={true} />
+              <PriceChartCard showLiquidation={true} />
+            </Column>
+            <Column $gap={4}>
+              <AmountCard setAmountModalVisible={setAmountModalVisible} />
+              <SliderCard />
+            </Column>
           </Column>
-          <Column $gap={4}>
-            <AmountCard setAmountModalVisible={setAmountModalVisible} />
-            <SliderCard />
-          </Column>
-        </Column>
-        <Column style={{ paddingStart: 16, paddingEnd: 16 }}>
+        </ScreenContainer>
+        {/* Button container absolutely positioned above the video area */}
+        <View
+          style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            paddingHorizontal: 16,
+            paddingBottom: 24,
+            zIndex: 10,
+          }}
+        >
           <PrimaryButton onPress={handleTrade}>
             {`${tradeSide.charAt(0).toUpperCase()}${tradeSide.slice(
               1
             )} ${selectedToken.toUpperCase()}`}
           </PrimaryButton>
-        </Column>
-      </ScreenContainer>
-      {amountPopupVisible && (
-        <AmountModal
-          visible={amountPopupVisible}
-          onClose={() => setAmountModalVisible(false)}
-        />
-      )}
-    </View>
+        </View>
+        {amountPopupVisible && (
+          <AmountModal
+            visible={amountPopupVisible}
+            onClose={() => setAmountModalVisible(false)}
+          />
+        )}
+      </View>
+    </>
   );
 };
