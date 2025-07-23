@@ -10,6 +10,7 @@ let packageName = 'com.anagramxyz.rektreactnative';
 let bundleIdentifier = 'com.anagramxyz.rektreactnative';
 let scheme = 'rektreactnative';
 let env = 'development';
+let solanaNetwork = 'solana:devnet';
 
 // Preview settings
 if (process.env.DEPLOY_ENVIRONMENT === 'preview') {
@@ -23,6 +24,7 @@ if (process.env.DEPLOY_ENVIRONMENT === 'preview') {
   bundleIdentifier = 'com.anagramxyz.rektreactnativepreview';
   scheme = 'rektreactnativepreview';
   env = 'preview';
+  solanaNetwork = 'solana:devnet';
 }
 
 // Example: override for production
@@ -37,7 +39,8 @@ if (process.env.DEPLOY_ENVIRONMENT === 'production') {
   // packageName = 'com.anagramxyz.rektreactnativeprod';
   // bundleIdentifier = 'com.anagramxyz.rektreactnativeprod';
   // scheme = 'rektreactnativeprod';
-  // env = 'production';
+  env = 'production';
+  solanaNetwork = 'solana:mainnet-beta';
 }
 
 module.exports = {
@@ -63,6 +66,15 @@ module.exports = {
       bundleIdentifier,
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
+        LSApplicationQueriesSchemes: [
+          'phantom',
+          'solflare',
+          'backpack',
+          'exodus',
+          'trust',
+          'coinbase',
+          'metamask',
+        ],
       },
     },
     android: {
@@ -115,6 +127,7 @@ module.exports = {
         projectId: easProjectId,
       },
       env,
+      solanaNetwork,
     },
   },
 };
