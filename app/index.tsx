@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing } from 'react-native';
 
 import RektLogo from '@/assets/images/rekt-logo.svg';
@@ -8,8 +8,10 @@ import {
   PrimaryButton,
   ScreenContainer,
   TertiaryButton,
+  WalletConnectionModal,
 } from '@/components';
-import { useAppContext } from '@/contexts';
+import { useAppContext, useWallet } from '@/contexts';
+import { LoadingScreen } from '@/screens';
 
 import { router } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
@@ -18,13 +20,42 @@ import styled, { DefaultTheme } from 'styled-components/native';
 
 const Index = () => {
   const { isLoggedIn, setIsLoggedIn } = useAppContext();
+  const {
+    connect,
+    connecting,
+    connected,
+    showWalletModal,
+    setShowWalletModal,
+  } = useWallet();
   const { t } = useTranslation();
+  const [isCheckingConnection, setIsCheckingConnection] = useState(true);
+  // Initial connection check - give some time for persistent state to load
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsCheckingConnection(false);
+    }, 500); // Short delay to allow persistent state to be checked
+
+    return () => clearTimeout(timer);
+  }, []);
+
   // Function to check if user is logged in and redirect
   useEffect(() => {
     if (isLoggedIn) {
       router.replace('/(tabs)');
     }
   }, [isLoggedIn]);
+
+  // Handle wallet connection success
+  useEffect(() => {
+    if (connected) {
+      // Show loading for a brief moment to smooth the transition
+      setIsCheckingConnection(true);
+      setTimeout(() => {
+        setIsLoggedIn(true);
+        setIsCheckingConnection(false);
+      }, 800); // Brief delay for smooth transition
+    }
+  }, [connected, setIsLoggedIn]);
 
   const player = useVideoPlayer(midFireUrl, (player) => {
     player.loop = true;
@@ -72,6 +103,11 @@ const Index = () => {
     };
   }, [scaleAnim, translateYAnim, welcomeOpacity]);
 
+  // Show loading screen while checking connection or connecting
+  if (isCheckingConnection || connecting) {
+    return <LoadingScreen />;
+  }
+
   return (
     <ScreenContainer
       alignItems='stretch'
@@ -99,15 +135,19 @@ const Index = () => {
           </AnimatedTitle1>
         </Column>
         <AnimatedButtonsContainer style={{ opacity: welcomeOpacity }}>
-          <PrimaryButton onPress={() => setIsLoggedIn(true)}>
-            {t('Sign up')}
+          <PrimaryButton onPress={connect} disabled={connecting}>
+            {connecting ? t('Connecting...') : t('Sign up with wallet')}
           </PrimaryButton>
-          <TertiaryButton onPress={() => setIsLoggedIn(true)}>
-            {t('Login')}
+          <TertiaryButton onPress={connect} disabled={connecting}>
+            {connecting ? t('Connecting...') : t('Login')}
           </TertiaryButton>
         </AnimatedButtonsContainer>
         <VideoView player={player} style={{ width: '100%', height: '50%' }} />
       </Column>
+      <WalletConnectionModal
+        visible={showWalletModal}
+        onRequestClose={() => setShowWalletModal(false)}
+      />
     </ScreenContainer>
   );
 };

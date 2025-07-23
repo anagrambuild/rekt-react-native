@@ -1,7 +1,7 @@
 import { I18nManager } from 'react-native';
 
 import { darkTheme, lightTheme } from '@/constants/theme';
-import { AppProvider } from '@/contexts';
+import { AppProvider, WalletProvider } from '@/contexts';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
 import {
@@ -9,6 +9,7 @@ import {
   ThemeProvider as NavigationThemeProvider,
 } from '@react-navigation/native';
 
+import '../polyfills';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -38,21 +39,23 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <AppProvider>
-        <NavigationThemeProvider value={navTheme}>
-          <StyledThemeProvider theme={styledTheme}>
-            <Stack screenOptions={{ headerShown: false }} />
-            <ToastManager
-              position='top'
-              offsetTop={100}
-              useModal={true}
-              theme='dark'
-              backgroundColor={styledTheme.colors.card}
-              textColor={styledTheme.colors.textPrimary}
-              progressBarColor={styledTheme.colors.profit}
-              iconColor={styledTheme.colors.profit}
-            />
-          </StyledThemeProvider>
-        </NavigationThemeProvider>
+        <WalletProvider>
+          <NavigationThemeProvider value={navTheme}>
+            <StyledThemeProvider theme={styledTheme}>
+              <Stack screenOptions={{ headerShown: false }} />
+              <ToastManager
+                position='top'
+                offsetTop={100}
+                useModal={true}
+                theme='dark'
+                backgroundColor={styledTheme.colors.card}
+                textColor={styledTheme.colors.textPrimary}
+                progressBarColor={styledTheme.colors.profit}
+                iconColor={styledTheme.colors.profit}
+              />
+            </StyledThemeProvider>
+          </NavigationThemeProvider>
+        </WalletProvider>
       </AppProvider>
     </GestureHandlerRootView>
   );
