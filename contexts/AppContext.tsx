@@ -12,6 +12,7 @@ import { AppState } from 'react-native';
 import { detectLanguage, initializeI18n } from '../i18n';
 import { HomeProvider } from './HomeContext';
 import { ProfileProvider } from './ProfileContext';
+import { WalletProvider } from './WalletContext';
 
 type SignUpFormData = {
   username: string;
@@ -38,7 +39,12 @@ export const AppContext = createContext<AppContextType>({
   currentLanguage: 'en',
   showSignUpForm: false,
   setShowSignUpForm: () => {},
-  signUpForm: { username: '', email: '', profileImage: null, enableBiometrics: false },
+  signUpForm: {
+    username: '',
+    email: '',
+    profileImage: null,
+    enableBiometrics: false,
+  },
   setSignUpForm: () => {},
 });
 
@@ -88,10 +94,10 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <AppContext.Provider
-      value={{ 
-        isLoggedIn, 
-        setIsLoggedIn, 
-        i18nReady, 
+      value={{
+        isLoggedIn,
+        setIsLoggedIn,
+        i18nReady,
         currentLanguage,
         showSignUpForm,
         setShowSignUpForm,
@@ -99,9 +105,11 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         setSignUpForm,
       }}
     >
-      <ProfileProvider>
-        <HomeProvider>{children}</HomeProvider>
-      </ProfileProvider>
+      <WalletProvider>
+        <ProfileProvider>
+          <HomeProvider>{children}</HomeProvider>
+        </ProfileProvider>
+      </WalletProvider>
     </AppContext.Provider>
   );
 };
