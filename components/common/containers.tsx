@@ -82,6 +82,7 @@ interface ColumnProps {
   $justifyContent?: string;
   $padding?: number;
   $width?: number | string;
+  $height?: number | string;
   style?: StyleProp<ViewStyle>;
   theme: DefaultTheme;
 }
@@ -89,6 +90,7 @@ interface ColumnProps {
 export const Column = styled.View<ColumnProps>`
   flex-direction: column;
   width: ${({ $width }: ColumnProps) => $width || '100%'};
+  height: ${({ $height }: ColumnProps) => $height || 'auto'};
   gap: ${({ $gap }: ColumnProps) => $gap || 0}px;
   align-items: ${({ $alignItems }: ColumnProps) => $alignItems || 'center'};
   justify-content: ${({ $justifyContent }: ColumnProps) =>
