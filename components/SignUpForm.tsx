@@ -174,7 +174,7 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
         </Column>
 
         {/* Submit Button */}
-        <PrimaryButton onPress={handleSubmit}>
+        <PrimaryButton onPress={handleSubmit} disabled={!!usernameError}>
           {t('Complete Sign Up')}
         </PrimaryButton>
       </Column>
