@@ -28,10 +28,15 @@ const sharedTextStyles = css`
 `;
 
 // PRIMARY BUTTON
-const StyledPrimaryButton = styled(PressableOpacity)`
+const StyledPrimaryButton = styled(PressableOpacity)<{ disabled?: boolean }>`
   ${sharedStyles}
-  background-color: ${({ theme }: ThemedButtonProps) =>
-    theme.colors.textPrimary};
+  background-color: ${({
+    theme,
+    disabled,
+  }: ThemedButtonProps & { disabled?: boolean }) =>
+    disabled ? theme.colors.disabled : theme.colors.textPrimary};
+  opacity: ${({ disabled = false }: { disabled?: boolean }) =>
+    disabled ? 0.8 : 1};
 `;
 
 const PrimaryButtonText = styled.Text`
@@ -49,9 +54,15 @@ export const PrimaryButton = ({ icon, children, ...props }: ButtonProps) => (
 );
 
 // SECONDARY BUTTON
-const StyledSecondaryButton = styled(PressableOpacity)`
+const StyledSecondaryButton = styled(PressableOpacity)<{ disabled?: boolean }>`
   ${sharedStyles}
-  background-color: ${({ theme }: ThemedButtonProps) => theme.colors.secondary};
+  background-color: ${({
+    theme,
+    disabled,
+  }: ThemedButtonProps & { disabled?: boolean }) =>
+    disabled ? theme.colors.disabled : theme.colors.secondary};
+  opacity: ${({ disabled = false }: { disabled?: boolean }) =>
+    disabled ? 0.8 : 1};
 `;
 
 const SecondaryButtonText = styled.Text`

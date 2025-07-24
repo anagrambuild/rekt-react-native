@@ -7,6 +7,7 @@ import {
   Column,
   PrimaryButton,
   ScreenContainer,
+  SignUpForm,
   TertiaryButton,
   WalletConnectionModal,
 } from '@/components';
@@ -19,7 +20,8 @@ import { useTranslation } from 'react-i18next';
 import styled, { DefaultTheme } from 'styled-components/native';
 
 const Index = () => {
-  const { isLoggedIn, setIsLoggedIn } = useAppContext();
+  const { isLoggedIn, setIsLoggedIn, showSignUpForm, setShowSignUpForm } =
+    useAppContext();
   const {
     connect,
     connecting,
@@ -29,6 +31,11 @@ const Index = () => {
   } = useWallet();
   const { t } = useTranslation();
   const [isCheckingConnection, setIsCheckingConnection] = useState(true);
+
+  const handleSignUpComplete = () => {
+    setIsLoggedIn(true);
+    setShowSignUpForm(false);
+  };
   // Initial connection check - give some time for persistent state to load
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -51,11 +58,11 @@ const Index = () => {
       // Show loading for a brief moment to smooth the transition
       setIsCheckingConnection(true);
       setTimeout(() => {
-        setIsLoggedIn(true);
+        setShowSignUpForm(true);
         setIsCheckingConnection(false);
       }, 800); // Brief delay for smooth transition
     }
-  }, [connected, setIsLoggedIn]);
+  }, [connected, setShowSignUpForm]);
 
   const player = useVideoPlayer(midFireUrl, (player) => {
     player.loop = true;
@@ -106,6 +113,37 @@ const Index = () => {
   // Show loading screen while checking connection or connecting
   if (isCheckingConnection || connecting) {
     return <LoadingScreen />;
+  }
+
+  // Show sign-up form after wallet connection
+  if (showSignUpForm) {
+    return (
+      <ScreenContainer
+        alignItems='stretch'
+        justifyContent='flex-start'
+        contentContainerStyle={{ flex: 1 }}
+      >
+        <Column
+          $width='100%'
+          $justifyContent='space-between'
+          $height='100%'
+          $padding={0}
+        >
+          <Column
+            $width='100%'
+            $padding={16}
+            $justifyContent='space-between'
+            $alignItems='center'
+          >
+            <RektLogo width={80} height={80} />
+            <AnimatedTitle1 style={{ textAlign: 'center' }}>
+              {t('Complete Your Profile')}
+            </AnimatedTitle1>
+          </Column>
+          <SignUpForm onComplete={handleSignUpComplete} />
+        </Column>
+      </ScreenContainer>
+    );
   }
 
   return (

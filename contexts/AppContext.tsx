@@ -13,11 +13,22 @@ import { detectLanguage, initializeI18n } from '../i18n';
 import { HomeProvider } from './HomeContext';
 import { ProfileProvider } from './ProfileContext';
 
+type SignUpFormData = {
+  username: string;
+  email: string;
+  profileImage: string | null;
+  enableBiometrics: boolean;
+};
+
 type AppContextType = {
   isLoggedIn: boolean;
   setIsLoggedIn: Dispatch<SetStateAction<boolean>>;
   i18nReady: boolean;
   currentLanguage: string;
+  showSignUpForm: boolean;
+  setShowSignUpForm: Dispatch<SetStateAction<boolean>>;
+  signUpForm: SignUpFormData;
+  setSignUpForm: Dispatch<SetStateAction<SignUpFormData>>;
 };
 
 export const AppContext = createContext<AppContextType>({
@@ -25,12 +36,23 @@ export const AppContext = createContext<AppContextType>({
   setIsLoggedIn: () => {},
   i18nReady: false,
   currentLanguage: 'en',
+  showSignUpForm: false,
+  setShowSignUpForm: () => {},
+  signUpForm: { username: '', email: '', profileImage: null, enableBiometrics: false },
+  setSignUpForm: () => {},
 });
 
 export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [i18nReady, setI18nReady] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState('en');
+  const [showSignUpForm, setShowSignUpForm] = useState(false);
+  const [signUpForm, setSignUpForm] = useState<SignUpFormData>({
+    username: '',
+    email: '',
+    profileImage: null,
+    enableBiometrics: false,
+  });
   const appState = useRef(AppState.currentState);
 
   useEffect(() => {
@@ -66,7 +88,16 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <AppContext.Provider
-      value={{ isLoggedIn, setIsLoggedIn, i18nReady, currentLanguage }}
+      value={{ 
+        isLoggedIn, 
+        setIsLoggedIn, 
+        i18nReady, 
+        currentLanguage,
+        showSignUpForm,
+        setShowSignUpForm,
+        signUpForm,
+        setSignUpForm,
+      }}
     >
       <ProfileProvider>
         <HomeProvider>{children}</HomeProvider>

@@ -114,6 +114,12 @@ module.exports = {
           recordAudioAndroid: true,
         },
       ],
+      [
+        'expo-local-authentication',
+        {
+          faceIDPermission: 'Allow $(PRODUCT_NAME) to use Face ID for secure authentication.',
+        },
+      ],
     ],
     splash: {
       backgroundColor: '#000000',

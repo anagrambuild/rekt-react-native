@@ -99,5 +99,21 @@
   "Please connect your wallet in {{walletName}} and return to the app": "Please connect your wallet in {{walletName}} and return to the app",
   "{{walletName}} Not Found": "{{walletName}} Not Found",
   "Please install {{walletName}} from the App Store": "Please install {{walletName}} from the App Store",
-  "Invalid wallet address": "Invalid wallet address"
+  "Invalid wallet address": "Invalid wallet address",
+  "Complete Your Profile": "Complete Your Profile",
+  "Upload Photo": "Upload Photo",
+  "Email Address": "Email Address",
+  "Enter your email (optional)": "Enter your email (optional)",
+  "Username is required": "Username is required",
+  "Complete Sign Up": "Complete Sign Up",
+  "Unable to access camera": "Unable to access camera",
+  "Unable to access photo library": "Unable to access photo library",
+  "Enable {{biometricType}}": "Enable {{biometricType}}",
+  "Use {{biometricType}} to unlock the app": "Use {{biometricType}} to unlock the app",
+  "Authenticate with {{biometricType}}": "Authenticate with {{biometricType}}",
+  "Use Passcode": "Use Passcode",
+  "Authentication Error": "Authentication Error",
+  "Unable to authenticate with biometrics. Please try again.": "Unable to authenticate with biometrics. Please try again.",
+  "Biometrics Not Available": "Biometrics Not Available",
+  "{{biometricType}} is not set up on this device. Please set it up in Settings first.": "{{biometricType}} is not set up on this device. Please set it up in Settings first."
 }
