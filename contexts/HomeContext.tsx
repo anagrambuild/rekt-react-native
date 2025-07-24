@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react';
+import { useTokenPricesQuery, TokenPrice, SupportedToken } from '@/utils';
 
 // Trade type for active trades
 export type TradeStatus = 'open' | 'closed';
@@ -25,6 +26,9 @@ interface HomeContextType {
   btcTrade: Trade | null;
   setBtcTrade: (trade: Trade | null) => void;
   walletBalance: number;
+  tokenPrices: Record<SupportedToken, TokenPrice> | undefined;
+  isPricesLoading: boolean;
+  pricesError: Error | null;
 }
 
 export const HomeContext = createContext<HomeContextType>({
@@ -40,6 +44,9 @@ export const HomeContext = createContext<HomeContextType>({
   btcTrade: null,
   setBtcTrade: () => {},
   walletBalance: 0,
+  tokenPrices: undefined,
+  isPricesLoading: false,
+  pricesError: null,
 });
 
 export const useHomeContext = () => {
@@ -53,6 +60,16 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
   const [ethTrade, setEthTrade] = useState<Trade | null>(null);
   const [btcTrade, setBtcTrade] = useState<Trade | null>(null);
   const [walletBalance, setWalletBalance] = useState<number>(0);
+
+  // Fetch token prices using React Query
+  const { 
+    data: tokenPrices, 
+    isLoading: isPricesLoading, 
+    error: pricesError 
+  } = useTokenPricesQuery(['sol', 'eth', 'btc'], {
+    refetchOnWindowFocus: false,
+    refetchOnMount: true,
+  });
 
   useEffect(() => {
     // TODO - fetch real wallet balance
@@ -78,6 +95,9 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
         btcTrade,
         setBtcTrade,
         walletBalance,
+        tokenPrices,
+        isPricesLoading,
+        pricesError,
       }}
     >
       {children}
@@ -87,7 +107,8 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
 
 const priceChartTimeframes = [
   { label: '1m', value: '1m' },
-  { label: '2m', value: '2m' },
   { label: '5m', value: '5m' },
-  { label: '10m', value: '10m' },
+  { label: '1h', value: '1h' },
+  { label: '4h', value: '4h' },
+  { label: '1d', value: '1d' },
 ];
