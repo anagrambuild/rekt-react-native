@@ -12,6 +12,7 @@ import {
   PrimaryButton,
   Row,
   SecondaryButton,
+  StyledInput,
   Title4,
 } from '@/components';
 import { useProfileContext } from '@/contexts';
@@ -187,18 +188,6 @@ export const EditProfileModal = ({
 const StyledInputContainer = styled.View`
   position: relative;
   width: 100%;
-`;
-
-const StyledInput = styled.TextInput`
-  font-family: 'Geist';
-  font-size: 16px;
-  font-weight: 400;
-  color: ${({ theme }: any) => theme.colors.textPrimary};
-  background-color: ${({ theme }: any) => theme.colors.field};
-  width: 100%;
-  padding: 12px 16px 12px 24px;
-  border-radius: 12px;
-  height: 48px;
 `;
 
 const StyleAt = styled.Text`

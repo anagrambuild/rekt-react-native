@@ -1,6 +1,7 @@
 export * from './buttons';
 export * from './Card';
 export * from './containers';
+export * from './Input';
 export * from './Modal';
 export * from './Picker';
 export * from './PulsatingContainer';
