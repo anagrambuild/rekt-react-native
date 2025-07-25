@@ -12,6 +12,7 @@ import { AppState } from 'react-native';
 import { detectLanguage, initializeI18n } from '../i18n';
 import { HomeProvider } from './HomeContext';
 import { ProfileProvider } from './ProfileContext';
+import { SolanaProvider } from './SolanaContext';
 import { WalletProvider } from './WalletContext';
 
 type SignUpFormData = {
@@ -105,11 +106,13 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         setSignUpForm,
       }}
     >
-      <WalletProvider>
-        <ProfileProvider>
-          <HomeProvider>{children}</HomeProvider>
-        </ProfileProvider>
-      </WalletProvider>
+      <SolanaProvider>
+        <WalletProvider>
+          <ProfileProvider>
+            <HomeProvider>{children}</HomeProvider>
+          </ProfileProvider>
+        </WalletProvider>
+      </SolanaProvider>
     </AppContext.Provider>
   );
 };

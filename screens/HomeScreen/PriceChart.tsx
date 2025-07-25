@@ -3,7 +3,11 @@ import { Dimensions, Pressable } from 'react-native';
 
 import rektBomb from '@/assets/images/app-pngs/rekt-bomb.png';
 import FlagIcon from '@/assets/images/app-svgs/flag.svg';
-import { BodyXSMonoEmphasized, PulsatingContainer, BodyXSEmphasized } from '@/components';
+import {
+  BodyXSEmphasized,
+  BodyXSMonoEmphasized,
+  PulsatingContainer,
+} from '@/components';
 import { Trade, useHomeContext } from '@/contexts';
 import {
   calculatePriceChange,
@@ -13,9 +17,9 @@ import {
   useHistoricalDataQuery,
 } from '@/utils';
 
-import { liquidationPrices } from './mockData';
 import { EmojiContainer } from './EmojiContainer';
 import { FloatingEmoji } from './FloatingEmoji';
+import { liquidationPrices } from './mockData';
 import { Image } from 'expo-image';
 import { LineChart } from 'react-native-gifted-charts';
 import styled, { DefaultTheme, useTheme } from 'styled-components/native';
