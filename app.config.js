@@ -11,6 +11,7 @@ let bundleIdentifier = 'com.anagramxyz.rektreactnative';
 let scheme = 'rektreactnative';
 let env = 'development';
 let solanaNetwork = 'solana:devnet';
+let apiUrl = 'https://rekt-user-management.onrender.com';
 
 // Preview settings
 if (process.env.DEPLOY_ENVIRONMENT === 'preview') {
@@ -25,6 +26,7 @@ if (process.env.DEPLOY_ENVIRONMENT === 'preview') {
   scheme = 'rektreactnativepreview';
   env = 'preview';
   solanaNetwork = 'solana:devnet';
+  apiUrl = 'https://rekt-user-management.onrender.com';
 }
 
 // Example: override for production
@@ -41,6 +43,7 @@ if (process.env.DEPLOY_ENVIRONMENT === 'production') {
   // scheme = 'rektreactnativeprod';
   env = 'production';
   solanaNetwork = 'solana:mainnet-beta';
+  apiUrl = 'https://rekt-user-management.onrender.com';
 }
 
 module.exports = {
@@ -134,6 +137,7 @@ module.exports = {
       },
       env,
       solanaNetwork,
+      apiUrl,
     },
   },
 };
