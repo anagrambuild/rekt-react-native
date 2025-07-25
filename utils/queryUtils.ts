@@ -7,12 +7,19 @@ import {
 
 import {
   ChartDataPoint,
+  createUser,
+  CreateUserRequest,
   fetchHistoricalData,
   fetchSingleTokenPrice,
   fetchTokenPrices,
+  getUserByWalletAddress,
   SupportedTimeframe,
   SupportedToken,
   TokenPrice,
+  updateUser,
+  UpdateUserRequest,
+  updateUserSwigWalletAddress,
+  User,
 } from './backendApi';
 import { queryClient } from './queryClient';
 import { queryKeys } from './queryKeys';
@@ -35,6 +42,30 @@ export const fetchApi = async <T>(
   }
 
   return response.json();
+};
+
+// Hook to update user's Swig wallet address
+export const useUpdateUserSwigWalletAddressMutation = (
+  options?: UseMutationOptions<
+    User,
+    Error,
+    { userId: string; swigWalletAddress: string }
+  >
+) => {
+  return useMutation({
+    mutationFn: ({ userId, swigWalletAddress }) =>
+      updateUserSwigWalletAddress(userId, swigWalletAddress),
+    onSuccess: (data) => {
+      // Update the user query cache with the updated user
+      queryClient.setQueryData(
+        queryKeys.userByWallet(data.walletAddress),
+        data
+      );
+      // Invalidate user queries to refresh any related data
+      queryClient.invalidateQueries({ queryKey: queryKeys.user });
+    },
+    ...options,
+  });
 };
 
 // Custom hook for price queries
@@ -185,6 +216,64 @@ export const useHistoricalDataQuery = (
     queryFn: () => fetchHistoricalData(token, timeframe),
     staleTime: 1000 * 60, // 1 minute stale time
     refetchInterval: 1000 * 60, // Refetch every minute
+    ...options,
+  });
+};
+
+// User Management Hooks
+
+// Hook to get user by wallet address
+export const useUserByWalletQuery = (
+  walletAddress: string,
+  options?: Omit<UseQueryOptions<User | null, Error>, 'queryKey' | 'queryFn'>
+) => {
+  return useQuery({
+    queryKey: queryKeys.userByWallet(walletAddress),
+    queryFn: () => getUserByWalletAddress(walletAddress),
+    enabled: !!walletAddress, // Only run query if wallet address is provided
+    staleTime: 1000 * 60 * 5, // 5 minutes stale time
+    ...options,
+  });
+};
+
+// Hook to create a new user
+export const useCreateUserMutation = (
+  options?: UseMutationOptions<User, Error, CreateUserRequest>
+) => {
+  return useMutation({
+    mutationFn: createUser,
+    onSuccess: (data, variables) => {
+      // Update the user query cache with the new user
+      queryClient.setQueryData(
+        queryKeys.userByWallet(variables.walletAddress),
+        data
+      );
+      // Invalidate user queries to refresh any related data
+      queryClient.invalidateQueries({ queryKey: queryKeys.user });
+    },
+    ...options,
+  });
+};
+
+// Hook to update an existing user
+export const useUpdateUserMutation = (
+  options?: UseMutationOptions<
+    User,
+    Error,
+    { userId: string; userData: UpdateUserRequest }
+  >
+) => {
+  return useMutation({
+    mutationFn: ({ userId, userData }) => updateUser(userId, userData),
+    onSuccess: (data) => {
+      // Update the user query cache with the updated user
+      queryClient.setQueryData(
+        queryKeys.userByWallet(data.walletAddress),
+        data
+      );
+      // Invalidate user queries to refresh any related data
+      queryClient.invalidateQueries({ queryKey: queryKeys.user });
+    },
     ...options,
   });
 };

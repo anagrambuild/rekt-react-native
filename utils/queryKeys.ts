@@ -8,6 +8,7 @@ export const queryKeys = {
   // User related queries
   user: ['user'] as const,
   userProfile: (userId: string) => ['user', 'profile', userId] as const,
+  userByWallet: (walletAddress: string) => ['user', 'wallet', walletAddress] as const,
   
   // Leaderboard queries
   leaderboard: ['leaderboard'] as const,
