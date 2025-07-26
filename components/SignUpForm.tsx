@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, TouchableOpacity } from 'react-native';
+import { Alert, Platform, TouchableOpacity } from 'react-native';
 
 import {
   BodyS,
@@ -11,13 +11,35 @@ import {
   Switch,
 } from '@/components';
 import { useAppContext } from '@/contexts';
+import { useSolana } from '@/contexts/SolanaContext';
+import { useWallet } from '@/contexts/WalletContext';
 import { useBiometrics, useImagePicker } from '@/hooks';
+import {
+  signTestTransactionWithMWA,
+  signTestTransactionWithPhantom,
+} from '@/utils/mobileSwigUtils';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import Constants from 'expo-constants';
 import { Image } from 'expo-image';
 import { useTranslation } from 'react-i18next';
 import styled, { DefaultTheme } from 'styled-components/native';
+
+// Import MWA for Android
+const isAndroid = Platform.OS === 'android';
+let transact: any = null;
+
+if (isAndroid) {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const protocol = require('@solana-mobile/mobile-wallet-adapter-protocol-web3js');
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    transact = protocol.transact;
+  } catch (error) {
+    console.error('Failed to import mobile wallet adapter:', error);
+  }
+}
 
 interface SignUpFormProps {
   onComplete?: () => void;
@@ -29,6 +51,9 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
   const { takePhoto, pickFromLibrary, isLoading } = useImagePicker();
   const { isSupported, isEnrolled, biometricType, enableBiometrics } =
     useBiometrics();
+  const { connected, publicKey, getDappKeyPair, sharedSecret, session } =
+    useWallet();
+  const { connection } = useSolana();
   const [usernameError, setUsernameError] = useState('');
 
   const handleUsernameChange = (text: string) => {
@@ -82,6 +107,64 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
     } else {
       // User wants to disable biometrics
       setSignUpForm((prev) => ({ ...prev, enableBiometrics: false }));
+    }
+  };
+
+  const handleTestWalletSigning = async () => {
+    if (!connected || !publicKey) {
+      Alert.alert(
+        t('Wallet Not Connected'),
+        t('Please connect your wallet first')
+      );
+      return;
+    }
+
+    try {
+      const solanaNetwork =
+        Constants.expoConfig?.extra?.solanaNetwork || 'solana:devnet';
+      let result;
+
+      if (Platform.OS === 'android') {
+        // Use Mobile Wallet Adapter for Android
+        result = await signTestTransactionWithMWA(
+          connection,
+          publicKey,
+          solanaNetwork
+        );
+      } else {
+        // Use Phantom deep links for iOS
+        if (!sharedSecret || !session) {
+          Alert.alert(
+            t('Wallet Not Connected'),
+            t('Please connect your Phantom wallet first')
+          );
+          return;
+        }
+
+        const dappKeyPair = getDappKeyPair();
+        result = await signTestTransactionWithPhantom(
+          connection,
+          publicKey,
+          sharedSecret,
+          session,
+          dappKeyPair.publicKey
+        );
+      }
+
+      if (result.success) {
+        Alert.alert(
+          t('Test Successful'),
+          t('Wallet signing test completed successfully!')
+        );
+      } else {
+        Alert.alert(
+          t('Test Failed'),
+          result.error || t('Unknown error occurred')
+        );
+      }
+    } catch (error) {
+      console.error('Test wallet signing error:', error);
+      Alert.alert(t('Test Failed'), t('Failed to test wallet signing'));
     }
   };
 
@@ -172,6 +255,16 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
             </Card>
           )}
         </Column>
+
+        {/* Test Wallet Signing Button */}
+        {connected && (
+          <PrimaryButton
+            onPress={handleTestWalletSigning}
+            style={{ backgroundColor: '#6366f1' }}
+          >
+            {t('Test Wallet Signing')}
+          </PrimaryButton>
+        )}
 
         {/* Submit Button */}
         <PrimaryButton onPress={handleSubmit} disabled={!!usernameError}>

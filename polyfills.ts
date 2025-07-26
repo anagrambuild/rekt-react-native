@@ -27,6 +27,29 @@ if (typeof global.process === 'undefined') {
   global.process = { env: {} } as any;
 }
 
+// Base64 polyfill for react-native-quick-base64
+if (typeof (global as any).base64ToArrayBuffer === 'undefined') {
+  (global as any).base64ToArrayBuffer = (base64: string) => {
+    const binaryString = Buffer.from(base64, 'base64').toString('binary');
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    return bytes.buffer;
+  };
+}
+
+if (typeof (global as any).arrayBufferToBase64 === 'undefined') {
+  (global as any).arrayBufferToBase64 = (buffer: ArrayBuffer) => {
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    for (let i = 0; i < bytes.byteLength; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return Buffer.from(binary, 'binary').toString('base64');
+  };
+}
+
 // Setup PRNG for tweetnacl
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const nacl = require('tweetnacl');
