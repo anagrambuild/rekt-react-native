@@ -184,3 +184,154 @@ export const calculatePriceChange = (
 
   return { change, changePercent };
 };
+
+// User Management Types and Functions
+
+export interface User {
+  id: string;
+  username: string;
+  email?: string;
+  profileImage?: string;
+  walletAddress: string;
+  swigWalletAddress?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateUserRequest {
+  username: string;
+  email?: string;
+  profileImage?: string;
+  walletAddress: string;
+  swigWalletAddress?: string;
+}
+
+export interface UpdateUserRequest {
+  username?: string;
+  email?: string;
+  profileImage?: string;
+  swigWalletAddress?: string;
+}
+
+export const getUserByWalletAddress = async (
+  walletAddress: string
+): Promise<User | null> => {
+  try {
+    // Note: This endpoint doesn't exist in your backend yet
+    // For now, return null to indicate user doesn't exist
+    // You may need to implement this endpoint or use a different approach
+    console.log('⚠️ getUserByWalletAddress endpoint not implemented in backend for:', walletAddress);
+    return null;
+  } catch (error) {
+    console.error('Error fetching user by wallet address:', error);
+    return null;
+  }
+};
+
+export const createUser = async (
+  userData: CreateUserRequest
+): Promise<User> => {
+  try {
+    // Map frontend data structure to backend expected structure
+    const backendUserData = {
+      username: userData.username,
+      email: userData.email || '',
+      avatar_url: userData.profileImage || '', // This will be the Supabase URL
+      swigWalletAddress: userData.swigWalletAddress || '',
+      walletAddress: userData.walletAddress, // Add wallet address if backend expects it
+    };
+
+    const response = await fetch(`${BACKEND_BASE_URL}/api/auth/create-account`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(backendUserData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData.message || `HTTP error! status: ${response.status}`
+      );
+    }
+
+    const result = await response.json();
+    console.log('✓ User created successfully:', result);
+
+    // Map backend response to frontend User interface
+    return {
+      id: result.id || result.user_id,
+      username: result.username,
+      email: result.email,
+      profileImage: result.avatar_url,
+      walletAddress: result.walletAddress || userData.walletAddress,
+      swigWalletAddress: result.swigWalletAddress,
+      createdAt: result.createdAt || result.created_at || new Date().toISOString(),
+      updatedAt: result.updatedAt || result.updated_at || new Date().toISOString(),
+    };
+  } catch (error) {
+    console.error('Error creating user:', error);
+    throw error;
+  }
+};
+
+export const updateUser = async (
+  userId: string,
+  userData: UpdateUserRequest
+): Promise<User> => {
+  try {
+    const response = await fetch(`${BACKEND_BASE_URL}/api/users/${userId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(userData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData.message || `HTTP error! status: ${response.status}`
+      );
+    }
+
+    const result = await response.json();
+    console.log('✓ User updated successfully:', result);
+
+    return result;
+  } catch (error) {
+    console.error('Error updating user:', error);
+    throw error;
+  }
+};
+
+export const updateUserSwigWalletAddress = async (
+  userId: string,
+  swigWalletAddress: string
+): Promise<User> => {
+  try {
+    const response = await fetch(`${BACKEND_BASE_URL}/api/users/${userId}/swig-wallet`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ swigWalletAddress }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData.message || `HTTP error! status: ${response.status}`
+      );
+    }
+
+    const result = await response.json();
+    console.log('✓ User Swig wallet address updated successfully:', result);
+
+    return result;
+  } catch (error) {
+    console.error('Error updating user Swig wallet address:', error);
+    throw error;
+  }
+};
