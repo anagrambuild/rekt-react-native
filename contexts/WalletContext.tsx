@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 import {
   createContext,
   ReactNode,
@@ -25,7 +26,7 @@ let persistentWalletState = {
 };
 
 // Use require for bs58 to avoid PRNG issues
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+
 const bs58 = require('bs58');
 
 // Only import wallet adapter for Android
@@ -34,7 +35,6 @@ let transact: any = null;
 
 if (isAndroid) {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const protocol = require('@solana-mobile/mobile-wallet-adapter-protocol-web3js');
     transact = protocol.transact;
   } catch (error) {
@@ -87,12 +87,14 @@ interface WalletProviderProps {
 
 export const WalletProvider = ({ children }: WalletProviderProps) => {
   const { t } = useTranslation();
-  
+
   // Initialize from persistent state
   const [connected, setConnected] = useState(persistentWalletState.connected);
   const [connecting, setConnecting] = useState(false);
-  const [publicKey, setPublicKey] = useState<PublicKey | null>(persistentWalletState.publicKey);
-  
+  const [publicKey, setPublicKey] = useState<PublicKey | null>(
+    persistentWalletState.publicKey
+  );
+
   // Track if component is mounted to prevent state updates after unmount
   const mountedRef = useRef(true);
   useEffect(() => {
@@ -117,8 +119,12 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
   const getDappKeyPair = useCallback(() => {
     return dappKeyPair;
   }, [dappKeyPair]);
-  const [sharedSecret, setSharedSecret] = useState<Uint8Array | null>(persistentWalletState.sharedSecret);
-  const [session, setSession] = useState<string | null>(persistentWalletState.session);
+  const [sharedSecret, setSharedSecret] = useState<Uint8Array | null>(
+    persistentWalletState.sharedSecret
+  );
+  const [session, setSession] = useState<string | null>(
+    persistentWalletState.session
+  );
 
   // Get Solana network from Expo config
   const solanaNetwork =
@@ -128,7 +134,7 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
     if (!isAndroid || !transact) {
       return false;
     }
-    
+
     try {
       const result = await transact(async (wallet: any) => {
         const authResult = await wallet.authorize({
@@ -147,11 +153,11 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
         const base64Address = result.accounts[0].address;
         const addressBytes = Buffer.from(base64Address, 'base64');
         const pubKey = new PublicKey(addressBytes);
-        
+
         // Update persistent state first
         persistentWalletState.connected = true;
         persistentWalletState.publicKey = pubKey;
-        
+
         if (mountedRef.current) {
           setPublicKey(pubKey);
           setConnected(true);
@@ -166,6 +172,7 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAndroid, transact, solanaNetwork, t]);
+
   const handleWalletConnect = useCallback(
     (publicKeyString: string) => {
       try {
@@ -183,27 +190,79 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
   );
 
   // Handle incoming URL schemes (wallet responses)
+  // Android URL Handler (for MWA - keep it simple)
   useEffect(() => {
-    const handleUrl = (url: string) => {
+    if (!isAndroid) return;
 
+    const handleAndroidUrl = (url: string) => {
+      // Android MWA doesn't use URL schemes for transaction responses
+      // MWA handles everything internally, so we just handle errors here
+      if (url.includes('errorCode')) {
+        try {
+          const urlObj = new URL(url);
+          const errorCode = urlObj.searchParams.get('errorCode');
+          const errorMessage = urlObj.searchParams.get('errorMessage');
+          console.error('Android MWA error:', errorCode, errorMessage);
+          Alert.alert(
+            t('Connection Failed'),
+            errorMessage || t('Unknown wallet error')
+          );
+        } catch (error) {
+          console.error('Failed to parse Android error response:', error);
+        }
+      }
+    };
+
+    // Handle initial URL if app was opened via deep link
+    Linking.getInitialURL().then((url) => {
+      if (url) {
+        handleAndroidUrl(url);
+      }
+    });
+
+    // Listen for URL changes while app is running
+    const subscription = Linking.addEventListener('url', (event) => {
+      handleAndroidUrl(event.url);
+    });
+
+    return () => {
+      subscription?.remove();
+    };
+  }, [t]);
+
+  // iOS URL Handler (for Phantom deep links)
+  useEffect(() => {
+    if (isAndroid) return; // Only run on iOS
+
+    const handleiOSUrl = (url: string) => {
       // Check for error response first
       if (url.includes('errorCode')) {
         try {
           const urlObj = new URL(url);
           const errorCode = urlObj.searchParams.get('errorCode');
           const errorMessage = urlObj.searchParams.get('errorMessage');
-          console.error('Wallet connection error:', errorCode, errorMessage);
-          Alert.alert(
-            t('Connection Failed'),
-            errorMessage || t('Unknown wallet error')
-          );
+          console.error('iOS Phantom error:', errorCode, errorMessage);
+
+          // If we have a test transaction resolver waiting, reject it
+          if ((global as any).phantomTestSigningResolver) {
+            (global as any).phantomTestSigningResolver.reject(
+              new Error(errorMessage || 'Unknown wallet error')
+            );
+            delete (global as any).phantomTestSigningResolver;
+          } else {
+            // Otherwise show connection error
+            Alert.alert(
+              t('Connection Failed'),
+              errorMessage || t('Unknown wallet error')
+            );
+          }
         } catch (error) {
-          console.error('Failed to parse error response:', error);
+          console.error('Failed to parse iOS error response:', error);
         }
         return;
       }
 
-      // Check for successful connection (encrypted response)
+      // Handle full encrypted response (with phantom_encryption_public_key)
       if (
         url.includes('phantom_encryption_public_key') &&
         url.includes('data')
@@ -235,18 +294,161 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
               const connectData = JSON.parse(
                 Buffer.from(decryptedData).toString('utf8')
               );
-              setSharedSecret(sharedSecretDapp);
-              setSession(connectData.session);
-              handleWalletConnect(connectData.public_key);
+
+              // PRIORITY 1: Check for test transaction resolver FIRST
+              if ((global as any).phantomTestSigningResolver) {
+                if (connectData.signature) {
+                  (global as any).phantomTestSigningResolver.resolve(
+                    connectData.signature
+                  );
+                  delete (global as any).phantomTestSigningResolver;
+                } else if (connectData.transaction) {
+                  (async () => {
+                    try {
+                      const {
+                        Connection,
+                        clusterApiUrl,
+                      } = require('@solana/web3.js');
+                      const connection = new Connection(
+                        clusterApiUrl('devnet')
+                      );
+
+                      const signedTransactionBytes = bs58.decode(
+                        connectData.transaction
+                      );
+                      const signature = await connection.sendRawTransaction(
+                        signedTransactionBytes,
+                        {
+                          skipPreflight: false,
+                          preflightCommitment: 'processed',
+                        }
+                      );
+
+                      (global as any).phantomTestSigningResolver.resolve(
+                        signature
+                      );
+                      delete (global as any).phantomTestSigningResolver;
+                    } catch (sendError) {
+                      console.error(
+                        'Failed to send iOS signed transaction:',
+                        sendError
+                      );
+                      (global as any).phantomTestSigningResolver.reject(
+                        sendError as Error
+                      );
+                      delete (global as any).phantomTestSigningResolver;
+                    }
+                  })();
+                }
+              }
+              // PRIORITY 2: Only check for wallet connection if NO test transaction resolver exists
+              else if (connectData.public_key && connectData.session) {
+                setSharedSecret(sharedSecretDapp);
+                setSession(connectData.session);
+                handleWalletConnect(connectData.public_key);
+              }
             } else {
-              throw new Error('Unable to decrypt data');
+              throw new Error('Unable to decrypt iOS response data');
             }
-          }        } catch (error) {
-          console.error('Failed to parse wallet response:', error);
-          Alert.alert(
-            t('Connection Failed'),
-            t('Failed to parse wallet response')
-          );
+          }
+        } catch (error) {
+          console.error('Failed to parse iOS wallet response:', error);
+
+          if ((global as any).phantomTestSigningResolver) {
+            (global as any).phantomTestSigningResolver.reject(error as Error);
+            delete (global as any).phantomTestSigningResolver;
+          } else {
+            Alert.alert(
+              t('Connection Failed'),
+              t('Failed to parse wallet response')
+            );
+          }
+        }
+      }
+      // Handle transaction-only response (data + nonce, no phantom_encryption_public_key)
+      else if (
+        url.includes('data') &&
+        url.includes('nonce') &&
+        (global as any).phantomTestSigningResolver
+      ) {
+        try {
+          const urlObj = new URL(url);
+          const data = urlObj.searchParams.get('data');
+          const nonce = urlObj.searchParams.get('nonce');
+
+          if (data && nonce && sharedSecret) {
+            // Decrypt using the existing shared secret from wallet connection
+            const decryptedData = nacl.box.open.after(
+              bs58.decode(data),
+              bs58.decode(nonce),
+              sharedSecret
+            );
+
+            if (decryptedData) {
+              const responseData = JSON.parse(
+                Buffer.from(decryptedData).toString('utf8')
+              );
+
+              if (responseData.signature) {
+                (global as any).phantomTestSigningResolver.resolve(
+                  responseData.signature
+                );
+                delete (global as any).phantomTestSigningResolver;
+              } else if (responseData.transaction) {
+                (async () => {
+                  try {
+                    const {
+                      Connection,
+                      clusterApiUrl,
+                    } = require('@solana/web3.js');
+                    const connection = new Connection(clusterApiUrl('devnet'));
+
+                    const signedTransactionBytes = bs58.decode(
+                      responseData.transaction
+                    );
+                    const signature = await connection.sendRawTransaction(
+                      signedTransactionBytes,
+                      {
+                        skipPreflight: false,
+                        preflightCommitment: 'processed',
+                      }
+                    );
+
+                    (global as any).phantomTestSigningResolver.resolve(
+                      signature
+                    );
+                    delete (global as any).phantomTestSigningResolver;
+                  } catch (sendError) {
+                    console.error(
+                      'Failed to send iOS signed transaction:',
+                      sendError
+                    );
+                    (global as any).phantomTestSigningResolver.reject(
+                      sendError as Error
+                    );
+                    delete (global as any).phantomTestSigningResolver;
+                  }
+                })();
+              } else {
+                (global as any).phantomTestSigningResolver.reject(
+                  new Error('No signature or transaction in iOS response')
+                );
+                delete (global as any).phantomTestSigningResolver;
+              }
+            } else {
+              throw new Error('Unable to decrypt iOS transaction response');
+            }
+          } else {
+            throw new Error(
+              'Missing data, nonce, or sharedSecret for iOS transaction response'
+            );
+          }
+        } catch (error) {
+          console.error('Failed to parse iOS transaction response:', error);
+          if ((global as any).phantomTestSigningResolver) {
+            (global as any).phantomTestSigningResolver.reject(error as Error);
+            delete (global as any).phantomTestSigningResolver;
+          }
         }
       }
     };
@@ -254,20 +456,19 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
     // Handle initial URL if app was opened via deep link
     Linking.getInitialURL().then((url) => {
       if (url) {
-        handleUrl(url);
+        handleiOSUrl(url);
       }
     });
 
     // Listen for URL changes while app is running
     const subscription = Linking.addEventListener('url', (event) => {
-      handleUrl(event.url);
+      handleiOSUrl(event.url);
     });
 
     return () => {
       subscription?.remove();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [handleWalletConnect]);
+  }, [handleWalletConnect, getDappKeyPair, sharedSecret, t]);
 
   const connect = useCallback(async () => {
     if (connecting || connected) {
@@ -301,7 +502,7 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
     persistentWalletState.publicKey = null;
     persistentWalletState.sharedSecret = null;
     persistentWalletState.session = null;
-    
+
     setConnected(false);
     setPublicKey(null);
     setSharedSecret(null);
