@@ -12,6 +12,7 @@ let scheme = 'rektreactnative';
 let env = 'development';
 let solanaNetwork = 'solana:devnet';
 let apiUrl = 'https://rekt-user-management.onrender.com';
+let usdcMint = 'Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr'; // Devnet USDC
 
 // Preview settings
 if (process.env.DEPLOY_ENVIRONMENT === 'preview') {
@@ -27,6 +28,7 @@ if (process.env.DEPLOY_ENVIRONMENT === 'preview') {
   env = 'preview';
   solanaNetwork = 'solana:devnet';
   apiUrl = 'https://rekt-user-management.onrender.com';
+  usdcMint = 'Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr'; // Devnet USDC
 }
 
 // Example: override for production
@@ -44,6 +46,7 @@ if (process.env.DEPLOY_ENVIRONMENT === 'production') {
   env = 'production';
   solanaNetwork = 'solana:mainnet-beta';
   apiUrl = 'https://rekt-user-management.onrender.com';
+  usdcMint = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'; // Mainnet USDC
 }
 
 module.exports = {
@@ -97,6 +100,7 @@ module.exports = {
       'expo-router',
       'expo-localization',
       'expo-video',
+      'expo-secure-store',
       [
         'expo-image-picker',
         {
@@ -120,7 +124,8 @@ module.exports = {
       [
         'expo-local-authentication',
         {
-          faceIDPermission: 'Allow $(PRODUCT_NAME) to use Face ID for secure authentication.',
+          faceIDPermission:
+            'Allow $(PRODUCT_NAME) to use Face ID for secure authentication.',
         },
       ],
     ],
@@ -138,6 +143,7 @@ module.exports = {
       env,
       solanaNetwork,
       apiUrl,
+      usdcMint,
     },
   },
 };
