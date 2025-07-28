@@ -1,6 +1,7 @@
 import { PublicKey } from '@solana/web3.js';
 
-import * as SecureStore from 'expo-secure-store';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const SecureStore = require('expo-secure-store');
 
 // Constants for session management
 const AUTH_STORAGE_KEY = 'userAuth';
@@ -10,6 +11,7 @@ const MAX_REASONABLE_TIME = 30 * 24 * 60 * 60 * 1000; // 30 days for tampering d
 export interface SecureAuthData {
   walletAddress: string;
   swigAddress: string;
+  profileId: string;
   timestamp: number;
   deviceId?: string;
 }
@@ -30,12 +32,14 @@ export interface AuthValidationResult {
  */
 export const storeSecureAuth = async (
   walletAddress: string | PublicKey,
-  swigAddress: string | PublicKey
+  swigAddress: string | PublicKey,
+  profileId: string
 ): Promise<void> => {
   try {
     const authData: SecureAuthData = {
       walletAddress: walletAddress.toString(),
       swigAddress: swigAddress.toString(),
+      profileId,
       timestamp: Date.now(),
       deviceId: await getDeviceId(),
     };
@@ -71,6 +75,7 @@ export const getSecureAuth = async (): Promise<AuthValidationResult> => {
     if (
       !authData.walletAddress ||
       !authData.swigAddress ||
+      !authData.profileId ||
       !authData.timestamp
     ) {
       return { isValid: false, reason: 'invalid_format' };

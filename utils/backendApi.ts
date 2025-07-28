@@ -213,17 +213,35 @@ export interface UpdateUserRequest {
   swigWalletAddress?: string;
 }
 
-export const getUserByWalletAddress = async (
-  walletAddress: string
+export const getUserByProfileId = async (
+  profileId: string
 ): Promise<User | null> => {
   try {
-    // Note: This endpoint doesn't exist in your backend yet
-    // For now, return null to indicate user doesn't exist
-    // You may need to implement this endpoint or use a different approach
-    console.log('⚠️ getUserByWalletAddress endpoint not implemented in backend for:', walletAddress);
-    return null;
+    const response = await fetch(`${BACKEND_BASE_URL}/api/users/profile/${profileId}`);
+    
+    if (response.status === 404) {
+      return null; // User doesn't exist
+    }
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    
+    // Map backend response to frontend User interface
+    return {
+      id: result.user.id,
+      username: result.user.username,
+      email: result.user.email,
+      profileImage: result.user.avatar_url,
+      walletAddress: result.user.wallet_address || '',
+      swigWalletAddress: result.user.swig_wallet_address || '',
+      createdAt: result.user.joined_at || new Date().toISOString(),
+      updatedAt: result.user.updated_at || new Date().toISOString(),
+    };
   } catch (error) {
-    console.error('Error fetching user by wallet address:', error);
+    console.error('Error fetching user by profile ID:', error);
     return null;
   }
 };
@@ -237,8 +255,8 @@ export const createUser = async (
       username: userData.username,
       email: userData.email || '',
       avatar_url: userData.profileImage || '', // This will be the Supabase URL
-      swigWalletAddress: userData.swigWalletAddress || '',
-      walletAddress: userData.walletAddress, // Add wallet address if backend expects it
+      wallet_address: userData.walletAddress, // Add wallet address
+      swig_wallet_address: userData.swigWalletAddress || '', // Add Swig wallet address
     };
 
     const response = await fetch(`${BACKEND_BASE_URL}/api/auth/create-account`, {
@@ -261,14 +279,14 @@ export const createUser = async (
 
     // Map backend response to frontend User interface
     return {
-      id: result.id || result.user_id,
-      username: result.username,
-      email: result.email,
-      profileImage: result.avatar_url,
-      walletAddress: result.walletAddress || userData.walletAddress,
-      swigWalletAddress: result.swigWalletAddress,
-      createdAt: result.createdAt || result.created_at || new Date().toISOString(),
-      updatedAt: result.updatedAt || result.updated_at || new Date().toISOString(),
+      id: result.id || result.user_id || result.user?.id,
+      username: result.username || result.user?.username,
+      email: result.email || result.user?.email,
+      profileImage: result.avatar_url || result.user?.avatar_url,
+      walletAddress: result.wallet_address || result.user?.wallet_address || userData.walletAddress,
+      swigWalletAddress: result.swig_wallet_address || result.user?.swig_wallet_address || userData.swigWalletAddress,
+      createdAt: result.createdAt || result.created_at || result.user?.joined_at || new Date().toISOString(),
+      updatedAt: result.updatedAt || result.updated_at || result.user?.updated_at || new Date().toISOString(),
     };
   } catch (error) {
     console.error('Error creating user:', error);
