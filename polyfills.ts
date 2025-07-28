@@ -2,7 +2,64 @@
 import 'react-native-get-random-values';
 // Buffer polyfill
 import { Buffer } from 'buffer';
+// Crypto polyfill for digest functions (required by Solana/Swig)
+// Use expo-crypto for better Expo compatibility
+import * as Crypto from 'expo-crypto';
 global.Buffer = Buffer;
+
+// Polyfill crypto.subtle for digest operations
+if (!global.crypto.subtle) {
+  // Create a new crypto object with subtle support
+  const originalCrypto = global.crypto;
+  global.crypto = {
+    ...originalCrypto,
+    subtle: {
+      digest: async (algorithm: string, data: ArrayBuffer | Uint8Array) => {
+        // Map Web Crypto API algorithm names to expo-crypto algorithms
+        let expoCryptoAlgorithm;
+        const algoName = algorithm.toUpperCase().replace('-', '');
+        
+        switch (algoName) {
+          case 'SHA1':
+            expoCryptoAlgorithm = Crypto.CryptoDigestAlgorithm.SHA1;
+            break;
+          case 'SHA256':
+            expoCryptoAlgorithm = Crypto.CryptoDigestAlgorithm.SHA256;
+            break;
+          case 'SHA384':
+            expoCryptoAlgorithm = Crypto.CryptoDigestAlgorithm.SHA384;
+            break;
+          case 'SHA512':
+            expoCryptoAlgorithm = Crypto.CryptoDigestAlgorithm.SHA512;
+            break;
+          case 'MD5':
+            expoCryptoAlgorithm = Crypto.CryptoDigestAlgorithm.MD5;
+            break;
+          default:
+            // Default to SHA256 for unknown algorithms
+            console.warn(`Unknown crypto algorithm: ${algorithm}, defaulting to SHA256`);
+            expoCryptoAlgorithm = Crypto.CryptoDigestAlgorithm.SHA256;
+        }
+        
+        const result = await Crypto.digestStringAsync(
+          expoCryptoAlgorithm,
+          new Uint8Array(data).reduce(
+            (str, byte) => str + String.fromCharCode(byte),
+            ''
+          ),
+          { encoding: Crypto.CryptoEncoding.HEX }
+        );
+        
+        // Convert hex string back to ArrayBuffer
+        const bytes = new Uint8Array(result.length / 2);
+        for (let i = 0; i < result.length; i += 2) {
+          bytes[i / 2] = parseInt(result.substring(i, i + 2), 16);
+        }
+        return bytes.buffer;
+      },
+    } as any,
+  };
+}
 
 // Crypto polyfill - ensure it's available before any crypto operations
 if (typeof global.crypto === 'undefined') {
