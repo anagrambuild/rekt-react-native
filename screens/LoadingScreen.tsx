@@ -34,6 +34,7 @@ export const LoadingScreen = () => {
           height: '50%',
           zIndex: 0,
         }}
+        pointerEvents='none'
       />
     </ScreenContainer>
   );

@@ -8,7 +8,6 @@ import {
   PrimaryButton,
   ScreenContainer,
   SignUpForm,
-  TertiaryButton,
   WalletConnectionModal,
 } from '@/components';
 import { useAppContext, useWallet } from '@/contexts';
@@ -121,25 +120,20 @@ const Index = () => {
       <ScreenContainer
         alignItems='stretch'
         justifyContent='flex-start'
-        contentContainerStyle={{ flex: 1 }}
+        noPadding
+        contentContainerStyle={{ flex: 1, position: 'relative' }}
       >
-        <Column
-          $width='100%'
-          $justifyContent='space-between'
-          $height='100%'
-          $padding={0}
-        >
-          <Column
-            $width='100%'
-            $padding={16}
-            $justifyContent='space-between'
-            $alignItems='center'
-          >
-            <RektLogo width={80} height={80} />
-            <AnimatedTitle1 style={{ textAlign: 'center' }}>
-              {t('Complete Your Profile')}
-            </AnimatedTitle1>
-          </Column>
+        <Column $width='100%' $height='100%' $justifyContent='flex-start'>
+          <VideoView
+            player={player}
+            style={{
+              width: '100%',
+              height: '50%',
+              position: 'absolute',
+              bottom: 0,
+            }}
+            pointerEvents='none'
+          />
           <SignUpForm onComplete={handleSignUpComplete} />
         </Column>
       </ScreenContainer>
@@ -174,13 +168,14 @@ const Index = () => {
         </Column>
         <AnimatedButtonsContainer style={{ opacity: welcomeOpacity }}>
           <PrimaryButton onPress={connect} disabled={connecting}>
-            {connecting ? t('Connecting...') : t('Sign up with wallet')}
+            {connecting ? t('Connecting...') : t('Connect wallet')}
           </PrimaryButton>
-          <TertiaryButton onPress={connect} disabled={connecting}>
-            {connecting ? t('Connecting...') : t('Login')}
-          </TertiaryButton>
         </AnimatedButtonsContainer>
-        <VideoView player={player} style={{ width: '100%', height: '50%' }} />
+        <VideoView
+          player={player}
+          style={{ width: '100%', height: '50%' }}
+          pointerEvents='none'
+        />
       </Column>
       <WalletConnectionModal
         visible={showWalletModal}
