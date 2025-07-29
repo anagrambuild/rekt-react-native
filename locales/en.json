@@ -115,5 +115,16 @@
   "Authentication Error": "Authentication Error",
   "Unable to authenticate with biometrics. Please try again.": "Unable to authenticate with biometrics. Please try again.",
   "Biometrics Not Available": "Biometrics Not Available",
-  "{{biometricType}} is not set up on this device. Please set it up in Settings first.": "{{biometricType}} is not set up on this device. Please set it up in Settings first."
+  "{{biometricType}} is not set up on this device. Please set it up in Settings first.": "{{biometricType}} is not set up on this device. Please set it up in Settings first.",
+  "Insufficient Balance": "Insufficient Balance",
+  "You need at least {{amount}} SOL to create an account. Please add funds to your wallet and try again.": "You need at least {{amount}} SOL to create an account. Please add funds to your wallet and try again.",
+  "Account Creation Failed": "Account Creation Failed",
+  "Unable to create your account. This may be due to network issues or insufficient funds.": "Unable to create your account. This may be due to network issues or insufficient funds.",
+  "Swig account already exists for this wallet": "Swig account already exists for this wallet",
+  "Account Already Exists": "Account Already Exists",
+  "Sign Up Failed": "Sign Up Failed",
+  "Failed to create account: {{error}}": "Failed to create account: {{error}}",
+  "Wallet Not Connected": "Wallet Not Connected",
+  "Please connect your wallet first": "Please connect your wallet first",
+  "Please connect your Phantom wallet first": "Please connect your Phantom wallet first"
 }

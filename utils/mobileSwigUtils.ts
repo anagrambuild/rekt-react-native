@@ -1,7 +1,13 @@
-/* eslint-disable @typescript-eslint/no-require-imports */
 import { Platform } from 'react-native';
 
-import { Connection, PublicKey, Transaction } from '@solana/web3.js';
+import {
+  Connection,
+  PublicKey,
+  SystemProgram,
+  Transaction,
+  TransactionMessage,
+  VersionedTransaction,
+} from '@solana/web3.js';
 import {
   Actions,
   createEd25519AuthorityInfo,
@@ -9,8 +15,91 @@ import {
   getCreateSwigInstruction,
 } from '@swig-wallet/classic';
 
+import bs58 from 'bs58';
+import { Buffer } from 'buffer';
 import * as Linking from 'expo-linking';
 import { toByteArray } from 'react-native-quick-base64';
+import nacl from 'tweetnacl';
+
+/**
+ * Diagnostic function to validate Swig account creation parameters
+ */
+export const validateSwigAccountParams = (
+  id: Uint8Array,
+  swigAddress: PublicKey,
+  payer: PublicKey,
+  authorityInfo: any,
+  actions: any
+) => {
+  console.log('🔍 [DIAGNOSTIC] Validating Swig account parameters...');
+
+  // Check ID
+  console.log('- ID length:', id.length, '(should be 32)');
+  console.log('- ID bytes:', Array.from(id).slice(0, 8), '... (first 8 bytes)');
+  console.log(
+    '- ID is all zeros:',
+    id.every((byte) => byte === 0)
+  );
+
+  // Check addresses
+  console.log('- Payer:', payer.toBase58());
+  console.log('- Swig Address:', swigAddress.toBase58());
+
+  // Deep inspect authority info structure
+  console.log(
+    '- Authority Info Structure:',
+    JSON.stringify(authorityInfo, null, 2)
+  );
+  console.log('- Authority has ed25519 field:', 'ed25519' in authorityInfo);
+  console.log('- Authority ed25519 value:', authorityInfo.ed25519);
+
+  // Try different ways to access the public key
+  let authorityPubkey = 'NOT FOUND';
+  let authorityMatches = false;
+
+  // Check if authority.data contains the public key bytes
+  if (authorityInfo.data && Array.isArray(Object.values(authorityInfo.data))) {
+    const dataBytes = Object.values(authorityInfo.data) as number[];
+    if (dataBytes.length === 32) {
+      try {
+        const authorityPublicKey = new PublicKey(new Uint8Array(dataBytes));
+        authorityPubkey = authorityPublicKey.toBase58();
+        authorityMatches = authorityPubkey === payer.toBase58();
+      } catch (error) {
+        console.log('- Error creating PublicKey from data:', error);
+      }
+    }
+  }
+
+  // Fallback to other possible structures
+  if (authorityPubkey === 'NOT FOUND') {
+    authorityPubkey =
+      authorityInfo.ed25519?.publicKey?.toBase58() ||
+      authorityInfo.publicKey?.toBase58() ||
+      authorityInfo.pubkey?.toBase58() ||
+      'NOT FOUND';
+  }
+
+  console.log('- Authority PublicKey:', authorityPubkey);
+  console.log('- Authority Type:', authorityInfo.type, '(1 = Ed25519)');
+  console.log('- Payer == Authority:', authorityMatches);
+
+  // Check actions
+  console.log('- Actions:', JSON.stringify(actions, null, 2));
+
+  // Validate PDA derivation
+  try {
+    const derivedAddress = findSwigPda(id);
+    console.log(
+      '- PDA derivation matches:',
+      derivedAddress.toBase58() === swigAddress.toBase58()
+    );
+  } catch (error) {
+    console.log('- PDA derivation error:', error);
+  }
+
+  console.log('🔍 [DIAGNOSTIC] Validation complete');
+};
 
 // Type definition for mobile Swig creation result
 export interface MobileSwigCreationResult {
@@ -24,14 +113,22 @@ export interface MobileSwigCreationResult {
 let transact: any = null;
 const isAndroid = Platform.OS === 'android';
 
-if (isAndroid) {
-  try {
-    const mobileWalletAdapter = require('@solana-mobile/mobile-wallet-adapter-protocol-web3js');
-    transact = mobileWalletAdapter.transact;
-  } catch (error) {
-    console.log('Mobile wallet adapter not available on this platform', error);
+// Initialize MWA transact function for Android
+const initializeMWA = async () => {
+  if (isAndroid && !transact) {
+    try {
+      const { transact: mwaTransact } = await import(
+        '@solana-mobile/mobile-wallet-adapter-protocol-web3js'
+      );
+      transact = mwaTransact;
+    } catch (error) {
+      console.log(
+        'Mobile wallet adapter not available on this platform',
+        error
+      );
+    }
   }
-}
+};
 
 /**
  * Creates a Swig account using Phantom wallet deep linking (iOS)
@@ -43,16 +140,9 @@ export const createSwigAccountWithPhantom = async (
   session: string,
   dappPublicKey: Uint8Array
 ): Promise<MobileSwigCreationResult> => {
-  const bs58 = require('bs58');
-  const nacl = require('tweetnacl');
-  const Buffer = require('buffer').Buffer;
-
-  // Create deterministic ID based on user's public key
+  // Generate random ID (matching tutorial approach)
   const id = new Uint8Array(32);
-  const userBytes = userPublicKey.toBytes();
-  for (let i = 0; i < Math.min(32, userBytes.length); i++) {
-    id[i] = userBytes[i];
-  }
+  crypto.getRandomValues(id);
 
   // Derive the Swig PDA
   const swigAddress = findSwigPda(id);
@@ -61,11 +151,17 @@ export const createSwigAccountWithPhantom = async (
     // Create authority info for the user's public key
     const rootAuthorityInfo = createEd25519AuthorityInfo(userPublicKey);
 
-    // Set up actions - giving the user full control initially
-    const rootActions = Actions.set()
-      .manageAuthority()
-      .solLimit({ amount: BigInt(1000000000) }) // 1 SOL limit
-      .get();
+    // Set up actions - only manageAuthority for root (matching tutorial)
+    const rootActions = Actions.set().manageAuthority().get();
+
+    // Validate parameters before creating instruction
+    validateSwigAccountParams(
+      id,
+      swigAddress,
+      userPublicKey,
+      rootAuthorityInfo,
+      rootActions
+    );
 
     // Create the Swig account instruction
     const createSwigIx = await getCreateSwigInstruction({
@@ -107,8 +203,8 @@ export const createSwigAccountWithPhantom = async (
     // Get app URL scheme for test transaction (redirect to root with identifier)
     const redirectLink = Linking.createURL('');
 
-    // Create Phantom signAndSendTransaction URL (matching demo app exactly)
-    const phantomUrl = `https://phantom.app/ul/v1/signAndSendTransaction?dapp_encryption_public_key=${bs58.encode(
+    // Create Phantom signTransaction URL (compatible method)
+    const phantomUrl = `https://phantom.app/ul/v1/signTransaction?dapp_encryption_public_key=${bs58.encode(
       dappPublicKey
     )}&nonce=${bs58.encode(nonce)}&payload=${bs58.encode(
       encryptedPayload
@@ -133,14 +229,80 @@ export const createSwigAccountWithPhantom = async (
       }, 120000); // 2 minute timeout
 
       // Store the resolver in a global state so the URL handler can access it
-      (global as any).phantomSigningResolver = {
-        resolve: (signature: string) => {
+      (global as any).phantomSwigSigningResolver = {
+        resolve: async (responseData: any) => {
           clearTimeout(timeout);
-          resolve({
-            swigAddress,
-            transactionSignature: signature,
-            success: true,
-          });
+          try {
+            console.log('📤 Processing Swig creation response from Phantom...');
+            console.log('Response data:', responseData);
+
+            // Check if we got a signature (signAndSendTransaction response)
+            if (responseData.signature) {
+              console.log(
+                '✅ Received transaction signature:',
+                responseData.signature
+              );
+              resolve({
+                swigAddress,
+                transactionSignature: responseData.signature,
+                success: true,
+              });
+              return;
+            }
+
+            // Check if we got a signed transaction (signTransaction response)
+            if (responseData.transaction) {
+              console.log('📤 Sending signed Swig creation transaction...');
+
+              // Decode the signed transaction
+              const signedTransaction = bs58.decode(responseData.transaction);
+
+              // Send the signed transaction
+              const signature = await connection.sendRawTransaction(
+                signedTransaction,
+                {
+                  skipPreflight: false,
+                  preflightCommitment: 'confirmed',
+                }
+              );
+
+              console.log(
+                '⏳ Confirming Swig creation transaction:',
+                signature
+              );
+
+              // Confirm the transaction
+              await connection.confirmTransaction({
+                signature,
+                blockhash,
+                lastValidBlockHeight: (
+                  await connection.getLatestBlockhash()
+                ).lastValidBlockHeight,
+              });
+
+              console.log('✅ Swig creation transaction confirmed!');
+
+              resolve({
+                swigAddress,
+                transactionSignature: signature,
+                success: true,
+              });
+              return;
+            }
+
+            // If we get here, the response format is unexpected
+            console.error(
+              '❌ Unexpected response format from Phantom:',
+              responseData
+            );
+            reject(new Error('Unexpected response format from Phantom'));
+          } catch (sendError) {
+            console.error(
+              '❌ Error processing Swig creation response:',
+              sendError
+            );
+            reject(sendError);
+          }
         },
         reject: (error: Error) => {
           clearTimeout(timeout);
@@ -162,24 +324,191 @@ export const createSwigAccountWithPhantom = async (
 };
 
 /**
+ * Creates a Swig account using Mobile Wallet Adapter (Android)
+ * Following the EXACT same pattern as the working MWA test transaction
+ */
+export const createSwigAccountWithMWA = async (
+  connection: Connection,
+  solanaNetwork: string
+): Promise<MobileSwigCreationResult> => {
+  // Initialize MWA if needed
+  await initializeMWA();
+
+  if (!transact) {
+    return {
+      swigAddress: PublicKey.default,
+      transactionSignature: '',
+      success: false,
+      error: 'Mobile Wallet Adapter not available',
+    };
+  }
+
+  try {
+    // Step 1: Get blockhash BEFORE any MWA operations (same as working test)
+    const latestBlockhash = await connection.getLatestBlockhash();
+
+    // Step 2: Use MWA ONLY for authorization (same as working test)
+    const cluster = solanaNetwork.includes('mainnet') ? 'mainnet-beta' : 'devnet';
+    const authResult = await transact(async (wallet: any) => {
+      const result = await wallet.authorize({
+        cluster: cluster, // Use proper cluster name
+        identity: {
+          name: 'Rekt', // Same as working test
+          uri: 'https://rekt.app',
+          icon: 'favicon.ico',
+        },
+        // NO cached auth token - same as working test
+      });
+
+      return result; // Simple return, just like working test
+    });
+
+    // Step 3: Now do ALL Swig transaction operations OUTSIDE of MWA
+    // Convert base64 address to PublicKey
+    const addressBytes = toByteArray(authResult.accounts[0].address);
+    const authorizedPubkey = new PublicKey(addressBytes);
+
+    // Generate random ID (matching tutorial approach)
+    const id = new Uint8Array(32);
+    crypto.getRandomValues(id);
+
+    // Derive the Swig PDA
+    const swigAddress = findSwigPda(id);
+
+    // Create authority info for the authorized public key
+    console.log(
+      '🔧 Creating Ed25519 authority info for:',
+      authorizedPubkey.toBase58()
+    );
+    const rootAuthorityInfo = createEd25519AuthorityInfo(authorizedPubkey);
+    console.log('🔧 Authority info created:', rootAuthorityInfo);
+
+    // Set up actions - only manageAuthority for root (matching tutorial)
+    const rootActions = Actions.set().manageAuthority().get();
+
+    // Create the Swig account instruction
+    console.log('🔧 Creating Swig instruction...');
+    console.log('- Payer:', authorizedPubkey.toBase58());
+    console.log('- Swig Address:', swigAddress.toBase58());
+
+    // Validate parameters before creating instruction
+    validateSwigAccountParams(
+      id,
+      swigAddress,
+      authorizedPubkey,
+      rootAuthorityInfo,
+      rootActions
+    );
+
+    const createSwigIx = await getCreateSwigInstruction({
+      payer: authorizedPubkey,
+      id,
+      actions: rootActions,
+      authorityInfo: rootAuthorityInfo,
+    });
+
+    console.log('✅ Swig instruction created');
+
+    // Create the transaction using VersionedTransaction (same as working test)
+
+    // Create the transaction message
+    console.log('🔧 Building transaction message...');
+    const txMessage = new TransactionMessage({
+      payerKey: authorizedPubkey,
+      recentBlockhash: latestBlockhash.blockhash,
+      instructions: [createSwigIx],
+    }).compileToV0Message();
+
+    // Construct the Versioned Transaction
+    const versionedTransaction = new VersionedTransaction(txMessage);
+    console.log('✅ Transaction built successfully');
+
+    // Step 4: Use MWA ONLY for signing (minimal operation, same as working test)
+    console.log('🔐 Starting MWA signing process...');
+    const signResult = await transact(async (wallet: any) => {
+      console.log('🔐 Re-authorizing with cached token...');
+      // Re-authorize with the cached token from previous auth
+      await wallet.authorize({
+        cluster: cluster,
+        identity: {
+          name: 'Rekt',
+          uri: 'https://rekt.app',
+          icon: 'favicon.ico',
+        },
+        auth_token: authResult.auth_token, // Use the token from previous auth
+      });
+
+      console.log('🔐 Requesting transaction signature...');
+      const signedTransactions = await wallet.signTransactions({
+        transactions: [versionedTransaction],
+      });
+
+      console.log('✅ Transaction signed successfully');
+      return signedTransactions[0]; // Simple return
+    });
+
+    // Step 5: Send transaction using connection (outside MWA, same as working test)
+    const serializedTx = signResult.serialize();
+    const txSignature = await connection.sendRawTransaction(serializedTx, {
+      skipPreflight: false,
+      preflightCommitment: 'confirmed',
+    });
+
+    // Wait for confirmation
+    await connection.confirmTransaction({
+      signature: txSignature,
+      blockhash: latestBlockhash.blockhash,
+      lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+    });
+
+    console.log('✅ Swig account created with MWA:', swigAddress.toBase58());
+    console.log('✅ Transaction signature:', txSignature);
+
+    return {
+      swigAddress,
+      transactionSignature: txSignature,
+      success: true,
+    };
+  } catch (error) {
+    console.error('Error creating Swig account with MWA:', error);
+
+    if (error instanceof Error) {
+      // Handle specific MWA session errors (same as working test)
+      if (error.message.includes('CLOSED')) {
+        return {
+          swigAddress: PublicKey.default,
+          transactionSignature: '',
+          success: false,
+          error: 'Wallet session closed. Please try again.',
+        };
+      }
+    }
+
+    const errorMessage =
+      error instanceof Error ? error.message : 'Unknown error occurred';
+    return {
+      swigAddress: PublicKey.default,
+      transactionSignature: '',
+      success: false,
+      error: errorMessage,
+    };
+  }
+};
+
+/**
  * Determines the appropriate method to create a Swig account based on platform and wallet
  */
 export const createSwigAccountForMobile = async (
   connection: Connection,
   _userPublicKey: PublicKey,
-  _solanaNetwork: string,
+  solanaNetwork: string,
   sharedSecret?: Uint8Array,
   session?: string,
   dappPublicKey?: Uint8Array
 ): Promise<MobileSwigCreationResult> => {
   if (isAndroid) {
-    // For now, return an error since this function is not implemented
-    return {
-      swigAddress: _userPublicKey, // placeholder
-      transactionSignature: '',
-      success: false,
-      error: 'MWA Swig account creation not implemented',
-    };
+    // Use MWA for Android
+    return await createSwigAccountWithMWA(connection, solanaNetwork);
   } else if (
     Platform.OS === 'ios' &&
     sharedSecret &&
@@ -217,7 +546,6 @@ export const createTestTransaction = async (
   userPublicKey: PublicKey
 ): Promise<Transaction> => {
   // Create a simple transaction that transfers minimal SOL to specified test address
-  const { SystemProgram } = require('@solana/web3.js');
 
   // Test recipient address
   const testRecipientAddress = new PublicKey(
@@ -249,6 +577,9 @@ export const signTestTransactionWithMWA = async (
   _userPublicKey: PublicKey,
   solanaNetwork: string
 ): Promise<{ signature: string; success: boolean; error?: string }> => {
+  // Initialize MWA if needed
+  await initializeMWA();
+
   if (!transact) {
     return {
       signature: '',
@@ -262,9 +593,10 @@ export const signTestTransactionWithMWA = async (
     const latestBlockhash = await connection.getLatestBlockhash();
 
     // Step 2: Use MWA ONLY for authorization (same as working connection)
+    const cluster = solanaNetwork.includes('mainnet') ? 'mainnet-beta' : 'devnet';
     const authResult = await transact(async (wallet: any) => {
       const result = await wallet.authorize({
-        cluster: solanaNetwork, // Same as working connection
+        cluster: cluster, // Use proper cluster name
         identity: {
           name: 'Rekt', // Same as working connection
           uri: 'https://rekt.app',
@@ -282,11 +614,6 @@ export const signTestTransactionWithMWA = async (
     const authorizedPubkey = new PublicKey(addressBytes);
 
     // Create test transaction using the authorized public key
-    const {
-      SystemProgram,
-      TransactionMessage,
-      VersionedTransaction,
-    } = require('@solana/web3.js');
 
     const testRecipientAddress = new PublicKey(
       '9PFiMki6eJKF238GDyEBt7yfeNL6JGD2YFKs41VyVHQp'
@@ -315,7 +642,7 @@ export const signTestTransactionWithMWA = async (
     const signResult = await transact(async (wallet: any) => {
       // Re-authorize with the cached token from previous auth
       await wallet.authorize({
-        cluster: solanaNetwork,
+        cluster: cluster,
         identity: {
           name: 'Rekt',
           uri: 'https://rekt.app',
@@ -379,13 +706,8 @@ export const signTestTransactionWithPhantom = async (
   session: string,
   dappPublicKey: Uint8Array
 ): Promise<{ signature: string; success: boolean; error?: string }> => {
-  const bs58 = require('bs58');
-  const nacl = require('tweetnacl');
-  const Buffer = require('buffer').Buffer;
-
   try {
     // Use legacy Transaction format for better compatibility
-    const { SystemProgram, Transaction } = require('@solana/web3.js');
 
     const testRecipientAddress = new PublicKey(
       '9PFiMki6eJKF238GDyEBt7yfeNL6JGD2YFKs41VyVHQp'
