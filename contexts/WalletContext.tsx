@@ -136,7 +136,9 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
     }
 
     try {
-      const cluster = solanaNetwork.includes('mainnet') ? 'mainnet-beta' : 'devnet';
+      const cluster = solanaNetwork.includes('mainnet')
+        ? 'mainnet-beta'
+        : 'devnet';
       const result = await transact(async (wallet: any) => {
         const authResult = await wallet.authorize({
           cluster: cluster,
@@ -237,7 +239,7 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
 
     const handleiOSUrl = (url: string) => {
       console.log('🔍 [DEBUG] Received iOS URL:', url);
-      
+
       // Check for error response first
       if (url.includes('errorCode')) {
         try {
@@ -312,10 +314,10 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
                         Connection,
                         clusterApiUrl,
                       } = require('@solana/web3.js');
-                      const cluster = solanaNetwork.includes('mainnet') ? 'mainnet-beta' : 'devnet';
-                      const connection = new Connection(
-                        clusterApiUrl(cluster)
-                      );
+                      const cluster = solanaNetwork.includes('mainnet')
+                        ? 'mainnet-beta'
+                        : 'devnet';
+                      const connection = new Connection(clusterApiUrl(cluster));
 
                       const signedTransactionBytes = bs58.decode(
                         connectData.transaction
@@ -373,7 +375,8 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
       else if (
         url.includes('data') &&
         url.includes('nonce') &&
-        ((global as any).phantomSwigSigningResolver || (global as any).phantomTestSigningResolver)
+        ((global as any).phantomSwigSigningResolver ||
+          (global as any).phantomTestSigningResolver)
       ) {
         try {
           const urlObj = new URL(url);
@@ -396,9 +399,13 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
               // Check for Swig resolver first
               if ((global as any).phantomSwigSigningResolver) {
                 if (responseData.signature) {
-                  (global as any).phantomSwigSigningResolver.resolve(responseData.signature);
+                  (global as any).phantomSwigSigningResolver.resolve(
+                    responseData.signature
+                  );
                 } else if (responseData.transaction) {
-                  (global as any).phantomSwigSigningResolver.resolve(responseData);
+                  (global as any).phantomSwigSigningResolver.resolve(
+                    responseData
+                  );
                 }
                 delete (global as any).phantomSwigSigningResolver;
               }
@@ -415,7 +422,9 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
                       Connection,
                       clusterApiUrl,
                     } = require('@solana/web3.js');
-                    const cluster = solanaNetwork.includes('mainnet') ? 'mainnet-beta' : 'devnet';
+                    const cluster = solanaNetwork.includes('mainnet')
+                      ? 'mainnet-beta'
+                      : 'devnet';
                     const connection = new Connection(clusterApiUrl(cluster));
 
                     const signedTransactionBytes = bs58.decode(
@@ -483,7 +492,7 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
     return () => {
       subscription?.remove();
     };
-  }, [handleWalletConnect, getDappKeyPair, sharedSecret, t]);
+  }, [handleWalletConnect, getDappKeyPair, sharedSecret, t, solanaNetwork]);
 
   const connect = useCallback(async () => {
     if (connecting || connected) {

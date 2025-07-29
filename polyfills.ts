@@ -41,21 +41,21 @@ if (!global.crypto.subtle) {
             expoCryptoAlgorithm = Crypto.CryptoDigestAlgorithm.SHA256;
         }
         
+        // Convert data to proper format for expo-crypto
+        const dataArray = new Uint8Array(data);
+        
+        // Use Buffer for proper binary-to-string conversion
+        const dataString = Buffer.from(dataArray).toString('binary');
+        
         const result = await Crypto.digestStringAsync(
           expoCryptoAlgorithm,
-          new Uint8Array(data).reduce(
-            (str, byte) => str + String.fromCharCode(byte),
-            ''
-          ),
+          dataString,
           { encoding: Crypto.CryptoEncoding.HEX }
         );
         
-        // Convert hex string back to ArrayBuffer
-        const bytes = new Uint8Array(result.length / 2);
-        for (let i = 0; i < result.length; i += 2) {
-          bytes[i / 2] = parseInt(result.substring(i, i + 2), 16);
-        }
-        return bytes.buffer;
+        // Convert hex string back to ArrayBuffer using Buffer (more reliable)
+        const resultBuffer = Buffer.from(result, 'hex');
+        return resultBuffer.buffer;
       },
     } as any,
   };
