@@ -63,8 +63,8 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const [currentLanguage, setCurrentLanguage] = useState('en');
   const [showSignUpForm, setShowSignUpForm] = useState(false);
   const [signUpForm, setSignUpForm] = useState<SignUpFormData>({
-    username: 'tim_ios_phantom',
-    email: 'tim_ios_phantom@email.com',
+    username: '',
+    email: '',
     profileImage: null,
     enableBiometrics: false,
   });
@@ -76,18 +76,12 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const checkExistingAuth = async () => {
       try {
-        console.log('Checking for existing authentication...');
         const authResult = await getSecureAuth();
 
         if (authResult.isValid && authResult.data) {
-          console.log('Valid auth data found, fetching user profile...');
           const user = await getUserByProfileId(authResult.data.profileId);
 
           if (user) {
-            console.log(
-              '✓ User profile found, auto-logging in:',
-              user.username
-            );
             setUserProfile(user);
             setIsLoggedIn(true);
           } else {

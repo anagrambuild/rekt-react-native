@@ -5,43 +5,6 @@ const BACKEND_BASE_URL =
   Constants.expoConfig?.extra?.apiUrl ||
   'https://rekt-user-management.onrender.com';
 
-// Test backend connectivity
-export const testBackendConnection = async (): Promise<boolean> => {
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-
-    console.log('🔍 Testing backend connection to:', BACKEND_BASE_URL);
-
-    // Try the main API endpoint instead of health check
-    const response = await fetch(
-      `${BACKEND_BASE_URL}/api/auth/create-account`,
-      {
-        method: 'OPTIONS', // Use OPTIONS to test connectivity without creating data
-        signal: controller.signal,
-      }
-    );
-
-    clearTimeout(timeoutId);
-
-    // For OPTIONS requests, we expect either 200, 204, or even 404 is fine as long as server responds
-    if (response.status < 500) {
-      console.log(
-        '✅ Backend connection successful (status:',
-        response.status,
-        ')'
-      );
-      return true;
-    } else {
-      console.log('❌ Backend server error:', response.status);
-      return false;
-    }
-  } catch (error) {
-    console.log('❌ Backend connection failed:', error);
-    return false;
-  }
-};
-
 export interface TokenPrice {
   id: string;
   symbol: string;

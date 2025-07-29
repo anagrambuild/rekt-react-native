@@ -133,6 +133,7 @@ const Index = () => {
               bottom: 0,
             }}
             pointerEvents='none'
+            nativeControls={false}
           />
           <SignUpForm onComplete={handleSignUpComplete} />
         </Column>
@@ -175,6 +176,7 @@ const Index = () => {
           player={player}
           style={{ width: '100%', height: '50%' }}
           pointerEvents='none'
+          nativeControls={false}
         />
       </Column>
       <WalletConnectionModal

@@ -1,22 +1,14 @@
 import { useRef, useState } from 'react';
-import {
-  Alert,
-  Keyboard,
-  Platform,
-  TextInput,
-  TouchableOpacity,
-} from 'react-native';
+import { Alert, Keyboard, TextInput, TouchableOpacity } from 'react-native';
 
+import RektLogo from '@/assets/images/rekt-logo.svg';
 import { useAppContext } from '@/contexts';
 import { useSolana } from '@/contexts/SolanaContext';
 import { useWallet } from '@/contexts/WalletContext';
 import { useBiometrics, useImagePicker } from '@/hooks';
+import { LoadingScreen } from '@/screens/LoadingScreen';
 import { createUser } from '@/utils/backendApi';
-import {
-  createSwigAccountForMobile,
-  signTestTransactionWithMWA,
-  signTestTransactionWithPhantom,
-} from '@/utils/mobileSwigUtils';
+import { createSwigAccountForMobile } from '@/utils/mobileSwigUtils';
 import { storeSecureAuth } from '@/utils/secureAuth';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -29,26 +21,12 @@ import {
   PrimaryButton,
   Row,
   Switch,
+  Title1,
 } from './common';
 import Constants from 'expo-constants';
 import { Image } from 'expo-image';
 import { useTranslation } from 'react-i18next';
 import styled, { DefaultTheme } from 'styled-components/native';
-
-// Import MWA for Android
-const isAndroid = Platform.OS === 'android';
-let transact: any = null;
-
-if (isAndroid) {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const protocol = require('@solana-mobile/mobile-wallet-adapter-protocol-web3js');
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    transact = protocol.transact;
-  } catch (error) {
-    console.error('Failed to import mobile wallet adapter:', error);
-  }
-}
 
 interface SignUpFormProps {
   onComplete?: () => void;
@@ -56,13 +34,16 @@ interface SignUpFormProps {
 
 export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
   const { t } = useTranslation();
-  const { signUpForm, setSignUpForm } = useAppContext();
-  const { takePhoto, pickFromLibrary, isLoading } = useImagePicker();
-  const { isSupported, isEnrolled, biometricType, enableBiometrics } =
-    useBiometrics();
   const { connected, publicKey, getDappKeyPair, sharedSecret, session } =
     useWallet();
   const { connection } = useSolana();
+  const { takePhoto, pickFromLibrary, isLoading } = useImagePicker();
+  const { isSupported, isEnrolled, biometricType, enableBiometrics } =
+    useBiometrics();
+
+  const { signUpForm, setSignUpForm } = useAppContext();
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [usernameError, setUsernameError] = useState('');
 
   const handleUsernameChange = (text: string) => {
@@ -125,64 +106,6 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
     }
   };
 
-  const handleTestWalletSigning = async () => {
-    if (!connected || !publicKey) {
-      Alert.alert(
-        t('Wallet Not Connected'),
-        t('Please connect your wallet first')
-      );
-      return;
-    }
-
-    try {
-      const solanaNetwork =
-        Constants.expoConfig?.extra?.solanaNetwork || 'solana:devnet';
-      let result;
-
-      if (Platform.OS === 'android') {
-        // Use Mobile Wallet Adapter for Android
-        result = await signTestTransactionWithMWA(
-          connection,
-          publicKey,
-          solanaNetwork
-        );
-      } else {
-        // Use Phantom deep links for iOS
-        if (!sharedSecret || !session) {
-          Alert.alert(
-            t('Wallet Not Connected'),
-            t('Please connect your Phantom wallet first')
-          );
-          return;
-        }
-
-        const dappKeyPair = getDappKeyPair();
-        result = await signTestTransactionWithPhantom(
-          connection,
-          publicKey,
-          sharedSecret,
-          session,
-          dappKeyPair.publicKey
-        );
-      }
-
-      if (result.success) {
-        Alert.alert(
-          t('Test Successful'),
-          t('Wallet signing test completed successfully!')
-        );
-      } else {
-        Alert.alert(
-          t('Test Failed'),
-          result.error || t('Unknown error occurred')
-        );
-      }
-    } catch (error) {
-      console.error('Test wallet signing error:', error);
-      Alert.alert(t('Test Failed'), t('Failed to test wallet signing'));
-    }
-  };
-
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
@@ -190,12 +113,9 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
       Alert.alert(t('Error'), t('Wallet not connected'));
       return;
     }
-
+    setIsSubmitting(true);
     try {
-      console.log('🚀 Starting account creation process...');
-
       // Step 1: Create Swig account
-      console.log('🔧 Step 1: Creating Swig account...');
       const solanaNetwork =
         Constants.expoConfig?.extra?.solanaNetwork || 'solana:devnet';
       const dappKeyPair = getDappKeyPair();
@@ -214,9 +134,6 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
         throw new Error(`Swig creation failed: ${swigResult.error}`);
       }
 
-      console.log('✅ Swig account created successfully!');
-      console.log('🏠 Swig address:', swigResult.swigAddress);
-
       // Convert swigAddress to string if it's a PublicKey
       const swigAddressString =
         typeof swigResult.swigAddress === 'string'
@@ -224,7 +141,6 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
           : swigResult.swigAddress.toBase58();
 
       // Step 2: Create user in database
-      console.log('💾 Step 2: Creating user in database...');
       const user = await createUser({
         username: signUpForm.username,
         email: signUpForm.email,
@@ -233,11 +149,7 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
         profileImage: signUpForm.profileImage || undefined,
       });
 
-      console.log('✅ User created successfully in database!');
-      console.log('👤 User ID:', user.id);
-
       // Step 3: Store authentication data
-      console.log('🔐 Step 3: Storing authentication data...');
       await storeSecureAuth(publicKey.toBase58(), swigAddressString, user.id);
 
       // Step 4: Store biometric preference if enabled
@@ -247,15 +159,7 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
         await AsyncStorage.setItem('biometric_enabled', 'false');
       }
 
-      console.log(
-        '🎉 Complete! Account creation process finished successfully!'
-      );
-      console.log('📊 Summary:');
-      console.log('  - Wallet:', publicKey.toBase58());
-      console.log('  - Swig:', swigAddressString);
-      console.log('  - User ID:', user.id);
-      console.log('  - Username:', signUpForm.username);
-
+      setIsSubmitting(false);
       onComplete?.();
     } catch (error) {
       console.error('❌ Account creation process failed:', error);
@@ -306,93 +210,99 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
     }
   };
 
+  // Show loading screen when submitting (after user returns from Phantom)
+  if (isSubmitting) {
+    return <LoadingScreen />;
+  }
+
   return (
     <FormContainer>
       <Column
         $gap={24}
         $width='100%'
+        $padding={24}
         $justifyContent='space-between'
         style={{ flex: 1 }}
       >
-        {/* Profile Image Upload */}
-        <TouchableOpacity onPress={handleImagePicker} disabled={isLoading}>
-          <AvatarContainer>
-            <AvatarImage
-              source={
-                signUpForm.profileImage
-                  ? { uri: signUpForm.profileImage }
-                  : require('@/assets/images/app-pngs/avatar.png')
-              }
-            />
-            <UploadOverlay>
-              <UploadText>{t('Upload Photo')}</UploadText>
-            </UploadOverlay>
-          </AvatarContainer>
-        </TouchableOpacity>
-
-        {/* Username Input */}
         <Column $gap={24}>
-          <Input
-            label={`${t('Username')} *`}
-            placeholder={t('Enter your username')}
-            value={signUpForm.username}
-            onChangeText={handleUsernameChange}
-            returnKeyType='next'
-            onSubmitEditing={onNext}
-          />
-          {usernameError ? <ErrorText>{usernameError}</ErrorText> : null}
+          <RektLogo width={100} height={50} />
+          <Title1 style={{ textAlign: 'center' }}>
+            {t('Complete Your Profile')}
+          </Title1>
+          {/* Profile Image Upload */}
+          <TouchableOpacity onPress={handleImagePicker} disabled={isLoading}>
+            <AvatarContainer>
+              <AvatarImage
+                source={
+                  signUpForm.profileImage
+                    ? { uri: signUpForm.profileImage }
+                    : require('@/assets/images/app-pngs/avatar.png')
+                }
+              />
+              <UploadOverlay>
+                <UploadText>{t('Upload Photo')}</UploadText>
+              </UploadOverlay>
+            </AvatarContainer>
+          </TouchableOpacity>
 
-          {/* Email Input */}
-          <Input
-            label={t('Email Address')}
-            placeholder={t('Enter your email (optional)')}
-            value={signUpForm.email}
-            onChangeText={handleEmailChange}
-            returnKeyType='done'
-            onSubmitEditing={Keyboard.dismiss}
-            ref={emailInputRef}
-          />
+          {/* Username Input */}
+          <Column $gap={24}>
+            <Input
+              label={`${t('Username')} *`}
+              placeholder={t('Enter your username')}
+              value={signUpForm.username}
+              onChangeText={handleUsernameChange}
+              returnKeyType='next'
+              onSubmitEditing={onNext}
+            />
+            {usernameError ? <ErrorText>{usernameError}</ErrorText> : null}
 
-          {/* Biometric Switch */}
-          {isSupported && isEnrolled && (
-            <Card $padding={16}>
-              <Row $gap={12} $justifyContent='space-between' $width='auto'>
-                <Column
-                  $gap={4}
-                  $flex={1}
-                  $width='auto'
-                  $alignItems='flex-start'
-                >
-                  <BodyS>
-                    {t('Enable {{biometricType}}', { biometricType })}
-                  </BodyS>
-                  <BodyS style={{ opacity: 0.7, fontSize: 12 }}>
-                    {t('Use {{biometricType}} to unlock the app', {
-                      biometricType,
-                    })}
-                  </BodyS>
-                </Column>
-                <Switch
-                  isOn={signUpForm.enableBiometrics}
-                  onPress={handleBiometricToggle}
-                />
-              </Row>
-            </Card>
-          )}
+            {/* Email Input */}
+            <Input
+              label={t('Email Address')}
+              placeholder={t('Enter your email (optional)')}
+              value={signUpForm.email}
+              onChangeText={handleEmailChange}
+              returnKeyType='done'
+              onSubmitEditing={Keyboard.dismiss}
+              ref={emailInputRef}
+            />
+
+            {/* Biometric Switch */}
+            {isSupported && isEnrolled && (
+              <Card $padding={16}>
+                <Row $gap={12} $justifyContent='space-between' $width='auto'>
+                  <Column
+                    $gap={4}
+                    $flex={1}
+                    $width='auto'
+                    $alignItems='flex-start'
+                  >
+                    <BodyS>
+                      {t('Enable {{biometricType}}', { biometricType })}
+                    </BodyS>
+                    <BodyS style={{ opacity: 0.7, fontSize: 12 }}>
+                      {t('Use {{biometricType}} to unlock the app', {
+                        biometricType,
+                      })}
+                    </BodyS>
+                  </Column>
+                  <Switch
+                    isOn={signUpForm.enableBiometrics}
+                    onPress={handleBiometricToggle}
+                  />
+                </Row>
+              </Card>
+            )}
+          </Column>
         </Column>
 
-        {/* Test Wallet Signing Button */}
-        {connected && (
-          <PrimaryButton
-            onPress={handleTestWalletSigning}
-            style={{ backgroundColor: '#6366f1' }}
-          >
-            {t('Test Wallet Signing')}
-          </PrimaryButton>
-        )}
-
         {/* Submit Button */}
-        <PrimaryButton onPress={handleSubmit} disabled={!!usernameError}>
+        <PrimaryButton
+          onPress={handleSubmit}
+          disabled={!!usernameError || isSubmitting}
+          loading={isSubmitting}
+        >
           {t('Complete Sign Up')}
         </PrimaryButton>
       </Column>
