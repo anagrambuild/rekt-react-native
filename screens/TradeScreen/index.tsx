@@ -147,6 +147,7 @@ export const TradeScreen = () => {
           height: '50%',
         }}
         pointerEvents='none'
+        nativeControls={false}
       />
       <View style={{ flex: 1, position: 'relative' }}>
         <Stack.Screen options={{ headerShown: false }} />

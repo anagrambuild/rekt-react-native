@@ -35,6 +35,7 @@ export const LoadingScreen = () => {
           zIndex: 0,
         }}
         pointerEvents='none'
+        nativeControls={false}
       />
     </ScreenContainer>
   );
