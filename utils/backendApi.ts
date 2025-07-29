@@ -1,12 +1,46 @@
-// Removed Platform import since we're using IP address for all devices
+import Constants from 'expo-constants';
 
-// For React Native, localhost needs to be different for different platforms
-// iOS Simulator: localhost or 127.0.0.1
-// Android Emulator: 10.0.2.2
-// Physical device: your computer's IP address
-const BACKEND_BASE_URL = __DEV__
-  ? 'http://10.0.0.245:3001' // Your computer's IP address for physical devices
-  : 'http://localhost:3001';
+// Use the API URL from app.config.js
+const BACKEND_BASE_URL =
+  Constants.expoConfig?.extra?.apiUrl ||
+  'https://rekt-user-management.onrender.com';
+
+// Test backend connectivity
+export const testBackendConnection = async (): Promise<boolean> => {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
+    console.log('🔍 Testing backend connection to:', BACKEND_BASE_URL);
+
+    // Try the main API endpoint instead of health check
+    const response = await fetch(
+      `${BACKEND_BASE_URL}/api/auth/create-account`,
+      {
+        method: 'OPTIONS', // Use OPTIONS to test connectivity without creating data
+        signal: controller.signal,
+      }
+    );
+
+    clearTimeout(timeoutId);
+
+    // For OPTIONS requests, we expect either 200, 204, or even 404 is fine as long as server responds
+    if (response.status < 500) {
+      console.log(
+        '✅ Backend connection successful (status:',
+        response.status,
+        ')'
+      );
+      return true;
+    } else {
+      console.log('❌ Backend server error:', response.status);
+      return false;
+    }
+  } catch (error) {
+    console.log('❌ Backend connection failed:', error);
+    return false;
+  }
+};
 
 export interface TokenPrice {
   id: string;
@@ -46,22 +80,31 @@ export type SupportedToken = keyof typeof SUPPORTED_TOKENS;
 export const fetchTokenPrices = async (
   tokens: SupportedToken[] = ['sol', 'eth', 'btc']
 ): Promise<Record<SupportedToken, TokenPrice>> => {
-  console.log(
-    'Fetching token prices from backend:',
-    `${BACKEND_BASE_URL}/api/markets`
-  );
-
   try {
     const response = await fetch(`${BACKEND_BASE_URL}/api/markets`);
 
     if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.log('❌ Backend API Error:', {
+        status: response.status,
+        statusText: response.statusText,
+        url: `${BACKEND_BASE_URL}/api/auth/create-account`,
+        errorData,
+      });
+
+      if (response.status === 404) {
+        throw new Error(
+          `API endpoint not found. The backend server may not be properly deployed or the API structure has changed. Status: ${response.status}`
+        );
+      }
+
       throw new Error(
-        `Backend API Error: ${response.status} ${response.statusText}`
+        errorData.message ||
+          `HTTP error! status: ${response.status} - ${response.statusText}`
       );
     }
 
     const data: BackendMarketResponse = await response.json();
-    console.log('Backend response:', data);
 
     if (!data.success || !data.data) {
       throw new Error('Invalid response format from backend');
@@ -97,7 +140,6 @@ export const fetchTokenPrices = async (
       }
     });
 
-    console.log('Processed token prices:', result);
     return result;
   } catch (error) {
     console.error('Error fetching token prices:', error);
@@ -217,18 +259,20 @@ export const getUserByProfileId = async (
   profileId: string
 ): Promise<User | null> => {
   try {
-    const response = await fetch(`${BACKEND_BASE_URL}/api/users/profile/${profileId}`);
-    
+    const response = await fetch(
+      `${BACKEND_BASE_URL}/api/users/profile/${profileId}`
+    );
+
     if (response.status === 404) {
       return null; // User doesn't exist
     }
-    
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    
+
     const result = await response.json();
-    
+
     // Map backend response to frontend User interface
     return {
       id: result.user.id,
@@ -259,13 +303,22 @@ export const createUser = async (
       swig_wallet_address: userData.swigWalletAddress || '', // Add Swig wallet address
     };
 
-    const response = await fetch(`${BACKEND_BASE_URL}/api/auth/create-account`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(backendUserData),
-    });
+    // Add timeout to prevent hanging requests
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    const response = await fetch(
+      `${BACKEND_BASE_URL}/api/auth/create-account`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(backendUserData),
+        signal: controller.signal,
+      }
+    );
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -283,13 +336,41 @@ export const createUser = async (
       username: result.username || result.user?.username,
       email: result.email || result.user?.email,
       profileImage: result.avatar_url || result.user?.avatar_url,
-      walletAddress: result.wallet_address || result.user?.wallet_address || userData.walletAddress,
-      swigWalletAddress: result.swig_wallet_address || result.user?.swig_wallet_address || userData.swigWalletAddress,
-      createdAt: result.createdAt || result.created_at || result.user?.joined_at || new Date().toISOString(),
-      updatedAt: result.updatedAt || result.updated_at || result.user?.updated_at || new Date().toISOString(),
+      walletAddress:
+        result.wallet_address ||
+        result.user?.wallet_address ||
+        userData.walletAddress,
+      swigWalletAddress:
+        result.swig_wallet_address ||
+        result.user?.swig_wallet_address ||
+        userData.swigWalletAddress,
+      createdAt:
+        result.createdAt ||
+        result.created_at ||
+        result.user?.joined_at ||
+        new Date().toISOString(),
+      updatedAt:
+        result.updatedAt ||
+        result.updated_at ||
+        result.user?.updated_at ||
+        new Date().toISOString(),
     };
   } catch (error) {
     console.error('Error creating user:', error);
+
+    // Provide more specific error messages
+    if (error instanceof Error) {
+      if (error.name === 'AbortError') {
+        throw new Error(
+          'Request timed out. Please check your internet connection and try again.'
+        );
+      } else if (error.message.includes('Network request failed')) {
+        throw new Error(
+          'Network error. Please check if the backend server is running and accessible.'
+        );
+      }
+    }
+
     throw error;
   }
 };
@@ -329,13 +410,16 @@ export const updateUserSwigWalletAddress = async (
   swigWalletAddress: string
 ): Promise<User> => {
   try {
-    const response = await fetch(`${BACKEND_BASE_URL}/api/users/${userId}/swig-wallet`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ swigWalletAddress }),
-    });
+    const response = await fetch(
+      `${BACKEND_BASE_URL}/api/users/${userId}/swig-wallet`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ swigWalletAddress }),
+      }
+    );
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));

@@ -1,3 +1,5 @@
+import Constants from 'expo-constants';
+
 export interface WebSocketMessage {
   type: 'subscribe' | 'unsubscribe' | 'price_update' | 'set_wallet';
   channel?: string;
@@ -21,8 +23,11 @@ export class WebSocketService {
   private reconnectDelay = 1000;
   private listeners: Map<string, Set<(data: any) => void>> = new Map();
 
-  constructor(url: string = 'ws://10.0.0.245:3001') {
-    this.url = url;
+  constructor(url?: string) {
+    // Use WebSocket URL from config, convert HTTP to WebSocket protocol
+    const apiUrl = Constants.expoConfig?.extra?.apiUrl || 'https://rekt-user-management.onrender.com';
+    const wsUrl = apiUrl.replace('https://', 'wss://').replace('http://', 'ws://');
+    this.url = url || wsUrl;
   }
 
   connect(): Promise<void> {

@@ -113,7 +113,6 @@ export const getSecureAuth = async (): Promise<AuthValidationResult> => {
       return { isValid: false, reason: 'tampered' };
     }
 
-    console.log('✓ Secure authentication data validated successfully');
     return { isValid: true, data: authData };
   } catch (error) {
     console.error('Error retrieving secure auth data:', error);
@@ -127,7 +126,6 @@ export const getSecureAuth = async (): Promise<AuthValidationResult> => {
 export const clearSecureAuth = async (): Promise<void> => {
   try {
     await SecureStore.deleteItemAsync(AUTH_STORAGE_KEY);
-    console.log('✓ Secure authentication data cleared');
   } catch (error) {
     console.error('Failed to clear secure auth data:', error);
   }
