@@ -1,5 +1,11 @@
 import { useRef, useState } from 'react';
-import { Alert, Keyboard, TextInput, TouchableOpacity } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Keyboard,
+  TextInput,
+  TouchableOpacity,
+} from 'react-native';
 
 import RektLogo from '@/assets/images/rekt-logo.svg';
 import { useAppContext } from '@/contexts';
@@ -7,7 +13,7 @@ import { useSolana } from '@/contexts/SolanaContext';
 import { useWallet } from '@/contexts/WalletContext';
 import { useBiometrics, useImagePicker } from '@/hooks';
 import { LoadingScreen } from '@/screens/LoadingScreen';
-import { createUser } from '@/utils/backendApi';
+import { createUser, uploadAvatar } from '@/utils/backendApi';
 import { createSwigAccountForMobile } from '@/utils/mobileSwigUtils';
 import { storeSecureAuth } from '@/utils/secureAuth';
 
@@ -26,7 +32,7 @@ import {
 import Constants from 'expo-constants';
 import { Image } from 'expo-image';
 import { useTranslation } from 'react-i18next';
-import styled, { DefaultTheme } from 'styled-components/native';
+import styled, { DefaultTheme, useTheme } from 'styled-components/native';
 
 interface SignUpFormProps {
   onComplete?: () => void;
@@ -40,7 +46,7 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
   const { takePhoto, pickFromLibrary, isLoading } = useImagePicker();
   const { isSupported, isEnrolled, biometricType, enableBiometrics } =
     useBiometrics();
-
+  const theme = useTheme();
   const { signUpForm, setSignUpForm } = useAppContext();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -140,13 +146,30 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
           ? swigResult.swigAddress
           : swigResult.swigAddress.toBase58();
 
-      // Step 2: Create user in database
+      // Step 2: Upload avatar if provided
+      let avatarUrl: string | undefined;
+      if (signUpForm.profileImage) {
+        try {
+          avatarUrl = await uploadAvatar(
+            signUpForm.profileImage,
+            `avatar_${Date.now()}.jpg`
+          );
+        } catch (avatarError) {
+          console.warn(
+            '⚠️ Avatar upload failed, continuing without avatar:',
+            avatarError
+          );
+          // Continue without avatar rather than failing the entire process
+        }
+      }
+
+      // Step 2b: Create user in database
       const user = await createUser({
         username: signUpForm.username,
         email: signUpForm.email,
         walletAddress: publicKey.toBase58(),
         swigWalletAddress: swigAddressString,
-        profileImage: signUpForm.profileImage || undefined,
+        profileImage: avatarUrl, // Use uploaded avatar URL instead of local path
       });
 
       // Step 3: Store authentication data
@@ -212,7 +235,16 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
 
   // Show loading screen when submitting (after user returns from Phantom)
   if (isSubmitting) {
-    return <LoadingScreen />;
+    return (
+      <>
+        <LoadingScreen />
+        <ActivityIndicator
+          size='large'
+          color={theme.colors.primary}
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+        />
+      </>
+    );
   }
 
   return (
