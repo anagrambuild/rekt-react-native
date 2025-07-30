@@ -9,7 +9,7 @@ import {
   PressableOpacity,
   Row,
 } from '@/components';
-import { useProfileContext } from '@/contexts';
+import { useProfileContext, useWallet } from '@/contexts';
 
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
@@ -24,6 +24,7 @@ export const ProfileInfoCards = () => {
   const { t } = useTranslation();
   const theme = useTheme();
   const { setIsOnOffRampModalVisible } = useProfileContext();
+  const { usdcBalance, isLoadingBalance } = useWallet();
   return (
     <Column $gap={6}>
       <PressableOpacity
@@ -36,7 +37,9 @@ export const ProfileInfoCards = () => {
               {t('Balance').toUpperCase()}
             </BodyXSMonoSecondary>
             <Row $gap={6} $width='auto'>
-              <Body1>{userMockData.balance.toLocaleString()}</Body1>
+              <Body1>
+                {isLoadingBalance ? '...' : (usdcBalance || 0).toLocaleString()}
+              </Body1>
               <UsdcIcon width={iconSize} height={iconSize} />
             </Row>
           </Column>

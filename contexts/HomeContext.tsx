@@ -1,7 +1,9 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useState } from 'react';
 
 import { currentPrices } from '@/screens/HomeScreen/mockData';
 import { SupportedToken, TokenPrice } from '@/utils';
+
+import { useWallet } from './WalletContext';
 
 // Trade type for active trades
 export type TradeStatus = 'open' | 'closed';
@@ -56,12 +58,12 @@ export const useHomeContext = () => {
 };
 
 export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
+  const { usdcBalance } = useWallet();
   const [selectedToken, setSelectedToken] = useState<string>('sol');
   const [selectedTimeframe, setSelectedTimeframe] = useState<string>('1m');
   const [solTrade, setSolTrade] = useState<Trade | null>(null);
   const [ethTrade, setEthTrade] = useState<Trade | null>(null);
   const [btcTrade, setBtcTrade] = useState<Trade | null>(null);
-  const [walletBalance, setWalletBalance] = useState<number>(0);
 
   // Use mock token prices instead of API
   const [tokenPrices] = useState<Record<SupportedToken, TokenPrice>>({
@@ -102,14 +104,8 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
   const isPricesLoading = false;
   const pricesError = null;
 
-  useEffect(() => {
-    // TODO - fetch real wallet balance
-    const fetchWalletBalance = async () => {
-      // const balance = await getWalletBalance();
-      setWalletBalance(1004.56);
-    };
-    fetchWalletBalance();
-  }, []);
+  // Use USDC balance from wallet context
+  const walletBalance = usdcBalance || 0;
 
   return (
     <HomeContext.Provider

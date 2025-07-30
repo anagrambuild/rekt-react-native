@@ -10,8 +10,9 @@ import {
 } from 'react';
 import { Alert, Linking, Platform } from 'react-native';
 
-import { PublicKey } from '@solana/web3.js';
+import { clusterApiUrl, Connection, PublicKey } from '@solana/web3.js';
 
+import { getSecureAuth } from '../utils/secureAuth';
 import { Buffer } from 'buffer';
 import Constants from 'expo-constants';
 import { useTranslation } from 'react-i18next';
@@ -50,10 +51,14 @@ export interface WalletContextState {
   getDappKeyPair: () => nacl.BoxKeyPair;
   sharedSecret: Uint8Array | null;
   session: string | null;
+  usdcBalance: number | null;
+  isLoadingBalance: boolean;
+  balanceError: string | null;
   connect: () => Promise<void>;
   disconnect: () => void;
   setShowWalletModal: (show: boolean) => void;
   handleWalletConnect: (publicKey: string) => void;
+  refreshBalance: () => Promise<void>;
 }
 
 const WalletContext = createContext<WalletContextState>({
@@ -67,10 +72,14 @@ const WalletContext = createContext<WalletContextState>({
   }),
   sharedSecret: null,
   session: null,
+  usdcBalance: null,
+  isLoadingBalance: false,
+  balanceError: null,
   connect: async () => {},
   disconnect: () => {},
   setShowWalletModal: () => {},
   handleWalletConnect: () => {},
+  refreshBalance: async () => {},
 });
 
 export const useWallet = () => {
@@ -126,9 +135,71 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
     persistentWalletState.session
   );
 
+  // USDC balance state
+  const [usdcBalance, setUsdcBalance] = useState<number | null>(null);
+  const [isLoadingBalance, setIsLoadingBalance] = useState(false);
+  const [balanceError, setBalanceError] = useState<string | null>(null);
+
   // Get Solana network from Expo config
   const solanaNetwork =
     Constants.expoConfig?.extra?.solanaNetwork || 'solana:devnet';
+
+  // Get USDC mint address from config
+  const usdcMint =
+    Constants.expoConfig?.extra?.usdcMint ||
+    'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
+
+  // Function to fetch USDC balance using stored wallet address
+  const refreshBalance = useCallback(async () => {
+    setIsLoadingBalance(true);
+    setBalanceError(null);
+
+    try {
+      // Get wallet address from secure storage
+      const authResult = await getSecureAuth();
+      if (!authResult.isValid || !authResult.data?.walletAddress) {
+        setUsdcBalance(null);
+        setBalanceError('No wallet address found');
+        return;
+      }
+
+      const walletAddress = authResult.data.walletAddress;
+      const walletPublicKey = new PublicKey(walletAddress);
+
+      const cluster = solanaNetwork.includes('mainnet')
+        ? 'mainnet-beta'
+        : 'devnet';
+      const connection = new Connection(clusterApiUrl(cluster), 'confirmed');
+
+      // Get token accounts for the wallet
+      const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
+        walletPublicKey,
+        {
+          mint: new PublicKey(usdcMint),
+        }
+      );
+
+      if (tokenAccounts.value.length === 0) {
+        // No USDC token account found
+        setUsdcBalance(0);
+      } else {
+        // Get the balance from the first token account
+        const balance =
+          tokenAccounts.value[0].account.data.parsed.info.tokenAmount.uiAmount;
+        setUsdcBalance(balance || 0);
+      }    } catch (error) {
+      console.error('Error fetching USDC balance:', error);
+      setBalanceError('Failed to fetch USDC balance');
+      setUsdcBalance(null);
+    } finally {
+      setIsLoadingBalance(false);
+    }
+  }, [solanaNetwork, usdcMint]);
+
+  // Fetch balance when app loads (using stored wallet address)
+  useEffect(() => {
+    refreshBalance();
+  }, [refreshBalance]);
 
   const connectAndroid = useCallback(async () => {
     if (!isAndroid || !transact) {
@@ -529,6 +600,11 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
     setPublicKey(null);
     setSharedSecret(null);
     setSession(null);
+
+    // Clear balance state
+    setUsdcBalance(null);
+    setBalanceError(null);
+    setIsLoadingBalance(false);
   }, []);
 
   const value: WalletContextState = {
@@ -539,10 +615,14 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
     getDappKeyPair,
     sharedSecret,
     session,
+    usdcBalance,
+    isLoadingBalance,
+    balanceError,
     connect,
     disconnect,
     setShowWalletModal,
     handleWalletConnect,
+    refreshBalance,
   };
 
   return (

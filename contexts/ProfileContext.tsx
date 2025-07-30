@@ -6,6 +6,7 @@ import {
   userMockData,
 } from '@/screens/ProfileScreen/profileMockData';
 
+import { useWallet } from './WalletContext';
 import { useTranslation } from 'react-i18next';
 
 export interface User {
@@ -70,6 +71,7 @@ export const ProfileProvider = ({
   children: React.ReactNode;
 }) => {
   const { t } = useTranslation();
+  const { usdcBalance } = useWallet();
   const [view, setView] = useState<'trades' | 'minigame'>('trades');
   const [isEditProfileModalVisible, setIsEditProfileModalVisible] =
     useState(false);
@@ -86,7 +88,7 @@ export const ProfileProvider = ({
   const userData: User = {
     username: userMockData.username,
     imgSrc: userImage,
-    balance: userMockData.balance,
+    balance: usdcBalance || 0,
   };
 
   const handleLinkPress = () => {

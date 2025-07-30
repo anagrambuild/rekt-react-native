@@ -19,8 +19,6 @@ import * as Linking from 'expo-linking';
 import { toByteArray } from 'react-native-quick-base64';
 import nacl from 'tweetnacl';
 
-
-
 // Type definition for mobile Swig creation result
 export interface MobileSwigCreationResult {
   swigAddress: PublicKey;
@@ -76,8 +74,8 @@ export const createSwigAccountWithPhantom = async (
   try {
     // Get USDC mint address from app config
     const usdcMint = new PublicKey(
-      Constants.expoConfig?.extra?.usdcMint || 
-      'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v' // Mainnet USDC fallback
+      Constants.expoConfig?.extra?.usdcMint ||
+        'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v' // Mainnet USDC fallback
     );
 
     // Create authority info for the user's public key
@@ -86,9 +84,9 @@ export const createSwigAccountWithPhantom = async (
     // Set up actions - manageAuthority AND USDC token permissions in one transaction
     const rootActions = Actions.set()
       .manageAuthority()
-      .tokenLimit({ 
-        mint: usdcMint, 
-        amount: BigInt(1000 * 10 ** 6) // 1000 USDC (6 decimals)
+      .tokenLimit({
+        mint: usdcMint,
+        amount: BigInt(1000 * 10 ** 6), // 1000 USDC (6 decimals)
       })
       .get();
 
@@ -330,8 +328,8 @@ export const createSwigAccountWithMWA = async (
 
     // Get USDC mint address from app config
     const usdcMint = new PublicKey(
-      Constants.expoConfig?.extra?.usdcMint || 
-      'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v' // Mainnet USDC fallback
+      Constants.expoConfig?.extra?.usdcMint ||
+        'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v' // Mainnet USDC fallback
     );
 
     // Create authority info for the authorized public key
@@ -340,13 +338,11 @@ export const createSwigAccountWithMWA = async (
     // Set up actions - manageAuthority AND USDC token permissions in one transaction
     const rootActions = Actions.set()
       .manageAuthority()
-      .tokenLimit({ 
-        mint: usdcMint, 
-        amount: BigInt(1000 * 10 ** 6) // 1000 USDC (6 decimals)
+      .tokenLimit({
+        mint: usdcMint,
+        amount: BigInt(1000 * 10 ** 6), // 1000 USDC (6 decimals)
       })
       .get();
-
-
 
     // Create the Swig account instruction manually with correct address
     // We need to calculate the bump seed for the PDA

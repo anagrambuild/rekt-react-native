@@ -93,7 +93,7 @@ export const AmountModal = ({
           }}
         >
           <WalletIcon width={24} height={24} />
-          <BodyS>${walletBalance} USDC</BodyS>
+          <BodyS>${walletBalance.toLocaleString()} USDC</BodyS>
         </Row>
         <ScrollRow $gap={8} keyboardShouldPersistTaps='always'>
           <PresetButton value={10} onPress={() => setLocalAmount('10')} />
