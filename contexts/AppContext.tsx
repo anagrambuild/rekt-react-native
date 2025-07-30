@@ -10,8 +10,12 @@ import {
 import { AppState } from 'react-native';
 
 import { detectLanguage, initializeI18n } from '../i18n';
+import { getUserByProfileId } from '../utils/backendApi';
+import { getSecureAuth } from '../utils/secureAuth';
 import { HomeProvider } from './HomeContext';
 import { ProfileProvider } from './ProfileContext';
+import { SolanaProvider } from './SolanaContext';
+import { WalletProvider } from './WalletContext';
 
 type SignUpFormData = {
   username: string;
@@ -29,6 +33,9 @@ type AppContextType = {
   setShowSignUpForm: Dispatch<SetStateAction<boolean>>;
   signUpForm: SignUpFormData;
   setSignUpForm: Dispatch<SetStateAction<SignUpFormData>>;
+  userProfile: any | null;
+  setUserProfile: Dispatch<SetStateAction<any | null>>;
+  checkingAuth: boolean;
 };
 
 export const AppContext = createContext<AppContextType>({
@@ -38,8 +45,16 @@ export const AppContext = createContext<AppContextType>({
   currentLanguage: 'en',
   showSignUpForm: false,
   setShowSignUpForm: () => {},
-  signUpForm: { username: '', email: '', profileImage: null, enableBiometrics: false },
+  signUpForm: {
+    username: '',
+    email: '',
+    profileImage: null,
+    enableBiometrics: false,
+  },
   setSignUpForm: () => {},
+  userProfile: null,
+  setUserProfile: () => {},
+  checkingAuth: false,
 });
 
 export const AppProvider = ({ children }: { children: React.ReactNode }) => {
@@ -53,7 +68,37 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     profileImage: null,
     enableBiometrics: false,
   });
+  const [userProfile, setUserProfile] = useState<any | null>(null);
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const appState = useRef(AppState.currentState);
+
+  // Check for existing authentication on app startup
+  useEffect(() => {
+    const checkExistingAuth = async () => {
+      try {
+        const authResult = await getSecureAuth();
+
+        if (authResult.isValid && authResult.data) {
+          const user = await getUserByProfileId(authResult.data.profileId);
+
+          if (user) {
+            setUserProfile(user);
+            setIsLoggedIn(true);
+          } else {
+            console.log('⚠️ User profile not found in database');
+          }
+        } else {
+          console.log('No valid auth data found:', authResult.reason);
+        }
+      } catch (error) {
+        console.error('Error checking existing auth:', error);
+      } finally {
+        setCheckingAuth(false);
+      }
+    };
+
+    checkExistingAuth();
+  }, []);
 
   useEffect(() => {
     // Initial i18n load
@@ -82,26 +127,33 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, []);
 
-  if (!i18nReady) {
+  if (!i18nReady || checkingAuth) {
     return null; // or a loading spinner
   }
 
   return (
     <AppContext.Provider
-      value={{ 
-        isLoggedIn, 
-        setIsLoggedIn, 
-        i18nReady, 
+      value={{
+        isLoggedIn,
+        setIsLoggedIn,
+        i18nReady,
         currentLanguage,
         showSignUpForm,
         setShowSignUpForm,
         signUpForm,
         setSignUpForm,
+        userProfile,
+        setUserProfile,
+        checkingAuth,
       }}
     >
-      <ProfileProvider>
-        <HomeProvider>{children}</HomeProvider>
-      </ProfileProvider>
+      <SolanaProvider>
+        <WalletProvider>
+          <ProfileProvider>
+            <HomeProvider>{children}</HomeProvider>
+          </ProfileProvider>
+        </WalletProvider>
+      </SolanaProvider>
     </AppContext.Provider>
   );
 };

@@ -19,6 +19,7 @@ export const PriceChartCard = ({
     solTrade,
     ethTrade,
     btcTrade,
+    tokenPrices,
   } = useHomeContext();
 
   // Get the current trade based on selected token
@@ -37,24 +38,33 @@ export const PriceChartCard = ({
 
   const currentTrade = getCurrentTrade();
 
+  // Format price for display
+  const formatPrice = (price: number | undefined) => {
+    if (!price) return '---';
+    if (price >= 1000) {
+      return `${(price / 1000).toFixed(1)}K`;
+    }
+    return price.toFixed(0);
+  };
+
   return (
     <Card style={{ gap: 4 }}>
       <ScrollRow contentContainerStyle={{ gap: 4 }}>
         <TokenTab
           name='sol'
-          price='100'
+          price={formatPrice(tokenPrices?.sol?.current_price)}
           selected={selectedToken === 'sol'}
           onPress={() => setSelectedToken('sol')}
         />
         <TokenTab
           name='eth'
-          price='100'
+          price={formatPrice(tokenPrices?.eth?.current_price)}
           selected={selectedToken === 'eth'}
           onPress={() => setSelectedToken('eth')}
         />
         <TokenTab
           name='btc'
-          price='100'
+          price={formatPrice(tokenPrices?.btc?.current_price)}
           selected={selectedToken === 'btc'}
           onPress={() => setSelectedToken('btc')}
         />

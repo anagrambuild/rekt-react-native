@@ -1,3 +1,5 @@
+import { TextInput } from 'react-native';
+
 import { Column, Row } from './containers';
 import { BodyS } from './texts';
 import styled from 'styled-components/native';
@@ -21,6 +23,7 @@ interface IntputProps {
   onChangeText: (text: string) => void;
   returnKeyType: 'done' | 'next' | 'search' | 'send';
   onSubmitEditing: () => void;
+  ref?: React.RefObject<TextInput | null>;
 }
 
 export const Input = ({
@@ -30,6 +33,7 @@ export const Input = ({
   onChangeText,
   returnKeyType,
   onSubmitEditing,
+  ref,
 }: IntputProps) => {
   return (
     <Column
@@ -46,6 +50,7 @@ export const Input = ({
           placeholder={placeholder}
           returnKeyType={returnKeyType}
           onSubmitEditing={onSubmitEditing}
+          ref={ref}
         />
       </Row>
     </Column>

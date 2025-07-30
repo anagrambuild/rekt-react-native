@@ -1,13 +1,15 @@
 import { I18nManager } from 'react-native';
 
 import { darkTheme, lightTheme } from '@/constants/theme';
-import { AppProvider, WalletProvider } from '@/contexts';
+import { AppProvider } from '@/contexts';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { queryClient } from '@/utils';
 
 import {
   DarkTheme,
   ThemeProvider as NavigationThemeProvider,
 } from '@react-navigation/native';
+import { QueryClientProvider } from '@tanstack/react-query';
 
 import '../polyfills';
 import { useFonts } from 'expo-font';
@@ -37,9 +39,9 @@ export default function RootLayout() {
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <AppProvider>
-        <WalletProvider>
+    <QueryClientProvider client={queryClient}>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <AppProvider>
           <NavigationThemeProvider value={navTheme}>
             <StyledThemeProvider theme={styledTheme}>
               <Stack screenOptions={{ headerShown: false }} />
@@ -55,8 +57,8 @@ export default function RootLayout() {
               />
             </StyledThemeProvider>
           </NavigationThemeProvider>
-        </WalletProvider>
-      </AppProvider>
-    </GestureHandlerRootView>
+        </AppProvider>
+      </GestureHandlerRootView>
+    </QueryClientProvider>
   );
 }

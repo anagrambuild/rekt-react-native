@@ -3,18 +3,23 @@ import { Dimensions, Pressable } from 'react-native';
 
 import rektBomb from '@/assets/images/app-pngs/rekt-bomb.png';
 import FlagIcon from '@/assets/images/app-svgs/flag.svg';
-import { BodyXSMonoEmphasized, PulsatingContainer } from '@/components';
+import {
+  BodyXSEmphasized,
+  BodyXSMonoEmphasized,
+  PulsatingContainer,
+} from '@/components';
 import { Trade, useHomeContext } from '@/contexts';
+import {
+  calculatePriceChange,
+  getCurrentPriceFromHistorical,
+  SupportedTimeframe,
+  SupportedToken,
+  useHistoricalDataQuery,
+} from '@/utils';
 
 import { EmojiContainer } from './EmojiContainer';
 import { FloatingEmoji } from './FloatingEmoji';
-import {
-  btcPriceData,
-  currentPrices,
-  ethPriceData,
-  liquidationPrices,
-  solPriceData,
-} from './mockData';
+import { liquidationPrices } from './mockData';
 import { Image } from 'expo-image';
 import { LineChart } from 'react-native-gifted-charts';
 import styled, { DefaultTheme, useTheme } from 'styled-components/native';
@@ -30,7 +35,17 @@ export const PriceChart = ({
 }) => {
   const theme = useTheme();
   const chartHeight = 200;
-  const { selectedToken } = useHomeContext();
+  const { selectedToken, selectedTimeframe, tokenPrices } = useHomeContext();
+
+  // Fetch historical chart data
+  const {
+    data: historicalData,
+    isLoading: isChartLoading,
+    error: chartError,
+  } = useHistoricalDataQuery(
+    selectedToken as SupportedToken,
+    selectedTimeframe as SupportedTimeframe
+  );
 
   // Floating emoji reactions state
   const [reactions, setReactions] = useState<{ id: string; emoji: string }[]>(
@@ -45,13 +60,8 @@ export const PriceChart = ({
     setIsAnimating(true);
   };
 
-  const data =
-    selectedToken === 'sol'
-      ? solPriceData
-      : selectedToken === 'eth'
-      ? ethPriceData
-      : btcPriceData;
-
+  // Use real data or fallback to loading state
+  const data = historicalData || [];
   const chartWidth = Dimensions.get('window').width * 0.9 - 8;
 
   const findYAxisOffset = (arr: number[]) => {
@@ -59,12 +69,16 @@ export const PriceChart = ({
     return Math.min(...arr);
   };
 
-  const dataValues = data.map((item) => item.value);
+  const dataValues = data.map((item: { value: number }) => item.value);
   const yAxisOffset = findYAxisOffset(dataValues);
 
-  // Get current price for selected token
+  // Get current price from real-time data or historical data
   const currentPrice =
-    currentPrices[selectedToken as keyof typeof currentPrices];
+    tokenPrices?.[selectedToken as SupportedToken]?.current_price ||
+    getCurrentPriceFromHistorical(data);
+
+  // Calculate price change percentage
+  const { changePercent } = calculatePriceChange(data);
 
   // Get liquidation price for current token
   const liquidationPrice =
@@ -110,8 +124,44 @@ export const PriceChart = ({
 
   // Toggle state for price/percentage view
   const [showPercent, setShowPercent] = useState(false);
-  // Mock percentage value
-  const mockPercent = 28.2;
+
+  // Show loading state if data is not available
+  if (isChartLoading || data.length === 0) {
+    return (
+      <Wrapper>
+        <ChartContainer
+          style={{
+            height: chartHeight,
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
+          <BodyXSEmphasized style={{ color: theme.colors.textSecondary }}>
+            Loading chart data...
+          </BodyXSEmphasized>
+        </ChartContainer>
+      </Wrapper>
+    );
+  }
+
+  // Show error state
+  if (chartError) {
+    return (
+      <Wrapper>
+        <ChartContainer
+          style={{
+            height: chartHeight,
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
+          <BodyXSEmphasized style={{ color: theme.colors.textSecondary }}>
+            Failed to load chart data
+          </BodyXSEmphasized>
+        </ChartContainer>
+      </Wrapper>
+    );
+  }
 
   return (
     <Wrapper>
@@ -194,10 +244,10 @@ export const PriceChart = ({
               {/* Toggle between price and percentage */}
               {trade && showPercent
                 ? isProfit === true
-                  ? `+${mockPercent.toFixed(2)}%`
+                  ? `+${Math.abs(changePercent).toFixed(2)}%`
                   : isProfit === false
-                  ? `-${mockPercent.toFixed(2)}%`
-                  : `${mockPercent.toFixed(2)}%`
+                  ? `-${Math.abs(changePercent).toFixed(2)}%`
+                  : `${changePercent.toFixed(2)}%`
                 : `$${currentPrice.toFixed(2)}`}
             </CurrentPriceText>
           </CurrentPriceBubble>

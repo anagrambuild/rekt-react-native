@@ -1,5 +1,8 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 
+import { currentPrices } from '@/screens/HomeScreen/mockData';
+import { SupportedToken, TokenPrice } from '@/utils';
+
 // Trade type for active trades
 export type TradeStatus = 'open' | 'closed';
 export interface Trade {
@@ -25,6 +28,9 @@ interface HomeContextType {
   btcTrade: Trade | null;
   setBtcTrade: (trade: Trade | null) => void;
   walletBalance: number;
+  tokenPrices: Record<SupportedToken, TokenPrice> | undefined;
+  isPricesLoading: boolean;
+  pricesError: Error | null;
 }
 
 export const HomeContext = createContext<HomeContextType>({
@@ -40,6 +46,9 @@ export const HomeContext = createContext<HomeContextType>({
   btcTrade: null,
   setBtcTrade: () => {},
   walletBalance: 0,
+  tokenPrices: undefined,
+  isPricesLoading: false,
+  pricesError: null,
 });
 
 export const useHomeContext = () => {
@@ -53,6 +62,45 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
   const [ethTrade, setEthTrade] = useState<Trade | null>(null);
   const [btcTrade, setBtcTrade] = useState<Trade | null>(null);
   const [walletBalance, setWalletBalance] = useState<number>(0);
+
+  // Use mock token prices instead of API
+  const [tokenPrices] = useState<Record<SupportedToken, TokenPrice>>({
+    sol: {
+      id: 'solana',
+      symbol: 'SOL',
+      name: 'Solana',
+      current_price: currentPrices.sol,
+      price_change_24h: 2.5,
+      price_change_percentage_24h: 1.5,
+      market_cap: 85000000000,
+      total_volume: 2500000000,
+      last_updated: new Date().toISOString(),
+    },
+    eth: {
+      id: 'ethereum',
+      symbol: 'ETH',
+      name: 'Ethereum',
+      current_price: currentPrices.eth,
+      price_change_24h: 45.2,
+      price_change_percentage_24h: 1.8,
+      market_cap: 310000000000,
+      total_volume: 15000000000,
+      last_updated: new Date().toISOString(),
+    },
+    btc: {
+      id: 'bitcoin',
+      symbol: 'BTC',
+      name: 'Bitcoin',
+      current_price: currentPrices.btc,
+      price_change_24h: 1200,
+      price_change_percentage_24h: 1.1,
+      market_cap: 2100000000000,
+      total_volume: 25000000000,
+      last_updated: new Date().toISOString(),
+    },
+  });
+  const isPricesLoading = false;
+  const pricesError = null;
 
   useEffect(() => {
     // TODO - fetch real wallet balance
@@ -78,6 +126,9 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
         btcTrade,
         setBtcTrade,
         walletBalance,
+        tokenPrices,
+        isPricesLoading,
+        pricesError,
       }}
     >
       {children}
@@ -87,7 +138,8 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
 
 const priceChartTimeframes = [
   { label: '1m', value: '1m' },
-  { label: '2m', value: '2m' },
   { label: '5m', value: '5m' },
-  { label: '10m', value: '10m' },
+  { label: '1h', value: '1h' },
+  { label: '4h', value: '4h' },
+  { label: '1d', value: '1d' },
 ];

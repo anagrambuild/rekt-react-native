@@ -23,6 +23,8 @@ export const Avatar = ({ imgSrc }: { imgSrc: any }) => {
         <VideoView
           player={player}
           style={{ width: 32, height: 32, borderRadius: 16 }}
+          pointerEvents='none'
+          nativeControls={false}
         />
       </BadgeContainer>
     </AvatarContainer>

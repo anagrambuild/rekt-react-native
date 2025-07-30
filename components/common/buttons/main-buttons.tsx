@@ -1,3 +1,5 @@
+import { ActivityIndicator } from 'react-native';
+
 import { PressableOpacity } from './PressableOpacity';
 import styled, { css, DefaultTheme } from 'styled-components/native';
 
@@ -11,6 +13,7 @@ interface ThemedButtonTextProps {
 
 interface ButtonProps extends React.ComponentProps<typeof PressableOpacity> {
   icon?: React.ReactNode;
+  loading?: boolean;
 }
 
 const sharedStyles = css`
@@ -27,16 +30,34 @@ const sharedTextStyles = css`
   font-size: 18px;
 `;
 
+// Styled ActivityIndicator components
+const PrimaryActivityIndicator = styled(ActivityIndicator)`
+  color: ${({ theme }: ThemedButtonProps) => theme.colors.background};
+`;
+
+const SecondaryActivityIndicator = styled(ActivityIndicator)`
+  color: ${({ theme }: ThemedButtonProps) => theme.colors.textPrimary};
+`;
+
 // PRIMARY BUTTON
-const StyledPrimaryButton = styled(PressableOpacity)<{ disabled?: boolean }>`
+const StyledPrimaryButton = styled(PressableOpacity)<{
+  disabled?: boolean;
+  loading?: boolean;
+}>`
   ${sharedStyles}
   background-color: ${({
     theme,
     disabled,
-  }: ThemedButtonProps & { disabled?: boolean }) =>
-    disabled ? theme.colors.disabled : theme.colors.textPrimary};
-  opacity: ${({ disabled = false }: { disabled?: boolean }) =>
-    disabled ? 0.8 : 1};
+    loading,
+  }: ThemedButtonProps & { disabled?: boolean; loading?: boolean }) =>
+    disabled || loading ? theme.colors.disabled : theme.colors.textPrimary};
+  opacity: ${({
+    disabled = false,
+    loading = false,
+  }: {
+    disabled?: boolean;
+    loading?: boolean;
+  }) => (disabled || loading ? 0.8 : 1)};
 `;
 
 const PrimaryButtonText = styled.Text`
@@ -46,23 +67,43 @@ const PrimaryButtonText = styled.Text`
   ${sharedTextStyles}
 `;
 
-export const PrimaryButton = ({ icon, children, ...props }: ButtonProps) => (
-  <StyledPrimaryButton {...props}>
-    {icon}
-    <PrimaryButtonText>{children}</PrimaryButtonText>
+export const PrimaryButton = ({
+  icon,
+  children,
+  loading,
+  ...props
+}: ButtonProps) => (
+  <StyledPrimaryButton {...props} loading={loading}>
+    {loading ? (
+      <PrimaryActivityIndicator />
+    ) : (
+      <>
+        {icon}
+        <PrimaryButtonText>{children}</PrimaryButtonText>
+      </>
+    )}
   </StyledPrimaryButton>
 );
 
 // SECONDARY BUTTON
-const StyledSecondaryButton = styled(PressableOpacity)<{ disabled?: boolean }>`
+const StyledSecondaryButton = styled(PressableOpacity)<{
+  disabled?: boolean;
+  loading?: boolean;
+}>`
   ${sharedStyles}
   background-color: ${({
     theme,
     disabled,
-  }: ThemedButtonProps & { disabled?: boolean }) =>
-    disabled ? theme.colors.disabled : theme.colors.secondary};
-  opacity: ${({ disabled = false }: { disabled?: boolean }) =>
-    disabled ? 0.8 : 1};
+    loading,
+  }: ThemedButtonProps & { disabled?: boolean; loading?: boolean }) =>
+    disabled || loading ? theme.colors.disabled : theme.colors.secondary};
+  opacity: ${({
+    disabled = false,
+    loading = false,
+  }: {
+    disabled?: boolean;
+    loading?: boolean;
+  }) => (disabled || loading ? 0.8 : 1)};
 `;
 
 const SecondaryButtonText = styled.Text`
@@ -72,22 +113,45 @@ const SecondaryButtonText = styled.Text`
   ${sharedTextStyles}
 `;
 
-export const SecondaryButton = ({ icon, children, ...props }: ButtonProps) => (
-  <StyledSecondaryButton {...props}>
-    {icon}
-    <SecondaryButtonText>{children}</SecondaryButtonText>
+export const SecondaryButton = ({
+  icon,
+  children,
+  loading,
+  ...props
+}: ButtonProps) => (
+  <StyledSecondaryButton {...props} loading={loading}>
+    {loading ? (
+      <SecondaryActivityIndicator />
+    ) : (
+      <>
+        {icon}
+        <SecondaryButtonText>{children}</SecondaryButtonText>
+      </>
+    )}
   </StyledSecondaryButton>
 );
 
 // LOGIN BUTTON
-const StyledTertiaryButton = styled(PressableOpacity)`
+const StyledTertiaryButton = styled(PressableOpacity)<{
+  disabled?: boolean;
+  loading?: boolean;
+}>`
   ${sharedStyles}
+  opacity: ${({
+    disabled = false,
+    loading = false,
+  }: {
+    disabled?: boolean;
+    loading?: boolean;
+  }) => (disabled || loading ? 0.8 : 1)};
 `;
 
-export const TertiaryButton = (
-  props: React.ComponentProps<typeof PressableOpacity>
-) => (
-  <StyledTertiaryButton {...props}>
-    <SecondaryButtonText>{props.children}</SecondaryButtonText>
+export const TertiaryButton = ({ loading, ...props }: ButtonProps) => (
+  <StyledTertiaryButton {...props} loading={loading}>
+    {loading ? (
+      <SecondaryActivityIndicator />
+    ) : (
+      <SecondaryButtonText>{props.children}</SecondaryButtonText>
+    )}
   </StyledTertiaryButton>
 );
