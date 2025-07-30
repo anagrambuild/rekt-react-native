@@ -12,7 +12,7 @@ import {
   fetchHistoricalData,
   fetchSingleTokenPrice,
   fetchTokenPrices,
-  getUserByWalletAddress,
+  getUserByProfileId,
   SupportedTimeframe,
   SupportedToken,
   TokenPrice,
@@ -224,15 +224,15 @@ export const useUpdateUserSwigWalletAddressMutation = (
   });
 };
 
-// Hook to get user by wallet address
-export const useUserByWalletQuery = (
-  walletAddress: string,
+// Hook to get user by profile ID
+export const useUserByProfileQuery = (
+  profileId: string,
   options?: Omit<UseQueryOptions<User | null, Error>, 'queryKey' | 'queryFn'>
 ) => {
   return useQuery({
-    queryKey: queryKeys.userByWallet(walletAddress),
-    queryFn: () => getUserByWalletAddress(walletAddress),
-    enabled: !!walletAddress, // Only run query if wallet address is provided
+    queryKey: queryKeys.userProfile(profileId),
+    queryFn: () => getUserByProfileId(profileId),
+    enabled: !!profileId, // Only run query if profile ID is provided
     staleTime: 1000 * 60 * 5, // 5 minutes stale time
     ...options,
   });

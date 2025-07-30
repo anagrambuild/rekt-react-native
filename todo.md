@@ -35,6 +35,8 @@ Liam's feedback:
   - graphs are jacked up
   - new app icon
   - drift protocols
+  - load chart data faster?
+  - get real historical data for token prices
 
 after hackathon
 

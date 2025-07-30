@@ -1,7 +1,6 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 
-import { currentPrices } from '@/screens/HomeScreen/mockData';
-import { SupportedToken, TokenPrice } from '@/utils';
+import { fetchTokenPrices, SupportedToken, TokenPrice } from '@/utils';
 
 import { useWallet } from './WalletContext';
 
@@ -65,44 +64,67 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
   const [ethTrade, setEthTrade] = useState<Trade | null>(null);
   const [btcTrade, setBtcTrade] = useState<Trade | null>(null);
 
-  // Use mock token prices instead of API
-  const [tokenPrices] = useState<Record<SupportedToken, TokenPrice>>({
-    sol: {
-      id: 'solana',
-      symbol: 'SOL',
-      name: 'Solana',
-      current_price: currentPrices.sol,
-      price_change_24h: 2.5,
-      price_change_percentage_24h: 1.5,
-      market_cap: 85000000000,
-      total_volume: 2500000000,
-      last_updated: new Date().toISOString(),
-    },
-    eth: {
-      id: 'ethereum',
-      symbol: 'ETH',
-      name: 'Ethereum',
-      current_price: currentPrices.eth,
-      price_change_24h: 45.2,
-      price_change_percentage_24h: 1.8,
-      market_cap: 310000000000,
-      total_volume: 15000000000,
-      last_updated: new Date().toISOString(),
-    },
-    btc: {
-      id: 'bitcoin',
-      symbol: 'BTC',
-      name: 'Bitcoin',
-      current_price: currentPrices.btc,
-      price_change_24h: 1200,
-      price_change_percentage_24h: 1.1,
-      market_cap: 2100000000000,
-      total_volume: 25000000000,
-      last_updated: new Date().toISOString(),
-    },
-  });
-  const isPricesLoading = false;
-  const pricesError = null;
+  // Fetch real token prices from backend API
+  const [tokenPrices, setTokenPrices] = useState<
+    Record<SupportedToken, TokenPrice> | undefined
+  >(undefined);
+  const [isPricesLoading, setIsPricesLoading] = useState(true);
+  const [pricesError, setPricesError] = useState<Error | null>(null);
+
+  // Fetch token prices on component mount
+  useEffect(() => {
+    const loadTokenPrices = async () => {
+      try {
+        setIsPricesLoading(true);
+        setPricesError(null);
+        const prices = await fetchTokenPrices(['sol', 'eth', 'btc']);
+        setTokenPrices(prices);
+      } catch (error) {
+        console.error('Failed to fetch token prices:', error);
+        setPricesError(error as Error);
+        // Fallback to mock data if API fails
+        setTokenPrices({
+          sol: {
+            id: 'solana',
+            symbol: 'SOL',
+            name: 'Solana',
+            current_price: 170.5,
+            price_change_24h: 2.5,
+            price_change_percentage_24h: 1.5,
+            market_cap: 85000000000,
+            total_volume: 2500000000,
+            last_updated: new Date().toISOString(),
+          },
+          eth: {
+            id: 'ethereum',
+            symbol: 'ETH',
+            name: 'Ethereum',
+            current_price: 2568.45,
+            price_change_24h: 45.2,
+            price_change_percentage_24h: 1.8,
+            market_cap: 310000000000,
+            total_volume: 15000000000,
+            last_updated: new Date().toISOString(),
+          },
+          btc: {
+            id: 'bitcoin',
+            symbol: 'BTC',
+            name: 'Bitcoin',
+            current_price: 109200,
+            price_change_24h: 1200,
+            price_change_percentage_24h: 1.1,
+            market_cap: 2100000000000,
+            total_volume: 25000000000,
+            last_updated: new Date().toISOString(),
+          },
+        });
+      } finally {
+        setIsPricesLoading(false);
+      }
+    };
+
+    loadTokenPrices();
+  }, []);
 
   // Use USDC balance from wallet context
   const walletBalance = usdcBalance || 0;

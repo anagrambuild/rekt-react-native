@@ -140,27 +140,55 @@ export const fetchHistoricalData = async (
   token: SupportedToken,
   timeframe: SupportedTimeframe = '1m'
 ): Promise<ChartDataPoint[]> => {
-  // For now, generate mock historical data based on current price
-  // In a real implementation, you'd fetch from your backend's historical endpoint
+  // Generate dynamic mock historical data based on real current price from backend
   const currentPrices = await fetchTokenPrices([token]);
   const currentPrice = currentPrices[token]?.current_price || 100;
 
-  // Generate 6 mock data points with some variation
+  // Generate 7 mock data points with realistic price movement
   const chartData: ChartDataPoint[] = [];
   const now = Date.now();
   const timeframeMs =
-    timeframe === '1m' ? 60000 : timeframe === '5m' ? 300000 : 3600000;
+    {
+      '1m': 60000,
+      '2m': 120000,
+      '5m': 300000,
+      '10m': 600000,
+      '1h': 3600000,
+      '4h': 14400000,
+      '1d': 86400000,
+    }[timeframe] || 60000;
 
-  for (let i = 5; i >= 0; i--) {
+  // Create more realistic price movement with trend
+  const maxVariation = 0.025; // ±2.5% max variation
+  let previousPrice = currentPrice;
+
+  for (let i = 6; i >= 0; i--) {
     const timestamp = now - i * timeframeMs;
-    // Add some random variation (±2%)
-    const variation = (Math.random() - 0.5) * 0.04;
-    const price = currentPrice * (1 + variation);
 
-    chartData.push({
-      value: price,
-      timestamp,
-    });
+    if (i === 0) {
+      // Last point should be the actual current price
+      chartData.push({
+        value: Math.round(currentPrice * 100) / 100,
+        timestamp,
+      });
+    } else {
+      // Generate realistic price movement with some momentum
+      const trendFactor = (6 - i) / 6; // 0 to 1, stronger trend towards current price
+      const randomWalk =
+        (Math.random() - 0.5) * maxVariation * (1 - trendFactor * 0.5);
+      const trendTowardsCurrent =
+        (currentPrice - previousPrice) * trendFactor * 0.1;
+
+      const price = previousPrice * (1 + randomWalk) + trendTowardsCurrent;
+      const roundedPrice = Math.round(price * 100) / 100;
+
+      chartData.push({
+        value: roundedPrice,
+        timestamp,
+      });
+
+      previousPrice = roundedPrice;
+    }
   }
 
   return chartData;
