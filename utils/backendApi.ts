@@ -263,7 +263,7 @@ export const createUser = async (
       email: userData.email || '',
       avatar_url: userData.profileImage || '', // This will be the Supabase URL
       wallet_address: userData.walletAddress, // Add wallet address
-      swig_wallet_address: userData.swigWalletAddress || '', // Add Swig wallet address
+      swigWalletAddress: userData.swigWalletAddress || '', // Backend expects camelCase
     };
 
     // Add timeout to prevent hanging requests
@@ -291,7 +291,6 @@ export const createUser = async (
     }
 
     const result = await response.json();
-    console.log('✓ User created successfully:', result);
 
     // Map backend response to frontend User interface
     return {
@@ -392,11 +391,61 @@ export const updateUserSwigWalletAddress = async (
     }
 
     const result = await response.json();
-    console.log('✓ User Swig wallet address updated successfully:', result);
 
     return result;
   } catch (error) {
     console.error('Error updating user Swig wallet address:', error);
+    throw error;
+  }
+};
+
+// Avatar Upload Function
+export interface AvatarUploadResponse {
+  success: boolean;
+  avatar_url: string;
+  filename: string;
+  message: string;
+}
+
+export const uploadAvatar = async (
+  imageUri: string,
+  fileName: string
+): Promise<string> => {
+  try {
+    // Create FormData for file upload
+    const formData = new FormData();
+
+    // Add the image file to FormData
+    formData.append('avatar', {
+      uri: imageUri,
+      type: 'image/jpeg', // Backend accepts JPEG, PNG, WebP, GIF
+      name: fileName,
+    } as any);
+
+    const response = await fetch(`${BACKEND_BASE_URL}/api/upload/avatar`, {
+      method: 'POST',
+      body: formData,
+      // Don't set Content-Type header - let FormData set it with boundary
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData.message ||
+          errorData.error ||
+          `HTTP error! status: ${response.status}`
+      );
+    }
+
+    const result: AvatarUploadResponse = await response.json();
+
+    if (!result.success || !result.avatar_url) {
+      throw new Error(result.message || 'Failed to upload avatar');
+    }
+
+    return result.avatar_url;
+  } catch (error) {
+    console.error('Error uploading avatar:', error);
     throw error;
   }
 };

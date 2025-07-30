@@ -238,8 +238,6 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
     if (isAndroid) return; // Only run on iOS
 
     const handleiOSUrl = (url: string) => {
-      console.log('🔍 [DEBUG] Received iOS URL:', url);
-
       // Check for error response first
       if (url.includes('errorCode')) {
         try {

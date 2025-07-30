@@ -45,7 +45,6 @@ export const storeSecureAuth = async (
     };
 
     await SecureStore.setItemAsync(AUTH_STORAGE_KEY, JSON.stringify(authData));
-    console.log('✓ Authentication data stored securely');
   } catch (error) {
     console.error('Failed to store secure auth data:', error);
     throw new Error('Failed to store authentication data');
