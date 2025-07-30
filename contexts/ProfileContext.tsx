@@ -1,10 +1,12 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import { Alert } from 'react-native';
 
 import {
   DetailedTradeData,
   userMockData,
 } from '@/screens/ProfileScreen/profileMockData';
+import { useUserByProfileQuery } from '@/utils/queryUtils';
+import { getSecureAuth } from '@/utils/secureAuth';
 
 import { useWallet } from './WalletContext';
 import { useTranslation } from 'react-i18next';
@@ -27,9 +29,9 @@ interface ProfileContextType {
   userImage: string | number;
   setUserImage: (image: string | number) => void;
   userData: User;
+  isUserLoading: boolean;
   handleImageUpload: (imageUri: string) => Promise<void>;
   handleImageRemoval: () => Promise<void>;
-  handleLinkPress: () => void;
   isOnOffRampModalVisible: boolean;
   setIsOnOffRampModalVisible: (visible: boolean) => void;
   handleTransferIn: () => void;
@@ -50,9 +52,9 @@ export const ProfileContext = createContext<ProfileContextType>({
   userImage: '',
   setUserImage: () => {},
   userData: { username: '', imgSrc: '', balance: 0 },
+  isUserLoading: false,
   handleImageUpload: async () => {},
   handleImageRemoval: async () => {},
-  handleLinkPress: () => {},
   isOnOffRampModalVisible: false,
   setIsOnOffRampModalVisible: () => {},
   handleTransferIn: () => {},
@@ -80,19 +82,48 @@ export const ProfileProvider = ({
   const [selectedTrade, setSelectedTrade] = useState<DetailedTradeData | null>(
     null
   );
-  const [userImage, setUserImage] = useState<string | number>(
-    userMockData.imgSrc
-  );
   const [isOnOffRampModalVisible, setIsOnOffRampModalVisible] = useState(false);
 
+  // State for profile ID and user data
+  const [profileId, setProfileId] = useState<string | null>(null);
+
+  // Fetch profile ID from secure storage
+  useEffect(() => {
+    const getProfileId = async () => {
+      try {
+        const authResult = await getSecureAuth();
+        if (authResult.isValid && authResult.data?.profileId) {
+          setProfileId(authResult.data.profileId);
+        }
+      } catch (error) {
+        console.error('Error getting profile ID:', error);
+      }
+    };
+    getProfileId();
+  }, []);
+
+  // Fetch user data from database
+  const { data: dbUser, isLoading: isUserLoading } = useUserByProfileQuery(
+    profileId || '',
+    { enabled: !!profileId }
+  );
+
+  // User image state - start with DB image or fallback to mock
+  const [userImage, setUserImage] = useState<string | number>(
+    dbUser?.profileImage || userMockData.imgSrc
+  );
+
+  // Update user image when DB data loads
+  useEffect(() => {
+    if (dbUser?.profileImage) {
+      setUserImage(dbUser.profileImage);
+    }
+  }, [dbUser?.profileImage]);
+
   const userData: User = {
-    username: userMockData.username,
+    username: dbUser?.username || userMockData.username,
     imgSrc: userImage,
     balance: usdcBalance || 0,
-  };
-
-  const handleLinkPress = () => {
-    console.log('link');
   };
 
   const handleImageUpload = async (imageUri: string) => {
@@ -160,9 +191,9 @@ export const ProfileProvider = ({
         userImage,
         setUserImage,
         userData,
+        isUserLoading,
         handleImageUpload,
         handleImageRemoval,
-        handleLinkPress,
         isOnOffRampModalVisible,
         setIsOnOffRampModalVisible,
         handleTransferIn,

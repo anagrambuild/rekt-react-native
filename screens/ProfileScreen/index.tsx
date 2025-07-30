@@ -33,6 +33,7 @@ export const ProfileScreen = () => {
     setSelectedTrade,
     userImage,
     userData,
+    isUserLoading,
     isOnOffRampModalVisible,
   } = useProfileContext();
 
@@ -59,7 +60,7 @@ export const ProfileScreen = () => {
         <Column $gap={12} style={{ flex: 1 }}>
           <Avatar imgSrc={userImage} />
           <Row $gap={6} $alignItems='center' $width='auto'>
-            <Title2>{`@${userData.username}`}</Title2>
+            <Title2>{isUserLoading ? '@...' : `@${userData.username}`}</Title2>
             <PressableOpacity onPress={handleLinkPress}>
               <MaterialCommunityIcons
                 name='link-variant'
