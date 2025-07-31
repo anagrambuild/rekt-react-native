@@ -471,9 +471,197 @@ export const uploadAvatar = async (
       throw new Error(result.message || 'Failed to upload avatar');
     }
 
-    return result.avatar_url;
+  return result.avatar_url;
+} catch (error) {
+  console.error('Error uploading avatar:', error);
+  throw error;
+}
+};
+
+// Trading API Functions
+
+export interface TradingBalance {
+  usdc: number;
+  availableMargin: number;
+  usedMargin: number;
+  totalValue: number;
+  walletAddress: string;
+}
+
+export interface OpenPositionRequest {
+  userId: string;
+  asset: 'SOL-PERP' | 'BTC-PERP' | 'ETH-PERP';
+  direction: 'long' | 'short';
+  amount: number;
+  leverage: number;
+}
+
+export interface OpenPositionResponse {
+  positionId: string;
+  asset: string;
+  direction: 'long' | 'short';
+  amount: number;
+  leverage: number;
+  entryPrice: number;
+  positionSize: number;
+  marginUsed: number;
+  status: 'open';
+  openedAt: string;
+}
+
+export interface Position {
+  id: string;
+  asset: string;
+  direction: 'long' | 'short';
+  size: number;
+  entryPrice: number;
+  currentPrice: number;
+  pnl: number;
+  pnlPercentage: number;
+  leverage: number;
+  liquidationPrice: number;
+  marginUsed: number;
+  openedAt: string;
+}
+
+export interface ClosePositionRequest {
+  userId: string;
+  positionId: string;
+}
+
+export interface ClosePositionResponse {
+  positionId: string;
+  exitPrice: number;
+  pnl: number;
+  pnlPercentage: number;
+  closedAt: string;
+}
+
+// Get user's trading balance
+export const getTradingBalance = async (userId: string): Promise<TradingBalance> => {
+  try {
+    const response = await fetch(`${BACKEND_BASE_URL}/api/trading/balance/${userId}`);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to get trading balance');
+    }
+
+    return result.data;
   } catch (error) {
-    console.error('Error uploading avatar:', error);
+    console.error('Error getting trading balance:', error);
+    throw error;
+  }
+};
+
+// Open a new trading position
+export const openTradingPosition = async (request: OpenPositionRequest): Promise<OpenPositionResponse> => {
+  try {
+    const response = await fetch(`${BACKEND_BASE_URL}/api/trading/open`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to open position');
+    }
+
+    return result.data;
+  } catch (error) {
+    console.error('Error opening trading position:', error);
+    throw error;
+  }
+};
+
+// Get open positions for a user
+export const getOpenPositions = async (userId: string): Promise<Position[]> => {
+  try {
+    const response = await fetch(`${BACKEND_BASE_URL}/api/trading/positions/${userId}`);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to get positions');
+    }
+
+    return result.data;
+  } catch (error) {
+    console.error('Error getting open positions:', error);
+    throw error;
+  }
+};
+
+// Close a trading position
+export const closeTradingPosition = async (request: ClosePositionRequest): Promise<ClosePositionResponse> => {
+  try {
+    const response = await fetch(`${BACKEND_BASE_URL}/api/trading/close`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to close position');
+    }
+
+    return result.data;
+  } catch (error) {
+    console.error('Error closing trading position:', error);
+    throw error;
+  }
+};
+
+// Get trading history for a user
+export const getTradingHistory = async (userId: string, status?: 'open' | 'closed', limit: number = 50): Promise<Position[]> => {
+  try {
+    let url = `${BACKEND_BASE_URL}/api/trading/history/${userId}?limit=${limit}`;
+    if (status) {
+      url += `&status=${status}`;
+    }
+
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to get trading history');
+    }
+
+    return result.data;
+  } catch (error) {
+    console.error('Error getting trading history:', error);
     throw error;
   }
 };
