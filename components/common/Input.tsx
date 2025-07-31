@@ -21,6 +21,8 @@ interface IntputProps {
   placeholder: string;
   value: string;
   onChangeText: (text: string) => void;
+  keyboardType?: 'default' | 'email-address' | 'numeric' | 'phone-pad';
+  textContentType?: 'emailAddress' | 'username' | 'password' | 'none';
   returnKeyType: 'done' | 'next' | 'search' | 'send';
   onSubmitEditing: () => void;
   ref?: React.RefObject<TextInput | null>;
@@ -31,6 +33,8 @@ export const Input = ({
   placeholder,
   value,
   onChangeText,
+  keyboardType = 'default',
+  textContentType,
   returnKeyType,
   onSubmitEditing,
   ref,
@@ -48,6 +52,8 @@ export const Input = ({
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
+          keyboardType={keyboardType}
+          textContentType={textContentType}
           returnKeyType={returnKeyType}
           onSubmitEditing={onSubmitEditing}
           ref={ref}

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -13,7 +13,11 @@ import { useSolana } from '@/contexts/SolanaContext';
 import { useWallet } from '@/contexts/WalletContext';
 import { useBiometrics, useImagePicker } from '@/hooks';
 import { LoadingScreen } from '@/screens/LoadingScreen';
-import { createUser, uploadAvatar } from '@/utils/backendApi';
+import {
+  checkUsernameAvailability,
+  createUser,
+  uploadAvatar,
+} from '@/utils/backendApi';
 import { createSwigAccountForMobile } from '@/utils/mobileSwigUtils';
 import { storeSecureAuth } from '@/utils/secureAuth';
 
@@ -33,6 +37,7 @@ import Constants from 'expo-constants';
 import { Image } from 'expo-image';
 import { useTranslation } from 'react-i18next';
 import styled, { DefaultTheme, useTheme } from 'styled-components/native';
+import { Toast } from 'toastify-react-native';
 
 interface SignUpFormProps {
   onComplete?: () => void;
@@ -51,10 +56,71 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [usernameError, setUsernameError] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(
+    null
+  );
+
+  // Debounced username checking
+  const checkUsername = useCallback(
+    async (username: string) => {
+      if (!username || username.length < 3) {
+        setUsernameAvailable(null);
+        return;
+      }
+
+      // Check username format and length first
+      if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+        setUsernameError(
+          t('Username can only contain letters, numbers, and underscores')
+        );
+        setUsernameAvailable(false);
+        return;
+      }
+
+      if (username.length < 3 || username.length > 20) {
+        setUsernameError(t('Username must be between 3-20 characters'));
+        setUsernameAvailable(false);
+        return;
+      }
+
+      setIsCheckingUsername(true);
+      try {
+        const result = await checkUsernameAvailability(username);
+        setUsernameAvailable(result.available);
+
+        if (!result.available) {
+          setUsernameError(t('Username is already taken'));
+        } else {
+          setUsernameError('');
+        }
+      } catch (error) {
+        console.error('Username check failed:', error);
+        setUsernameAvailable(null);
+      } finally {
+        setIsCheckingUsername(false);
+      }
+    },
+    [t]
+  );
+
+  // Debounce username checking
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (signUpForm.username) {
+        checkUsername(signUpForm.username);
+      }
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [signUpForm.username, checkUsername]);
 
   const handleUsernameChange = (text: string) => {
     setSignUpForm((prev) => ({ ...prev, username: text }));
     if (usernameError) setUsernameError('');
+    // Reset username validation state when user types
+    setUsernameAvailable(null);
   };
 
   const emailInputRef = useRef<TextInput>(null);
@@ -65,6 +131,17 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
 
   const handleEmailChange = (text: string) => {
     setSignUpForm((prev) => ({ ...prev, email: text }));
+
+    // Clear previous error
+    if (emailError) setEmailError('');
+
+    // Validate email format if not empty (email is optional)
+    if (text.trim() && text.length > 0) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(text)) {
+        setEmailError(t('Please enter a valid email address'));
+      }
+    }
   };
 
   const handleImagePicker = () => {
@@ -116,9 +193,65 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
     if (!validateForm()) return;
 
     if (!connected || !publicKey) {
-      Alert.alert(t('Error'), t('Wallet not connected'));
+      Toast.show({
+        text1: t('Error'),
+        text2: t('Wallet not connected'),
+        type: 'error',
+      });
       return;
     }
+
+    // Check username length and format before API call
+    if (signUpForm.username.length < 3 || signUpForm.username.length > 20) {
+      Toast.show({
+        text1: t('Invalid Username'),
+        text2: t('Username must be between 3-20 characters'),
+        type: 'error',
+      });
+      return;
+    }
+
+    if (!/^[a-zA-Z0-9_]+$/.test(signUpForm.username)) {
+      Toast.show({
+        text1: t('Invalid Username'),
+        text2: t('Username can only contain letters, numbers, and underscores'),
+        type: 'error',
+      });
+      return;
+    }
+
+    // Validate email format if provided (email is optional)
+    if (signUpForm.email.trim() && signUpForm.email.length > 0) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(signUpForm.email)) {
+        Toast.show({
+          text1: t('Invalid Email'),
+          text2: t('Please enter a valid email address'),
+          type: 'error',
+        });
+        return;
+      }
+    }
+
+    // Check username availability before proceeding
+    try {
+      const usernameCheck = await checkUsernameAvailability(
+        signUpForm.username
+      );
+      if (!usernameCheck.available) {
+        setUsernameError(t('Username is already taken'));
+        return;
+      }
+    } catch (error) {
+      console.error('Username check failed:', error);
+      Toast.show({
+        text1: t('Error'),
+        text2: t('Failed to verify username availability. Please try again.'),
+        type: 'error',
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       // Step 1: Create Swig account
@@ -229,7 +362,11 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
         }
       }
 
-      Alert.alert(t('Account Creation Failed'), errorMessage);
+      Toast.show({
+        text1: t('Account Creation Failed'),
+        text2: errorMessage,
+        type: 'error',
+      });
     }
   };
 
@@ -250,13 +387,13 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
   return (
     <FormContainer>
       <Column
-        $gap={24}
+        $gap={16}
         $width='100%'
         $padding={24}
         $justifyContent='space-between'
-        style={{ flex: 1 }}
+        style={{ flex: 1, marginTop: 6 }}
       >
-        <Column $gap={24}>
+        <Column $gap={16}>
           <RektLogo width={100} height={50} />
           <Title1 style={{ textAlign: 'center' }}>
             {t('Complete Your Profile')}
@@ -279,14 +416,33 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
 
           {/* Username Input */}
           <Column $gap={24}>
-            <Input
-              label={`${t('Username')} *`}
-              placeholder={t('Enter your username')}
-              value={signUpForm.username}
-              onChangeText={handleUsernameChange}
-              returnKeyType='next'
-              onSubmitEditing={onNext}
-            />
+            <Row $alignItems='flex-end' $gap={8}>
+              <Column style={{ flex: 1 }}>
+                <Input
+                  label={`${t('Username')} *`}
+                  placeholder={t('Enter your username')}
+                  value={signUpForm.username}
+                  onChangeText={handleUsernameChange}
+                  returnKeyType='next'
+                  onSubmitEditing={onNext}
+                />
+              </Column>
+              {isCheckingUsername && (
+                <ActivityIndicator
+                  size='small'
+                  color={theme.colors.tint}
+                  style={{ marginBottom: 12 }}
+                />
+              )}
+              {!isCheckingUsername && usernameAvailable === true && (
+                <SuccessIndicator style={{ marginBottom: 12 }}>
+                  ✓
+                </SuccessIndicator>
+              )}
+              {!isCheckingUsername && usernameAvailable === false && (
+                <ErrorIndicator style={{ marginBottom: 12 }}>✗</ErrorIndicator>
+              )}
+            </Row>
             {usernameError ? <ErrorText>{usernameError}</ErrorText> : null}
 
             {/* Email Input */}
@@ -295,10 +451,13 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
               placeholder={t('Enter your email (optional)')}
               value={signUpForm.email}
               onChangeText={handleEmailChange}
+              keyboardType='email-address'
+              textContentType='emailAddress'
               returnKeyType='done'
               onSubmitEditing={Keyboard.dismiss}
               ref={emailInputRef}
             />
+            {emailError ? <ErrorText>{emailError}</ErrorText> : null}
 
             {/* Biometric Switch */}
             {isSupported && isEnrolled && (
@@ -390,4 +549,16 @@ const ErrorText = styled.Text`
   font-size: 12px;
   font-family: 'Geist';
   margin-left: 4px;
+`;
+
+const SuccessIndicator = styled.Text`
+  color: ${({ theme }: { theme: DefaultTheme }) => theme.colors.profit};
+  font-size: 16px;
+  font-weight: bold;
+`;
+
+const ErrorIndicator = styled.Text`
+  color: ${({ theme }: { theme: DefaultTheme }) => theme.colors.loss};
+  font-size: 16px;
+  font-weight: bold;
 `;

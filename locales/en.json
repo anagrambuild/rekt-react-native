@@ -143,5 +143,14 @@
   "Failed to close position": "Failed to close position",
   "Loading chart data...": "Loading chart data...",
   "Failed to load chart data": "Failed to load chart data",
-  "N/A": "N/A"
+  "N/A": "N/A",
+  "Username is already taken": "Username is already taken",
+  "Failed to verify username availability. Please try again.": "Failed to verify username availability. Please try again.",
+  "Logged out successfully": "Logged out successfully",
+  "Failed to logout. Please try again.": "Failed to logout. Please try again.",
+  "Username can only contain letters, numbers, and underscores": "Username can only contain letters, numbers, and underscores",
+  "Username must be between 3-20 characters": "Username must be between 3-20 characters",
+  "Please enter a valid email address": "Please enter a valid email address",
+  "Invalid Username": "Invalid Username",
+  "Invalid Email": "Invalid Email"
 }
