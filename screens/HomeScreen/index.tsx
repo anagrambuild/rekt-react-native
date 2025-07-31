@@ -46,12 +46,21 @@ export const HomeScreen = () => {
       ? setEthTrade
       : setBtcTrade;
 
-  // Default to 'short' if no trade yet
+  // Set trade side, creating a draft trade if none exists
   const setTradeSide = (side: 'long' | 'short') => {
     if (trade) {
       setTrade({ ...trade, side });
+    } else {
+      // Create a new draft trade with the selected side
+      setTrade({
+        side,
+        entryPrice: 0,
+        amount: 10,
+        leverage: 1,
+        status: 'draft',
+        isMaxLeverageOn: false,
+      });
     }
-    // Do not create a new trade here; only update if one exists
   };
 
   const isActiveTrade = trade && trade.status === 'open';

@@ -38,6 +38,7 @@ interface ProfileContextType {
   handleCardPayment: () => void;
   handleWithdraw: () => void;
   handleHistory: () => void;
+  profileId: string | null;
 }
 
 export const ProfileContext = createContext<ProfileContextType>({
@@ -61,6 +62,7 @@ export const ProfileContext = createContext<ProfileContextType>({
   handleCardPayment: () => {},
   handleWithdraw: () => {},
   handleHistory: () => {},
+  profileId: null,
 });
 
 export const useProfileContext = () => {
@@ -200,6 +202,7 @@ export const ProfileProvider = ({
         handleCardPayment,
         handleWithdraw,
         handleHistory,
+        profileId,
       }}
     >
       {children}

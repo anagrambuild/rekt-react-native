@@ -1,11 +1,25 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 
 import { fetchTokenPrices, SupportedToken, TokenPrice } from '@/utils';
+import {
+  ClosePositionRequest,
+  closeTradingPosition,
+  getOpenPositions,
+  getTradingBalance,
+  getTradingHistory,
+  OpenPositionRequest,
+  openTradingPosition,
+  Position,
+  TradingBalance,
+} from '@/utils/backendApi';
 
+import { useProfileContext } from './ProfileContext';
 import { useWallet } from './WalletContext';
+import { useTranslation } from 'react-i18next';
+import { Toast } from 'toastify-react-native';
 
-// Trade type for active trades
-export type TradeStatus = 'open' | 'closed';
+// Trade type for active trades (keeping for backward compatibility)
+export type TradeStatus = 'draft' | 'open' | 'closed';
 export interface Trade {
   side: 'long' | 'short';
   entryPrice: number;
@@ -14,6 +28,7 @@ export interface Trade {
   status: TradeStatus;
   pnl?: number; // optional, for display
   timestamp?: number;
+  isMaxLeverageOn?: boolean; // for slider max leverage toggle
 }
 
 interface HomeContextType {
@@ -32,6 +47,29 @@ interface HomeContextType {
   tokenPrices: Record<SupportedToken, TokenPrice> | undefined;
   isPricesLoading: boolean;
   pricesError: Error | null;
+
+  // Trading functionality
+  balance: TradingBalance | null;
+  isLoadingBalance: boolean;
+  balanceError: string | null;
+  openPositions: Position[];
+  isLoadingPositions: boolean;
+  positionsError: string | null;
+  tradingHistory: Position[];
+  isLoadingHistory: boolean;
+  historyError: string | null;
+  isTrading: boolean;
+  openPosition: (
+    asset: 'SOL-PERP' | 'BTC-PERP' | 'ETH-PERP',
+    direction: 'long' | 'short',
+    amount: number,
+    leverage: number
+  ) => Promise<boolean>;
+  closePosition: (positionId: string) => Promise<boolean>;
+  refreshBalance: () => Promise<void>;
+  refreshPositions: () => Promise<void>;
+  refreshHistory: () => Promise<void>;
+  refreshAll: () => Promise<void>;
 }
 
 export const HomeContext = createContext<HomeContextType>({
@@ -50,6 +88,22 @@ export const HomeContext = createContext<HomeContextType>({
   tokenPrices: undefined,
   isPricesLoading: false,
   pricesError: null,
+  balance: null,
+  isLoadingBalance: false,
+  balanceError: null,
+  openPositions: [],
+  isLoadingPositions: false,
+  positionsError: null,
+  tradingHistory: [],
+  isLoadingHistory: false,
+  historyError: null,
+  isTrading: false,
+  openPosition: async () => false,
+  closePosition: async () => false,
+  refreshBalance: async () => {},
+  refreshPositions: async () => {},
+  refreshHistory: async () => {},
+  refreshAll: async () => {},
 });
 
 export const useHomeContext = () => {
@@ -57,7 +111,9 @@ export const useHomeContext = () => {
 };
 
 export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
+  const { t } = useTranslation();
   const { usdcBalance } = useWallet();
+  const { profileId } = useProfileContext();
   const [selectedToken, setSelectedToken] = useState<string>('sol');
   const [selectedTimeframe, setSelectedTimeframe] = useState<string>('1m');
   const [solTrade, setSolTrade] = useState<Trade | null>(null);
@@ -70,6 +126,255 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
   >(undefined);
   const [isPricesLoading, setIsPricesLoading] = useState(true);
   const [pricesError, setPricesError] = useState<Error | null>(null);
+
+  // Trading balance state
+  const [balance, setBalance] = useState<TradingBalance | null>(null);
+  const [isLoadingBalance, setIsLoadingBalance] = useState(false);
+  const [balanceError, setBalanceError] = useState<string | null>(null);
+
+  // Positions state
+  const [openPositions, setOpenPositions] = useState<Position[]>([]);
+  const [isLoadingPositions, setIsLoadingPositions] = useState(false);
+  const [positionsError, setPositionsError] = useState<string | null>(null);
+
+  // History state
+  const [tradingHistory, setTradingHistory] = useState<Position[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+
+  // Trading action state
+  const [isTrading, setIsTrading] = useState(false);
+
+  // Refresh balance
+  const refreshBalance = async () => {
+    if (!profileId) return;
+
+    setIsLoadingBalance(true);
+    setBalanceError(null);
+
+    try {
+      const balanceData = await getTradingBalance(profileId);
+      setBalance(balanceData);
+    } catch (error) {
+      console.error('Error refreshing balance:', error);
+      setBalanceError(
+        error instanceof Error ? error.message : 'Failed to load balance'
+      );
+    } finally {
+      setIsLoadingBalance(false);
+    }
+  };
+
+  // Refresh positions
+  const refreshPositions = async () => {
+    if (!profileId) return;
+
+    setIsLoadingPositions(true);
+    setPositionsError(null);
+
+    try {
+      const positions = await getOpenPositions(profileId);
+      setOpenPositions(positions);
+    } catch (error) {
+      console.error('Error refreshing positions:', error);
+      setPositionsError(
+        error instanceof Error ? error.message : 'Failed to load positions'
+      );
+    } finally {
+      setIsLoadingPositions(false);
+    }
+  };
+
+  // Refresh history
+  const refreshHistory = async () => {
+    if (!profileId) return;
+
+    setIsLoadingHistory(true);
+    setHistoryError(null);
+
+    try {
+      const history = await getTradingHistory(profileId);
+      setTradingHistory(history);
+    } catch (error) {
+      console.error('Error refreshing history:', error);
+      setHistoryError(
+        error instanceof Error ? error.message : 'Failed to load history'
+      );
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
+
+  // Refresh all data
+  const refreshAll = async () => {
+    await Promise.all([refreshBalance(), refreshPositions(), refreshHistory()]);
+  };
+
+  // Open a new position
+  const openPosition = async (
+    asset: 'SOL-PERP' | 'BTC-PERP' | 'ETH-PERP',
+    direction: 'long' | 'short',
+    amount: number,
+    leverage: number
+  ): Promise<boolean> => {
+    if (!profileId) {
+      Toast.show({
+        text1: t('Error'),
+        text2: t('Profile not found. Please try again.'),
+        type: 'error',
+      });
+      return false;
+    }
+
+    setIsTrading(true);
+
+    try {
+      // Validate inputs
+      const validAmount = Number(amount);
+      const validLeverage = Number(leverage);
+
+      if (!validAmount || validAmount < 10) {
+        Toast.show({
+          text1: t('Invalid Amount'),
+          text2: t('Minimum trade amount is $10'),
+          type: 'error',
+        });
+        return false;
+      }
+
+      if (!validLeverage || validLeverage < 1) {
+        Toast.show({
+          text1: t('Invalid Leverage'),
+          text2: t('Please enter a valid leverage of 1 or higher'),
+          type: 'error',
+        });
+        return false;
+      }
+
+      const request: OpenPositionRequest = {
+        userId: profileId,
+        asset,
+        direction,
+        amount: validAmount,
+        leverage: validLeverage,
+      };
+
+
+
+      const result = await openTradingPosition(request);
+
+      Toast.show({
+        text1: t('Position Opened'),
+        text2: t('Position opened successfully at ${{price}}', {
+          price: result.entryPrice.toFixed(2),
+        }),
+        type: 'success',
+      });
+
+      // Update local trade state to reflect the successful trade
+      // Determine token from asset parameter
+      const token = asset === 'SOL-PERP' ? 'sol' : asset === 'ETH-PERP' ? 'eth' : 'btc';
+      const currentTrade = token === 'sol' ? solTrade : token === 'eth' ? ethTrade : btcTrade;
+      const updatedTrade = {
+        ...currentTrade,
+        side: direction,
+        entryPrice: result.entryPrice,
+        amount: validAmount,
+        leverage: validLeverage,
+        status: 'open' as TradeStatus,
+        timestamp: Date.now(),
+      };
+
+      if (token === 'sol') {
+        setSolTrade(updatedTrade);
+      } else if (token === 'eth') {
+        setEthTrade(updatedTrade);
+      } else {
+        setBtcTrade(updatedTrade);
+      }
+
+      // Refresh data after successful trade
+      await refreshAll();
+      return true;
+    } catch (error) {
+      console.error('Error opening position:', error);
+      Toast.show({
+        text1: t('Trade Failed'),
+        text2:
+          error instanceof Error ? error.message : t('Failed to open position'),
+        type: 'error',
+      });
+      return false;
+    } finally {
+      setIsTrading(false);
+    }
+  };
+
+  // Close a position
+  const closePosition = async (positionId: string): Promise<boolean> => {
+    if (!profileId) {
+      Toast.show({
+        text1: t('Error'),
+        text2: t('Profile not found. Please try again.'),
+        type: 'error',
+      });
+      return false;
+    }
+
+    setIsTrading(true);
+
+    try {
+      const request: ClosePositionRequest = {
+        userId: profileId,
+        positionId,
+      };
+
+      const result = await closeTradingPosition(request);
+
+      const pnlText =
+        result.pnl >= 0
+          ? `+$${result.pnl.toFixed(2)}`
+          : `$${result.pnl.toFixed(2)}`;
+
+      Toast.show({
+        text1: t('Position Closed'),
+        text2: t('Position closed with PnL: {{pnl}} ({{percentage}}%)', {
+          pnl: pnlText,
+          percentage: result.pnlPercentage.toFixed(2),
+        }),
+        type: 'success',
+      });
+
+      // Refresh data after successful close
+      await refreshAll();
+      return true;
+    } catch (error) {
+      console.error('Error closing position:', error);
+      Toast.show({
+        text1: t('Close Failed'),
+        text2:
+          error instanceof Error
+            ? error.message
+            : t('Failed to close position'),
+        type: 'error',
+      });
+      return false;
+    } finally {
+      setIsTrading(false);
+    }
+  };
+
+  // Load initial data when profile ID is available
+  useEffect(() => {
+    if (profileId) {
+      refreshAll();
+
+      // Set up interval to refresh positions every 10 seconds for live PnL
+      const interval = setInterval(refreshPositions, 10000);
+      return () => clearInterval(interval);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profileId]);
 
   // Fetch token prices on component mount
   useEffect(() => {
@@ -147,6 +452,22 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
         tokenPrices,
         isPricesLoading,
         pricesError,
+        balance,
+        isLoadingBalance,
+        balanceError,
+        openPositions,
+        isLoadingPositions,
+        positionsError,
+        tradingHistory,
+        isLoadingHistory,
+        historyError,
+        isTrading,
+        openPosition,
+        closePosition,
+        refreshBalance,
+        refreshPositions,
+        refreshHistory,
+        refreshAll,
       }}
     >
       {children}
