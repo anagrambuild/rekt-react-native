@@ -11,7 +11,7 @@ import {
   SegmentContainer,
   SegmentControl,
 } from '@/components';
-import { useHomeContext } from '@/contexts/HomeContext';
+import { Trade, useHomeContext } from '@/contexts/HomeContext';
 
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import MaterialIcon from '@expo/vector-icons/MaterialIcons';
@@ -33,6 +33,8 @@ export const TradeScreen = () => {
   const { t } = useTranslation();
   const {
     selectedToken,
+    openPosition,
+    isTrading,
     solTrade,
     setSolTrade,
     ethTrade,
@@ -41,53 +43,99 @@ export const TradeScreen = () => {
     setBtcTrade,
   } = useHomeContext();
 
-  // Get current trade and setter for selected token
-  const trade =
-    selectedToken === 'sol'
-      ? solTrade
-      : selectedToken === 'eth'
-      ? ethTrade
-      : btcTrade;
+  const [amountPopupVisible, setAmountModalVisible] = useState(false);
 
-  const setTrade =
-    selectedToken === 'sol'
-      ? setSolTrade
-      : selectedToken === 'eth'
-      ? setEthTrade
-      : setBtcTrade;
-
-  // Default to 'short' if no trade yet
-  const tradeSide = trade?.side ?? 'short';
-
-  const setTradeSide = (side: 'long' | 'short') => {
-    if (trade) {
-      setTrade({ ...trade, side });
+  // Get current trade state based on selected token
+  const getCurrentTrade = () => {
+    switch (selectedToken) {
+      case 'sol':
+        return solTrade;
+      case 'eth':
+        return ethTrade;
+      case 'btc':
+        return btcTrade;
+      default:
+        return solTrade;
     }
   };
 
-  const [amountPopupVisible, setAmountModalVisible] = useState(false);
-
-  const entryPrice =
-    selectedToken === 'sol' ? 171 : selectedToken === 'eth' ? 2568 : 109000;
-
-  const mockTrade = {
-    ...trade,
-    side: tradeSide,
-    entryPrice: entryPrice,
-    status: 'open' as const, // <-- fix here
-    amount: trade?.amount ?? 10,
-    leverage: trade?.leverage ?? 1,
-    timestamp: Date.now(),
+  const setCurrentTrade = (trade: Trade | null) => {
+    switch (selectedToken) {
+      case 'sol':
+        setSolTrade(trade);
+        break;
+      case 'eth':
+        setEthTrade(trade);
+        break;
+      case 'btc':
+        setBtcTrade(trade);
+        break;
+      default:
+        setSolTrade(trade);
+        break;
+    }
   };
 
-  const handleTrade = () => {
-    // Set the trade for the selected token as active
-    setTrade(mockTrade);
-    router.replace('/');
+  const currentTrade = getCurrentTrade();
+  
+  // Use trade state or defaults
+  const tradeSide = currentTrade?.side || 'short';
+  const amount = currentTrade?.amount || 10;
+  const leverage = currentTrade?.leverage || 1;
+
+  // Update trade state functions
+  const setTradeSide = (side: 'long' | 'short') => {
+    setCurrentTrade({
+      ...currentTrade,
+      side,
+      amount: currentTrade?.amount || 10,
+      leverage: currentTrade?.leverage || 1,
+      status: 'draft',
+      entryPrice: 0,
+      isMaxLeverageOn: currentTrade?.isMaxLeverageOn || false,
+    });
+  };
+
+  const setAmount = (newAmount: number) => {
+    setCurrentTrade({
+      ...currentTrade,
+      side: currentTrade?.side || 'short',
+      amount: Math.max(10, newAmount),
+      leverage: currentTrade?.leverage || 1,
+      status: 'draft',
+      entryPrice: 0,
+      isMaxLeverageOn: currentTrade?.isMaxLeverageOn || false,
+    });
+  };
+  // Convert token symbol to backend format
+  const getAssetSymbol = (): 'SOL-PERP' | 'BTC-PERP' | 'ETH-PERP' => {
+    switch (selectedToken) {
+      case 'sol':
+        return 'SOL-PERP';
+      case 'eth':
+        return 'ETH-PERP';
+      case 'btc':
+        return 'BTC-PERP';
+      default:
+        return 'SOL-PERP';
+    }
+  };
+
+  const handleTrade = async () => {
+    const success = await openPosition(
+      getAssetSymbol(),
+      tradeSide,
+      amount,
+      leverage
+    );
+
+    if (success) {
+      // Navigate back to home screen after successful trade
+      router.replace('/');
+    }
   };
 
   // Select video based on leverage
-  const leverage = trade?.leverage ?? 1;
   let videoLevel: 'low' | 'mid' | 'high' = 'low';
   if (leverage > 100) {
     videoLevel = 'high';
@@ -196,8 +244,15 @@ export const TradeScreen = () => {
               <PriceChartCard showLiquidation={true} />
             </Column>
             <Column $gap={4}>
-              <AmountCard setAmountModalVisible={setAmountModalVisible} />
-              <SliderCard />
+              <AmountCard
+                setAmountModalVisible={setAmountModalVisible}
+                amount={amount}
+                setAmount={setAmount}
+              />
+              <SliderCard
+                leverage={leverage}
+                amount={amount}
+              />
             </Column>
           </Column>
         </ScreenContainer>
@@ -213,10 +268,14 @@ export const TradeScreen = () => {
             zIndex: 10,
           }}
         >
-          <PrimaryButton onPress={handleTrade}>
-            {`${tradeSide.charAt(0).toUpperCase()}${tradeSide.slice(
-              1
-            )} ${selectedToken.toUpperCase()}`}
+          <PrimaryButton 
+            onPress={handleTrade} 
+            loading={isTrading}
+          >
+            {t('{{side}} {{token}}', { 
+              side: tradeSide === 'long' ? 'Long' : 'Short',
+              token: selectedToken.toUpperCase()
+            })}
           </PrimaryButton>
         </View>
         {amountPopupVisible && (
