@@ -327,9 +327,9 @@ export const createUser = async (
     const backendUserData = {
       username: userData.username,
       email: userData.email || '',
-      avatar_url: userData.profileImage || '', // This will be the Supabase URL
-      wallet_address: userData.walletAddress, // Add wallet address
-      swigWalletAddress: userData.swigWalletAddress || '', // Backend expects camelCase
+      avatar_url: userData.profileImage || '',
+      wallet_address: userData.walletAddress,
+      swig_wallet_address: userData.swigWalletAddress || '',
     };
 
     // Add timeout to prevent hanging requests
@@ -445,7 +445,7 @@ export const updateUserSwigWalletAddress = async (
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ swigWalletAddress }),
+        body: JSON.stringify({ swig_wallet_address: swigWalletAddress }),
       }
     );
 
@@ -718,6 +718,49 @@ export const getTradingHistory = async (
     return result.data;
   } catch (error) {
     console.error('Error getting trading history:', error);
+    throw error;
+  }
+};
+
+// Get user by wallet address
+export const getUserByWalletAddress = async (
+  walletAddress: string
+): Promise<User | null> => {
+  try {
+    const response = await fetch(
+      `${BACKEND_BASE_URL}/api/users/by-wallet/${walletAddress}`
+    );
+
+    if (response.status === 404) {
+      return null; // User not found
+    }
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData.message || `HTTP error! status: ${response.status}`
+      );
+    }
+
+    const result = await response.json();
+
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to get user by wallet address');
+    }
+
+    // Map backend response to frontend User interface
+    return {
+      id: result.user.id,
+      username: result.user.username,
+      email: result.user.email,
+      profileImage: result.user.avatar_url,
+      walletAddress: result.user.wallet_address,
+      swigWalletAddress: result.user.swig_wallet_address,
+      createdAt: result.user.joined_at || new Date().toISOString(),
+      updatedAt: result.user.updated_at || new Date().toISOString(),
+    };
+  } catch (error) {
+    console.error('Error getting user by wallet address:', error);
     throw error;
   }
 };
