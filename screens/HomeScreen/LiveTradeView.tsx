@@ -125,12 +125,7 @@ export const LiveTradeView = ({ trade }: LiveTradeViewProps) => {
               <BodyMSecondary>{t('Rekt at')}</BodyMSecondary>
             </Row>
             <BodySEmphasized>
-              {rektAt
-                ? `$${rektAt.toLocaleString('en-US', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}`
-                : 'N/A'}
+              {rektAt ? `$${rektAt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : t('N/A')}
             </BodySEmphasized>
           </Row>
         </InnerCard>

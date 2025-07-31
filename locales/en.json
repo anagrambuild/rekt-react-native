@@ -127,5 +127,21 @@
   "Failed to create account: {{error}}": "Failed to create account: {{error}}",
   "Wallet Not Connected": "Wallet Not Connected",
   "Please connect your wallet first": "Please connect your wallet first",
-  "Please connect your Phantom wallet first": "Please connect your Phantom wallet first"
+  "Please connect your Phantom wallet first": "Please connect your Phantom wallet first",
+  "Profile not found. Please try again.": "Profile not found. Please try again.",
+  "Invalid Amount": "Invalid Amount",
+  "Minimum trade amount is $10": "Minimum trade amount is $10",
+  "Invalid Leverage": "Invalid Leverage",
+  "Please enter a valid leverage of 1 or higher": "Please enter a valid leverage of 1 or higher",
+  "Position Opened": "Position Opened",
+  "Position opened successfully at ${{price}}": "Position opened successfully at ${{price}}",
+  "Trade Failed": "Trade Failed",
+  "Failed to open position": "Failed to open position",
+  "Position Closed": "Position Closed",
+  "Position closed with PnL: {{pnl}} ({{percentage}}%)": "Position closed with PnL: {{pnl}} ({{percentage}}%)",
+  "Close Failed": "Close Failed",
+  "Failed to close position": "Failed to close position",
+  "Loading chart data...": "Loading chart data...",
+  "Failed to load chart data": "Failed to load chart data",
+  "N/A": "N/A"
 }

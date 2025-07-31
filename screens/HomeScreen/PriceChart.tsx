@@ -20,6 +20,7 @@ import {
 import { EmojiContainer } from './EmojiContainer';
 import { FloatingEmoji } from './FloatingEmoji';
 import { Image } from 'expo-image';
+import { useTranslation } from 'react-i18next';
 import { LineChart } from 'react-native-gifted-charts';
 import styled, { DefaultTheme, useTheme } from 'styled-components/native';
 
@@ -32,9 +33,11 @@ export const PriceChart = ({
   showLiquidation?: boolean;
   trade?: Trade | null;
 }) => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const chartHeight = 200;
-  const { selectedToken, selectedTimeframe, tokenPrices, openPositions } = useHomeContext();
+  const { selectedToken, selectedTimeframe, tokenPrices, openPositions } =
+    useHomeContext();
 
   // Fetch historical chart data
   const {
@@ -63,8 +66,6 @@ export const PriceChart = ({
   const data = historicalData || [];
   const chartWidth = Dimensions.get('window').width * 0.9 - 8;
 
-
-
   const dataValues = data.map((item: { value: number }) => item.value);
 
   // Get current price from real-time data or historical data
@@ -81,32 +82,28 @@ export const PriceChart = ({
     return position.asset === tokenMap[selectedToken as keyof typeof tokenMap];
   });
 
-
-
   // Get liquidation price from real position data only
   const liquidationPrice = currentPosition?.liquidationPrice;
-  
+
   // Use real entry price from backend position, fallback to trade state
   const entryPrice = currentPosition?.entryPrice || trade?.entryPrice || 0;
 
   // Calculate dynamic y-axis range to include all important prices
   const importantPrices = [
     ...dataValues, // Historical chart data
-    currentPrice,  // Current market price
+    currentPrice, // Current market price
     ...(entryPrice > 0 ? [entryPrice] : []), // Entry price if exists
     ...(liquidationPrice ? [liquidationPrice] : []), // Liquidation price if exists
-  ].filter(price => price > 0); // Remove any zero/invalid prices
+  ].filter((price) => price > 0); // Remove any zero/invalid prices
 
   const actualMinValue = Math.min(...importantPrices);
   const actualMaxValue = Math.max(...importantPrices);
-  
+
   // Add some padding (5%) to the range for better visualization
   const padding = (actualMaxValue - actualMinValue) * 0.05;
   const paddedMinValue = actualMinValue - padding;
   const paddedMaxValue = actualMaxValue + padding;
   const actualValueRange = paddedMaxValue - paddedMinValue;
-
-
 
   // Calculate positions for different price lines using the new padded range
   const calculateLinePosition = (price: number) => {
@@ -117,7 +114,9 @@ export const PriceChart = ({
     return topOffset + plotArea * (1 - priceRatio);
   };
 
-  const liquidationLineTop = liquidationPrice ? calculateLinePosition(liquidationPrice) : 0;
+  const liquidationLineTop = liquidationPrice
+    ? calculateLinePosition(liquidationPrice)
+    : 0;
   const currentPriceLineTop = calculateLinePosition(currentPrice);
   const entryPriceLineTop = entryPrice ? calculateLinePosition(entryPrice) : 0;
 
@@ -157,7 +156,7 @@ export const PriceChart = ({
           }}
         >
           <BodyXSEmphasized style={{ color: theme.colors.textSecondary }}>
-            Loading chart data...
+            {t('Loading chart data...')}
           </BodyXSEmphasized>
         </ChartContainer>
       </Wrapper>
@@ -176,7 +175,7 @@ export const PriceChart = ({
           }}
         >
           <BodyXSEmphasized style={{ color: theme.colors.textSecondary }}>
-            Failed to load chart data
+            {t('Failed to load chart data')}
           </BodyXSEmphasized>
         </ChartContainer>
       </Wrapper>
@@ -264,7 +263,10 @@ export const PriceChart = ({
                   : `${currentPosition.pnlPercentage.toFixed(2)}%`
                 : showPercent && !currentPosition
                 ? `${changePercent.toFixed(2)}%`
-                : `$${currentPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                : `$${currentPrice.toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}`}
             </CurrentPriceText>
           </CurrentPriceBubble>
         </CurrentPriceLabel>
@@ -281,7 +283,11 @@ export const PriceChart = ({
               <EntryPriceBubble>
                 <FlagIcon />
                 <EntryPriceText style={{ color: theme.colors.textPrimary }}>
-                  ${entryPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  $
+                  {entryPrice.toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
                 </EntryPriceText>
               </EntryPriceBubble>
             </EntryPriceLabel>
@@ -313,7 +319,11 @@ export const PriceChart = ({
               }}
             >
               <LiquidationText style={{ color: theme.colors.textPrimary }}>
-                ${liquidationPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                $
+                {liquidationPrice.toLocaleString('en-US', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
               </LiquidationText>
             </LiquidationLabel>
           </>
