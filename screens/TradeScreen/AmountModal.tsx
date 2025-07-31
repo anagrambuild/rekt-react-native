@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { TextInput } from 'react-native';
+import { Alert, TextInput } from 'react-native';
 
 import WalletIcon from '@/assets/images/app-svgs/wallet.svg';
 import {
@@ -58,8 +58,12 @@ export const AmountModal = ({
 
   const onSetAmount = () => {
     const parsed = Number(localAmount);
+    if (isNaN(parsed) || parsed < 10) {
+      Alert.alert(t('Trades must be at least 10 USDC'));
+      return;
+    }
     if (trade) {
-      setTrade({ ...trade, amount: isNaN(parsed) ? 0 : parsed });
+      setTrade({ ...trade, amount: parsed });
     }
     onClose();
   };

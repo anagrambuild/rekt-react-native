@@ -98,6 +98,7 @@
   "{{walletName}} integration is coming soon!": "{{walletName}} integration is coming soon!",
   "Please connect your wallet in {{walletName}} and return to the app": "Please connect your wallet in {{walletName}} and return to the app",
   "{{walletName}} Not Found": "{{walletName}} Not Found",
+  "Trades must be at least 10 USDC": "Trades must be at least 10 USDC",
   "Please install {{walletName}} from the App Store": "Please install {{walletName}} from the App Store",
   "Invalid wallet address": "Invalid wallet address",
   "Complete Your Profile": "Complete Your Profile",
