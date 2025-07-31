@@ -246,6 +246,44 @@ export interface UpdateUserRequest {
   swigWalletAddress?: string;
 }
 
+export interface UsernameCheckResponse {
+  available: boolean;
+  suggestions?: string[];
+}
+
+export const checkUsernameAvailability = async (
+  username: string
+): Promise<UsernameCheckResponse> => {
+  try {
+    const response = await fetch(
+      `${BACKEND_BASE_URL}/api/auth/check-username`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData.message || `HTTP error! status: ${response.status}`
+      );
+    }
+
+    const data = await response.json();
+    return {
+      available: data.available,
+      suggestions: data.suggestions,
+    };
+  } catch (error) {
+    console.error('❌ Username check error:', error);
+    throw error;
+  }
+};
+
 export const getUserByProfileId = async (
   profileId: string
 ): Promise<User | null> => {
@@ -471,11 +509,11 @@ export const uploadAvatar = async (
       throw new Error(result.message || 'Failed to upload avatar');
     }
 
-  return result.avatar_url;
-} catch (error) {
-  console.error('Error uploading avatar:', error);
-  throw error;
-}
+    return result.avatar_url;
+  } catch (error) {
+    console.error('Error uploading avatar:', error);
+    throw error;
+  }
 };
 
 // Trading API Functions
@@ -538,16 +576,20 @@ export interface ClosePositionResponse {
 }
 
 // Get user's trading balance
-export const getTradingBalance = async (userId: string): Promise<TradingBalance> => {
+export const getTradingBalance = async (
+  userId: string
+): Promise<TradingBalance> => {
   try {
-    const response = await fetch(`${BACKEND_BASE_URL}/api/trading/balance/${userId}`);
-    
+    const response = await fetch(
+      `${BACKEND_BASE_URL}/api/trading/balance/${userId}`
+    );
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
     const result = await response.json();
-    
+
     if (!result.success) {
       throw new Error(result.error || 'Failed to get trading balance');
     }
@@ -560,7 +602,9 @@ export const getTradingBalance = async (userId: string): Promise<TradingBalance>
 };
 
 // Open a new trading position
-export const openTradingPosition = async (request: OpenPositionRequest): Promise<OpenPositionResponse> => {
+export const openTradingPosition = async (
+  request: OpenPositionRequest
+): Promise<OpenPositionResponse> => {
   try {
     const response = await fetch(`${BACKEND_BASE_URL}/api/trading/open`, {
       method: 'POST',
@@ -572,11 +616,13 @@ export const openTradingPosition = async (request: OpenPositionRequest): Promise
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      throw new Error(
+        errorData.error || `HTTP error! status: ${response.status}`
+      );
     }
 
     const result = await response.json();
-    
+
     if (!result.success) {
       throw new Error(result.error || 'Failed to open position');
     }
@@ -591,14 +637,16 @@ export const openTradingPosition = async (request: OpenPositionRequest): Promise
 // Get open positions for a user
 export const getOpenPositions = async (userId: string): Promise<Position[]> => {
   try {
-    const response = await fetch(`${BACKEND_BASE_URL}/api/trading/positions/${userId}`);
-    
+    const response = await fetch(
+      `${BACKEND_BASE_URL}/api/trading/positions/${userId}`
+    );
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
     const result = await response.json();
-    
+
     if (!result.success) {
       throw new Error(result.error || 'Failed to get positions');
     }
@@ -611,7 +659,9 @@ export const getOpenPositions = async (userId: string): Promise<Position[]> => {
 };
 
 // Close a trading position
-export const closeTradingPosition = async (request: ClosePositionRequest): Promise<ClosePositionResponse> => {
+export const closeTradingPosition = async (
+  request: ClosePositionRequest
+): Promise<ClosePositionResponse> => {
   try {
     const response = await fetch(`${BACKEND_BASE_URL}/api/trading/close`, {
       method: 'POST',
@@ -623,11 +673,13 @@ export const closeTradingPosition = async (request: ClosePositionRequest): Promi
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      throw new Error(
+        errorData.error || `HTTP error! status: ${response.status}`
+      );
     }
 
     const result = await response.json();
-    
+
     if (!result.success) {
       throw new Error(result.error || 'Failed to close position');
     }
@@ -640,7 +692,11 @@ export const closeTradingPosition = async (request: ClosePositionRequest): Promi
 };
 
 // Get trading history for a user
-export const getTradingHistory = async (userId: string, status?: 'open' | 'closed', limit: number = 50): Promise<Position[]> => {
+export const getTradingHistory = async (
+  userId: string,
+  status?: 'open' | 'closed',
+  limit: number = 50
+): Promise<Position[]> => {
   try {
     let url = `${BACKEND_BASE_URL}/api/trading/history/${userId}?limit=${limit}`;
     if (status) {
@@ -648,13 +704,13 @@ export const getTradingHistory = async (userId: string, status?: 'open' | 'close
     }
 
     const response = await fetch(url);
-    
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
     const result = await response.json();
-    
+
     if (!result.success) {
       throw new Error(result.error || 'Failed to get trading history');
     }
