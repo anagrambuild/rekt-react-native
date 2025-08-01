@@ -44,8 +44,6 @@ export const fetchApi = async <T>(
   return response.json();
 };
 
-
-
 // Custom hook for price queries
 export const usePriceQuery = (
   symbol: string,
@@ -198,32 +196,6 @@ export const useHistoricalDataQuery = (
   });
 };
 
-// User Management Hooks
-
-// Hook to update user's Swig wallet address
-export const useUpdateUserSwigWalletAddressMutation = (
-  options?: UseMutationOptions<
-    User,
-    Error,
-    { userId: string; swigWalletAddress: string }
-  >
-) => {
-  return useMutation({
-    mutationFn: ({ userId, swigWalletAddress }) =>
-      updateUserSwigWalletAddress(userId, swigWalletAddress),
-    onSuccess: (data) => {
-      // Update the user query cache with the updated user
-      queryClient.setQueryData(
-        queryKeys.userByWallet(data.walletAddress),
-        data
-      );
-      // Invalidate user queries to refresh any related data
-      queryClient.invalidateQueries({ queryKey: queryKeys.user });
-    },
-    ...options,
-  });
-};
-
 // Hook to get user by profile ID
 export const useUserByProfileQuery = (
   profileId: string,
@@ -279,5 +251,3 @@ export const useUpdateUserMutation = (
     ...options,
   });
 };
-
-

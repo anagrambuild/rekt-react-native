@@ -1,11 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { Alert } from 'react-native';
 
-import {
-  DetailedTradeData,
-  userMockData,
-} from '@/screens/ProfileScreen/profileMockData';
-import { useUserByProfileQuery } from '@/utils/queryUtils';
+import { DetailedTradeData } from '@/screens/ProfileScreen/profileMockData';
 import { getSecureAuth } from '@/utils/secureAuth';
 
 import { useWallet } from './WalletContext';
@@ -29,7 +25,6 @@ interface ProfileContextType {
   userImage: string | number;
   setUserImage: (image: string | number) => void;
   userData: User;
-  isUserLoading: boolean;
   handleImageUpload: (imageUri: string) => Promise<void>;
   handleImageRemoval: () => Promise<void>;
   isOnOffRampModalVisible: boolean;
@@ -53,7 +48,6 @@ export const ProfileContext = createContext<ProfileContextType>({
   userImage: '',
   setUserImage: () => {},
   userData: { username: '', imgSrc: '', balance: 0 },
-  isUserLoading: false,
   handleImageUpload: async () => {},
   handleImageRemoval: async () => {},
   isOnOffRampModalVisible: false,
@@ -71,8 +65,10 @@ export const useProfileContext = () => {
 
 export const ProfileProvider = ({
   children,
+  userProfile,
 }: {
   children: React.ReactNode;
+  userProfile: any | null;
 }) => {
   const { t } = useTranslation();
   const { usdcBalance } = useWallet();
@@ -104,26 +100,20 @@ export const ProfileProvider = ({
     getProfileId();
   }, []);
 
-  // Fetch user data from database
-  const { data: dbUser, isLoading: isUserLoading } = useUserByProfileQuery(
-    profileId || '',
-    { enabled: !!profileId }
-  );
-
-  // User image state - start with DB image or fallback to mock
+  // User image state - start with userProfile image or empty string
   const [userImage, setUserImage] = useState<string | number>(
-    dbUser?.profileImage || userMockData.imgSrc
+    userProfile?.profileImage || ''
   );
 
-  // Update user image when DB data loads
+  // Update user image when userProfile data changes
   useEffect(() => {
-    if (dbUser?.profileImage) {
-      setUserImage(dbUser.profileImage);
+    if (userProfile?.profileImage) {
+      setUserImage(userProfile.profileImage);
     }
-  }, [dbUser?.profileImage]);
+  }, [userProfile?.profileImage]);
 
   const userData: User = {
-    username: dbUser?.username || userMockData.username,
+    username: userProfile?.username || '',
     imgSrc: userImage,
     balance: usdcBalance || 0,
   };
@@ -140,7 +130,7 @@ export const ProfileProvider = ({
         t('Failed to update profile picture. Please try again.')
       );
       // Revert to previous image on error
-      setUserImage(userMockData.imgSrc);
+      setUserImage(userProfile?.profileImage || '');
     }
   };
 
@@ -193,7 +183,6 @@ export const ProfileProvider = ({
         userImage,
         setUserImage,
         userData,
-        isUserLoading,
         handleImageUpload,
         handleImageRemoval,
         isOnOffRampModalVisible,
