@@ -276,7 +276,7 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
             if (existingUser) {
               // Store user data in secure storage
               await storeSecureAuth(
-                existingUser.walletAddress,
+                publicKeyString,
                 existingUser.swigWalletAddress || '',
                 existingUser.id
               );
@@ -320,7 +320,7 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
           if (existingUser) {
             // Store user data in secure storage
             await storeSecureAuth(
-              existingUser.walletAddress,
+              publicKeyString,
               existingUser.swigWalletAddress || '',
               existingUser.id
             );

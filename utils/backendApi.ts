@@ -225,7 +225,6 @@ export interface User {
   username: string;
   email?: string;
   profileImage?: string;
-  walletAddress: string;
   swigWalletAddress?: string;
   createdAt: string;
   updatedAt: string;
@@ -308,8 +307,7 @@ export const getUserByProfileId = async (
       username: result.user.username,
       email: result.user.email,
       profileImage: result.user.avatar_url,
-      walletAddress: result.user.wallet_address || '',
-      swigWalletAddress: result.user.swig_wallet_address || '',
+      swigWalletAddress: result.user.swig_wallet_address,
       createdAt: result.user.joined_at || new Date().toISOString(),
       updatedAt: result.user.updated_at || new Date().toISOString(),
     };
@@ -364,10 +362,6 @@ export const createUser = async (
       username: result.username || result.user?.username,
       email: result.email || result.user?.email,
       profileImage: result.avatar_url || result.user?.avatar_url,
-      walletAddress:
-        result.wallet_address ||
-        result.user?.wallet_address ||
-        userData.walletAddress,
       swigWalletAddress:
         result.swig_wallet_address ||
         result.user?.swig_wallet_address ||
@@ -424,9 +418,18 @@ export const updateUser = async (
     }
 
     const result = await response.json();
-    console.log('✓ User updated successfully:', result);
 
-    return result;
+    // Map backend response to frontend User interface
+    return {
+      id: result.user.id,
+      username: result.user.username,
+      email: result.user.email,
+      profileImage: result.user.avatar_url,
+
+      swigWalletAddress: result.user.swig_wallet_address,
+      createdAt: result.user.joined_at || new Date().toISOString(),
+      updatedAt: result.user.updated_at || new Date().toISOString(),
+    };
   } catch (error) {
     console.error('Error updating user:', error);
     throw error;
@@ -754,7 +757,7 @@ export const getUserByWalletAddress = async (
       username: result.user.username,
       email: result.user.email,
       profileImage: result.user.avatar_url,
-      walletAddress: result.user.wallet_address,
+
       swigWalletAddress: result.user.swig_wallet_address,
       createdAt: result.user.joined_at || new Date().toISOString(),
       updatedAt: result.user.updated_at || new Date().toISOString(),
