@@ -32,16 +32,17 @@ Liam's feedback:
 
   before hackathon end:
 
-  - verify on front end that username is unique
-  - new app icon
-  - logout function - allow login with new wallet and new account creation
-  - create get user by wallet address function in backend
+  - verify on front end that username is unique ✅
+  - add form validation ✅
+  - new app icon ✅
+  - logout function - allow login with new wallet and new account creation ✅
+  - create get user by wallet address function in backend ✅
   - usdc token amount did not show until restart
   - profile not found error on trade after account creation
   - show trade history from db in profile
-  - clean up ios bottom tray of wallets
+  - clean up ios bottom tray of wallets ✅
   - fix fake wallet address in profile
-  - add email type to email input
+  - add email type to email input ✅
 
   - get real historical data for token prices
   - load chart data faster?

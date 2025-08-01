@@ -22,8 +22,8 @@ if (process.env.DEPLOY_ENVIRONMENT === 'preview') {
   slug = 'rekt-react-native';
   version = '0.0.1';
   //   easProjectId = 'PREVIEW_PROJECT_ID'; // Optional: Only if you want a separate project in Expo dashboard
-  icon = './assets/images/mock-pngs/liam.png';
-  androidIcon = './assets/images/mock-pngs/liam.png';
+  icon = './assets/images/rekt-icon.png';
+  androidIcon = './assets/images/rekt-icon.png';
   packageName = 'com.anagramxyz.rektreactnativepreview';
   bundleIdentifier = 'com.anagramxyz.rektreactnativepreview';
   scheme = 'rektreactnativepreview';
