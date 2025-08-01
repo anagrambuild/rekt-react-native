@@ -57,7 +57,7 @@ export const PriceChart = ({
 
   // Handler to add a new floating emoji
   const handleEmojiReaction = (emoji: string) => {
-    const id = Math.random().toString(36).substr(2, 9);
+    const id = Math.random().toString(36).substring(2, 9);
     setReactions((prev) => [...prev, { id, emoji }]);
     setIsAnimating(true);
   };
@@ -120,18 +120,23 @@ export const PriceChart = ({
   const currentPriceLineTop = calculateLinePosition(currentPrice);
   const entryPriceLineTop = entryPrice ? calculateLinePosition(entryPrice) : 0;
 
-  // Determine if position is in profit or loss
-  const isProfit = currentPosition
-    ? currentPosition.pnl >= 0
-    : !trade || trade.status !== 'open'
-    ? null
-    : (trade.side === 'long' && currentPrice > trade.entryPrice) ||
-      (trade.side === 'short' && currentPrice < trade.entryPrice);
+  // Only show profit/loss styling when there's an actual open position or open trade
+  const hasOpenTrade = (trade && trade.status === 'open') || currentPosition;
 
-  // Set chart color based on isProfit
+  // Determine if position is in profit or loss
+  const isProfit = hasOpenTrade
+    ? currentPosition
+      ? currentPosition.pnl >= 0
+      : trade && trade.status === 'open'
+      ? (trade.side === 'long' && currentPrice > trade.entryPrice) ||
+        (trade.side === 'short' && currentPrice < trade.entryPrice)
+      : null
+    : null;
+
+  // Set chart color - only apply profit/loss colors when there's an open trade/position
   let chartColor = theme.colors.tint;
   let fillColor = theme.colors.tint;
-  if (trade && isProfit !== null) {
+  if (hasOpenTrade && isProfit !== null) {
     if (isProfit === true) {
       chartColor = theme.colors.profit;
       fillColor = theme.colors.profit;
@@ -254,7 +259,7 @@ export const PriceChart = ({
             right: 15,
           }}
         >
-          <CurrentPriceBubble $isProfit={isProfit}>
+          <CurrentPriceBubble $isProfit={hasOpenTrade ? isProfit : null}>
             <CurrentPriceText style={{ color: theme.colors.background }}>
               {/* Toggle between price and PnL percentage */}
               {showPercent && currentPosition
@@ -271,8 +276,8 @@ export const PriceChart = ({
           </CurrentPriceBubble>
         </CurrentPriceLabel>
 
-        {/* Entry Price Line and Label (show if position or trade exists) */}
-        {(currentPosition || trade) && entryPrice > 0 && (
+        {/* Entry Price Line and Label (show only if there's an open position or open trade) */}
+        {hasOpenTrade && entryPrice > 0 && (
           <>
             <EntryPriceLabel
               style={{

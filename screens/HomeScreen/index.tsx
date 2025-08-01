@@ -27,6 +27,7 @@ export const HomeScreen = () => {
     setEthTrade,
     btcTrade,
     setBtcTrade,
+    openPositions,
   } = useHomeContext();
 
   usePreventRemove(true, () => {});
@@ -63,7 +64,13 @@ export const HomeScreen = () => {
     }
   };
 
-  const isActiveTrade = trade && trade.status === 'open';
+  // Check for active trades - either from local state or actual open positions
+  const currentPosition = openPositions.find((position) => {
+    const tokenMap = { sol: 'SOL-PERP', eth: 'ETH-PERP', btc: 'BTC-PERP' };
+    return position.asset === tokenMap[selectedToken as keyof typeof tokenMap];
+  });
+  
+  const isActiveTrade = (trade && trade.status === 'open') || !!currentPosition;
 
   return (
     <ScreenContainer>
@@ -95,7 +102,15 @@ export const HomeScreen = () => {
           </Row>
         )}
         {isActiveTrade ? (
-          <LiveTradeView trade={trade} />
+          <LiveTradeView trade={trade || {
+            side: currentPosition?.direction || 'long',
+            entryPrice: currentPosition?.entryPrice || 0,
+            amount: currentPosition?.marginUsed || 0,
+            leverage: currentPosition?.leverage || 1,
+            status: 'open',
+            pnl: currentPosition?.pnl || 0,
+            timestamp: currentPosition?.openedAt ? new Date(currentPosition.openedAt).getTime() : Date.now(),
+          }} />
         ) : (
           <Row $padding={0}>
             <ShortButton
