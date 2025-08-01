@@ -152,5 +152,11 @@
   "Username must be between 3-20 characters": "Username must be between 3-20 characters",
   "Please enter a valid email address": "Please enter a valid email address",
   "Invalid Username": "Invalid Username",
-  "Invalid Email": "Invalid Email"
+  "Invalid Email": "Invalid Email",
+  "Authenticate to access your account": "Authenticate to access your account",
+  "Authentication Required": "Authentication Required",
+  "Use {{biometricType}} to access your account": "Use {{biometricType}} to access your account",
+  "Authentication Failed": "Authentication Failed",
+  "Please try again or restart the app to use a different method.": "Please try again or restart the app to use a different method.",
+  "No address found": "No address found"
 }

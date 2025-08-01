@@ -4,6 +4,7 @@ import { Animated, Easing } from 'react-native';
 import RektLogo from '@/assets/images/rekt-logo.svg';
 import { midFireUrl } from '@/assets/videos';
 import {
+  BiometricAuthScreen,
   Column,
   PrimaryButton,
   ScreenContainer,
@@ -19,7 +20,7 @@ import { useTranslation } from 'react-i18next';
 import styled, { DefaultTheme } from 'styled-components/native';
 
 const Index = () => {
-  const { isLoggedIn, setIsLoggedIn, showSignUpForm, setShowSignUpForm } =
+  const { isLoggedIn, setIsLoggedIn, showSignUpForm, setShowSignUpForm, requiresBiometric } =
     useAppContext();
   const {
     connect,
@@ -112,6 +113,11 @@ const Index = () => {
   // Show loading screen while checking connection or connecting
   if (isCheckingConnection || connecting) {
     return <LoadingScreen />;
+  }
+
+  // Show biometric authentication screen if required
+  if (requiresBiometric) {
+    return <BiometricAuthScreen />;
   }
 
   // Show sign-up form after wallet connection

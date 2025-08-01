@@ -10,6 +10,7 @@ import {
 } from 'react';
 import { Alert, Linking, Platform } from 'react-native';
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { clusterApiUrl, Connection, PublicKey } from '@solana/web3.js';
 
 import { getUserByWalletAddress } from '../utils/backendApi';
@@ -17,6 +18,7 @@ import { getSecureAuth, storeSecureAuth } from '../utils/secureAuth';
 import { useAppContext } from './AppContext';
 import { Buffer } from 'buffer';
 import Constants from 'expo-constants';
+import * as LocalAuthentication from 'expo-local-authentication';
 import { useTranslation } from 'react-i18next';
 import nacl from 'tweetnacl';
 
@@ -98,7 +100,8 @@ interface WalletProviderProps {
 
 export const WalletProvider = ({ children }: WalletProviderProps) => {
   const { t } = useTranslation();
-  const { setIsLoggedIn, setUserProfile } = useAppContext();
+  const { setIsLoggedIn, setUserProfile, setRequiresBiometric } =
+    useAppContext();
 
   // Initialize from persistent state
   const [connected, setConnected] = useState(persistentWalletState.connected);
@@ -151,6 +154,31 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
   const usdcMint =
     Constants.expoConfig?.extra?.usdcMint ||
     'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
+
+  // Helper function to handle login with biometric check
+  const handleUserLogin = async (user: any) => {
+    setUserProfile(user);
+
+    // Check if biometrics are enabled for this user
+    const biometricEnabled = await AsyncStorage.getItem('biometric_enabled');
+
+    if (biometricEnabled === 'true') {
+      // Check if biometrics are available on device
+      const isSupported = await LocalAuthentication.hasHardwareAsync();
+      const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+
+      if (isSupported && isEnrolled) {
+        // Require biometric authentication before logging in
+        setRequiresBiometric(true);
+      } else {
+        // Biometrics not available, log in directly
+        setIsLoggedIn(true);
+      }
+    } else {
+      // Biometrics not enabled, log in directly
+      setIsLoggedIn(true);
+    }
+  };
 
   // Function to fetch USDC balance using stored wallet address
   const refreshBalance = useCallback(async () => {
@@ -253,9 +281,8 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
                 existingUser.id
               );
 
-              // Set user profile and login state
-              setUserProfile(existingUser);
-              setIsLoggedIn(true);
+              // Set user profile and handle biometric check
+              await handleUserLogin(existingUser);
             } else {
               console.log('👤 No existing user found, will need to sign up');
             }
@@ -298,9 +325,8 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
               existingUser.id
             );
 
-            // Set user profile and login state
-            setUserProfile(existingUser);
-            setIsLoggedIn(true);
+            // Set user profile and handle biometric check
+            await handleUserLogin(existingUser);
           } else {
             console.log('👤 No existing user found, will need to sign up');
           }
@@ -317,6 +343,7 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
         setConnecting(false);
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [t, setIsLoggedIn, setUserProfile]
   );
 
