@@ -15,7 +15,6 @@ import { clusterApiUrl, Connection, PublicKey } from '@solana/web3.js';
 
 import { getUserByWalletAddress } from '../utils/backendApi';
 import { getSecureAuth, storeSecureAuth } from '../utils/secureAuth';
-import { useAppContext } from './AppContext';
 import { Buffer } from 'buffer';
 import Constants from 'expo-constants';
 import * as LocalAuthentication from 'expo-local-authentication';
@@ -96,12 +95,18 @@ export const useWallet = () => {
 
 interface WalletProviderProps {
   children: ReactNode;
+  setIsLoggedIn: (value: boolean) => void;
+  setUserProfile: (profile: any) => void;
+  setRequiresBiometric: (value: boolean) => void;
 }
 
-export const WalletProvider = ({ children }: WalletProviderProps) => {
+export const WalletProvider = ({
+  children,
+  setIsLoggedIn,
+  setUserProfile,
+  setRequiresBiometric,
+}: WalletProviderProps) => {
   const { t } = useTranslation();
-  const { setIsLoggedIn, setUserProfile, setRequiresBiometric } =
-    useAppContext();
 
   // Initialize from persistent state
   const [connected, setConnected] = useState(persistentWalletState.connected);

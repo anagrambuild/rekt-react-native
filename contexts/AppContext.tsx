@@ -207,7 +207,11 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
       }}
     >
       <SolanaProvider>
-        <WalletProvider>
+        <WalletProvider
+          setIsLoggedIn={setIsLoggedIn}
+          setUserProfile={setUserProfile}
+          setRequiresBiometric={setRequiresBiometric}
+        >
           <ProfileProvider>
             <HomeProvider>{children}</HomeProvider>
           </ProfileProvider>
