@@ -7,7 +7,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { AppState } from 'react-native';
+import { AppState, Platform } from 'react-native';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -77,7 +77,6 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     enableBiometrics: false,
   });
   const [userProfile, setUserProfile] = useState<any | null>(null);
-  console.log('userProfile', userProfile);
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [requiresBiometric, setRequiresBiometric] = useState(false);
   const appState = useRef(AppState.currentState);
@@ -105,8 +104,13 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
               const isEnrolled = await LocalAuthentication.isEnrolledAsync();
 
               if (isSupported && isEnrolled) {
-                // Require biometric authentication before logging in
-                setRequiresBiometric(true);
+                // Skip biometrics on Android due to dialog dismissal issues
+                if (Platform.OS === 'android') {
+                  setRequiresBiometric(false);
+                  setIsLoggedIn(true);
+                } else {
+                  setRequiresBiometric(true);
+                }
               } else {
                 // Biometrics not available, log in directly
                 setIsLoggedIn(true);
@@ -115,11 +119,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
               // Biometrics not enabled, log in directly
               setIsLoggedIn(true);
             }
-          } else {
-            console.log('⚠️ User profile not found in database');
           }
-        } else {
-          console.log('No valid auth data found:', authResult.reason);
         }
       } catch (error) {
         console.error('Error checking existing auth:', error);
@@ -138,11 +138,15 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         promptMessage: 'Authenticate to access your account',
         cancelLabel: 'Cancel',
         fallbackLabel: 'Use Passcode',
+        disableDeviceFallback: false,
+        requireConfirmation: false,
       });
 
       if (result.success) {
-        setIsLoggedIn(true);
         setRequiresBiometric(false);
+        setTimeout(() => {
+          setIsLoggedIn(true);
+        }, 100);
         return true;
       }
       return false;

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Easing } from 'react-native';
+import { Animated, Easing, Platform } from 'react-native';
 
 import RektLogo from '@/assets/images/rekt-logo.svg';
 import { midFireUrl } from '@/assets/videos';
@@ -31,6 +31,7 @@ const Index = () => {
   } = useWallet();
   const { t } = useTranslation();
   const [isCheckingConnection, setIsCheckingConnection] = useState(true);
+  const [forceRefresh, setForceRefresh] = useState(0);
 
   const handleSignUpComplete = () => {
     setIsLoggedIn(true);
@@ -47,10 +48,14 @@ const Index = () => {
 
   // Function to check if user is logged in and redirect
   useEffect(() => {
-    if (isLoggedIn) {
-      router.replace('/(tabs)');
+    if (isLoggedIn && !requiresBiometric) {
+      setForceRefresh(prev => prev + 1);
+      const delay = Platform.OS === 'android' ? 200 : 50;
+      setTimeout(() => {
+        router.replace('/(tabs)');
+      }, delay);
     }
-  }, [isLoggedIn]);
+  }, [isLoggedIn, requiresBiometric]);
 
   // Handle wallet connection success
   useEffect(() => {
@@ -117,7 +122,7 @@ const Index = () => {
 
   // Show biometric authentication screen if required
   if (requiresBiometric) {
-    return <BiometricAuthScreen />;
+    return <BiometricAuthScreen key="biometric-auth" />;
   }
 
   // Show sign-up form after wallet connection
@@ -149,6 +154,7 @@ const Index = () => {
 
   return (
     <ScreenContainer
+      key={`index-${forceRefresh}`}
       alignItems='stretch'
       justifyContent='flex-start'
       noPadding

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert } from 'react-native';
 
 import { useAppContext } from '@/contexts';
@@ -10,20 +10,30 @@ import styled, { DefaultTheme } from 'styled-components/native';
 
 export const BiometricAuthScreen = () => {
   const { t } = useTranslation();
-  const { authenticateWithBiometrics } = useAppContext();
+  const { authenticateWithBiometrics, requiresBiometric } = useAppContext();
   const { biometricType, isSupported, isEnrolled } = useBiometrics();
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
 
   // Auto-trigger biometric authentication when screen loads
   useEffect(() => {
-    if (isSupported && isEnrolled) {
+    if (isSupported && isEnrolled && requiresBiometric && !isAuthenticating) {
       handleBiometricAuth();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSupported, isEnrolled]);
+  }, [isSupported, isEnrolled, requiresBiometric]);
+
+  // If requiresBiometric is false, this component shouldn't render
+  if (!requiresBiometric) {
+    return null;
+  }
 
   const handleBiometricAuth = async () => {
+    if (isAuthenticating) return;
+
     try {
+      setIsAuthenticating(true);
       const success = await authenticateWithBiometrics();
+
       if (!success) {
         Alert.alert(
           t('Authentication Failed'),
@@ -36,6 +46,8 @@ export const BiometricAuthScreen = () => {
         t('Authentication Error'),
         t('Unable to authenticate. Please try again.')
       );
+    } finally {
+      setIsAuthenticating(false);
     }
   };
 
@@ -58,8 +70,13 @@ export const BiometricAuthScreen = () => {
             })}
           </Description>
         </Column>
-        <PrimaryButton onPress={handleBiometricAuth}>
-          {t('Authenticate with {{biometricType}}', { biometricType })}
+        <PrimaryButton
+          onPress={handleBiometricAuth}
+          disabled={isAuthenticating}
+        >
+          {isAuthenticating
+            ? t('Authenticating...')
+            : t('Authenticate with {{biometricType}}', { biometricType })}
         </PrimaryButton>
       </Column>
     </ScreenContainer>
