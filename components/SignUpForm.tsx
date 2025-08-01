@@ -52,7 +52,7 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
   const { isSupported, isEnrolled, biometricType, enableBiometrics } =
     useBiometrics();
   const theme = useTheme();
-  const { signUpForm, setSignUpForm } = useAppContext();
+  const { signUpForm, setSignUpForm, setUserProfile } = useAppContext();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [usernameError, setUsernameError] = useState('');
@@ -314,6 +314,9 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
       } else {
         await AsyncStorage.setItem('biometric_enabled', 'false');
       }
+
+      // Step 5: Update app state with the newly created user
+      setUserProfile(user);
 
       setIsSubmitting(false);
       onComplete?.();
