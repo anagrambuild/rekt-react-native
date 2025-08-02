@@ -199,8 +199,8 @@ export const WalletProvider = ({
         return;
       }
 
-      const walletAddress = authResult.data.walletAddress;
-      const walletPublicKey = new PublicKey(walletAddress);
+      const swigWalletAddress = authResult.data.swigAddress;
+      const swigWalletPublicKey = new PublicKey(swigWalletAddress);
 
       const cluster = solanaNetwork.includes('mainnet')
         ? 'mainnet-beta'
@@ -209,7 +209,7 @@ export const WalletProvider = ({
 
       // Get token accounts for the wallet
       const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
-        walletPublicKey,
+        swigWalletPublicKey,
         {
           mint: new PublicKey(usdcMint),
         }
