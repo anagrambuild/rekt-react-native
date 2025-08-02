@@ -16,9 +16,6 @@ import {
   SupportedTimeframe,
   SupportedToken,
   TokenPrice,
-  updateUser,
-  UpdateUserRequest,
-  updateUserSwigWalletAddress,
   User,
 } from './backendApi';
 import { queryClient } from './queryClient';
@@ -220,29 +217,6 @@ export const useCreateUserMutation = (
       // Update the user query cache with the new user
       queryClient.setQueryData(
         queryKeys.userByWallet(variables.walletAddress),
-        data
-      );
-      // Invalidate user queries to refresh any related data
-      queryClient.invalidateQueries({ queryKey: queryKeys.user });
-    },
-    ...options,
-  });
-};
-
-// Hook to update an existing user
-export const useUpdateUserMutation = (
-  options?: UseMutationOptions<
-    User,
-    Error,
-    { userId: string; userData: UpdateUserRequest }
-  >
-) => {
-  return useMutation({
-    mutationFn: ({ userId, userData }) => updateUser(userId, userData),
-    onSuccess: (data) => {
-      // Update the user query cache with the updated user
-      queryClient.setQueryData(
-        queryKeys.userByWallet(data.walletAddress),
         data
       );
       // Invalidate user queries to refresh any related data

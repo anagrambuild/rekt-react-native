@@ -19,9 +19,21 @@ import * as Linking from 'expo-linking';
 import { toByteArray } from 'react-native-quick-base64';
 import nacl from 'tweetnacl';
 
+// Program IDs (constants on Solana)
+const TOKEN_PROGRAM_ID = new PublicKey(
+  'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'
+);
+const ASSOCIATED_TOKEN_PROGRAM_ID = new PublicKey(
+  'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'
+);
+const SYSVAR_RENT_PUBKEY = new PublicKey(
+  'SysvarRent111111111111111111111111111111111'
+);
+
 // Type definition for mobile Swig creation result
 export interface MobileSwigCreationResult {
   swigAddress: PublicKey;
+  usdcTokenAccount?: PublicKey;
   transactionSignature: string;
   success: boolean;
   error?: string;
@@ -49,7 +61,111 @@ const initializeMWA = async () => {
 };
 
 /**
- * Creates a Swig account using Phantom wallet deep linking (iOS)
+ * Find Associated Token Account address using only web3.js
+ */
+const findAssociatedTokenAddress = async (
+  walletAddress: PublicKey,
+  tokenMintAddress: PublicKey
+): Promise<PublicKey> => {
+  const [address] = await PublicKey.findProgramAddress(
+    [
+      walletAddress.toBuffer(),
+      TOKEN_PROGRAM_ID.toBuffer(),
+      tokenMintAddress.toBuffer(),
+    ],
+    ASSOCIATED_TOKEN_PROGRAM_ID
+  );
+  return address;
+};
+
+/**
+ * Create Associated Token Account instruction using only web3.js
+ */
+const createAssociatedTokenAccountInstruction = (
+  payer: PublicKey,
+  associatedToken: PublicKey,
+  owner: PublicKey,
+  mint: PublicKey
+): TransactionInstruction => {
+  // The instruction data for createAssociatedTokenAccount is empty (0 bytes)
+  const data = Buffer.alloc(0);
+
+  const keys = [
+    { pubkey: payer, isSigner: true, isWritable: true },
+    { pubkey: associatedToken, isSigner: false, isWritable: true },
+    { pubkey: owner, isSigner: false, isWritable: false },
+    { pubkey: mint, isSigner: false, isWritable: false },
+    { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+    { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+    { pubkey: SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false },
+  ];
+
+  return new TransactionInstruction({
+    keys,
+    programId: ASSOCIATED_TOKEN_PROGRAM_ID,
+    data,
+  });
+};
+
+/**
+ * Check if Associated Token Account exists
+ */
+const checkAssociatedTokenAccountExists = async (
+  connection: Connection,
+  associatedTokenAddress: PublicKey
+): Promise<boolean> => {
+  try {
+    const accountInfo = await connection.getAccountInfo(associatedTokenAddress);
+    const exists = accountInfo !== null;
+    return exists;
+  } catch (error) {
+    console.error('❌ Error checking associated token account:', error);
+    return false;
+  }
+};
+
+/**
+ * Create USDC ATA instructions helper
+ */
+const createUsdcATAInstructions = async (
+  connection: Connection,
+  swigAddress: PublicKey,
+  payerAddress: PublicKey,
+  usdcMint: PublicKey
+): Promise<{
+  usdcTokenAccount: PublicKey;
+  createATAInstruction?: TransactionInstruction;
+}> => {
+  // Find the ATA address
+  const usdcTokenAccount = await findAssociatedTokenAddress(
+    swigAddress,
+    usdcMint
+  );
+
+  // Check if it already exists
+  const exists = await checkAssociatedTokenAccountExists(
+    connection,
+    usdcTokenAccount
+  );
+
+  if (exists) {
+    // ATA already exists, no instruction needed
+    return { usdcTokenAccount };
+  }
+
+  // Create the instruction to create the ATA
+  const createATAInstruction = createAssociatedTokenAccountInstruction(
+    payerAddress, // payer
+    usdcTokenAccount, // the ATA address
+    swigAddress, // owner
+    usdcMint // mint
+  );
+
+  return { usdcTokenAccount, createATAInstruction };
+};
+
+/**
+ * Creates a Swig account with USDC ATA using Phantom wallet deep linking (iOS)
  */
 export const createSwigAccountWithPhantom = async (
   connection: Connection,
@@ -77,6 +193,15 @@ export const createSwigAccountWithPhantom = async (
       Constants.expoConfig?.extra?.usdcMint ||
         'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v' // Mainnet USDC fallback
     );
+
+    // Create USDC ATA instructions
+    const { usdcTokenAccount, createATAInstruction } =
+      await createUsdcATAInstructions(
+        connection,
+        swigAddress,
+        userPublicKey,
+        usdcMint
+      );
 
     // Create authority info for the user's public key
     const rootAuthorityInfo = createEd25519AuthorityInfo(userPublicKey);
@@ -108,7 +233,7 @@ export const createSwigAccountWithPhantom = async (
       bump,
     });
 
-    // Create the instruction manually with correct accounts
+    // Create the Swig creation instruction
     const createSwigIx = new TransactionInstruction({
       programId: SWIG_PROGRAM_ID,
       keys: [
@@ -131,8 +256,13 @@ export const createSwigAccountWithPhantom = async (
       data: Buffer.from(instructionData),
     });
 
-    // Create transaction
+    // Create transaction with Swig creation and optionally ATA creation
     const transaction = new Transaction().add(createSwigIx);
+
+    // Add ATA creation instruction if needed
+    if (createATAInstruction) {
+      transaction.add(createATAInstruction);
+    }
 
     // Get recent blockhash
     const { blockhash } = await connection.getLatestBlockhash();
@@ -197,6 +327,7 @@ export const createSwigAccountWithPhantom = async (
             if (responseData.signature) {
               resolve({
                 swigAddress,
+                usdcTokenAccount,
                 transactionSignature: responseData.signature,
                 success: true,
               });
@@ -227,6 +358,7 @@ export const createSwigAccountWithPhantom = async (
 
               resolve({
                 swigAddress,
+                usdcTokenAccount,
                 transactionSignature: signature,
                 success: true,
               });
@@ -267,8 +399,7 @@ export const createSwigAccountWithPhantom = async (
 };
 
 /**
- * Creates a Swig account using Mobile Wallet Adapter (Android)
- * Following the EXACT same pattern as the working MWA test transaction
+ * Creates a Swig account with USDC ATA using Mobile Wallet Adapter (Android)
  */
 export const createSwigAccountWithMWA = async (
   connection: Connection,
@@ -332,6 +463,15 @@ export const createSwigAccountWithMWA = async (
         'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v' // Mainnet USDC fallback
     );
 
+    // Create USDC ATA instructions
+    const { usdcTokenAccount, createATAInstruction } =
+      await createUsdcATAInstructions(
+        connection,
+        swigAddress,
+        authorizedPubkey,
+        usdcMint
+      );
+
     // Create authority info for the authorized public key
     const rootAuthorityInfo = createEd25519AuthorityInfo(authorizedPubkey);
 
@@ -362,7 +502,7 @@ export const createSwigAccountWithMWA = async (
       bump,
     });
 
-    // Create the instruction manually with correct accounts
+    // Create the Swig creation instruction
     const createSwigIx = new TransactionInstruction({
       programId: SWIG_PROGRAM_ID,
       keys: [
@@ -385,13 +525,19 @@ export const createSwigAccountWithMWA = async (
       data: Buffer.from(instructionData),
     });
 
-    // Create the transaction using VersionedTransaction (same as working test)
+    // Prepare instructions array
+    const instructions = [createSwigIx];
 
-    // Create the transaction message
+    // Add ATA creation instruction if needed
+    if (createATAInstruction) {
+      instructions.push(createATAInstruction);
+    }
+
+    // Create the transaction message with all instructions
     const txMessage = new TransactionMessage({
       payerKey: authorizedPubkey,
       recentBlockhash: latestBlockhash.blockhash,
-      instructions: [createSwigIx],
+      instructions,
     }).compileToV0Message();
 
     // Construct the Versioned Transaction
@@ -433,6 +579,7 @@ export const createSwigAccountWithMWA = async (
 
     return {
       swigAddress,
+      usdcTokenAccount,
       transactionSignature: txSignature,
       success: true,
     };
@@ -523,7 +670,7 @@ export const createTestTransaction = async (
     SystemProgram.transfer({
       fromPubkey: userPublicKey,
       toPubkey: testRecipientAddress,
-      lamports: 200, // 100 lamports (0.0000001 SOL) - minimal test amount
+      lamports: 200, // 200 lamports (0.0000002 SOL) - minimal test amount
     })
   );
 

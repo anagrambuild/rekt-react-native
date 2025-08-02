@@ -212,7 +212,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
           setUserProfile={setUserProfile}
           setRequiresBiometric={setRequiresBiometric}
         >
-          <ProfileProvider>
+          <ProfileProvider userProfile={userProfile}>
             <HomeProvider>{children}</HomeProvider>
           </ProfileProvider>
         </WalletProvider>
