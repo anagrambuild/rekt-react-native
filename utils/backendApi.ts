@@ -871,3 +871,84 @@ export const getUserByWalletAddress = async (
     throw error;
   }
 };
+
+// Update user profile using the correct backend endpoint
+export const updateUserProfile = async (
+  userId: string,
+  userData: { username?: string; email?: string; avatar_url?: string }
+): Promise<User> => {
+  try {
+    const response = await fetch(`${BACKEND_BASE_URL}/api/users/profile/${userId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(userData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData.message || `HTTP error! status: ${response.status}`
+      );
+    }
+
+    const result = await response.json();
+
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to update user profile');
+    }
+
+    // Map backend response to frontend User interface
+    return {
+      id: result.user.id,
+      username: result.user.username,
+      email: result.user.email,
+      profileImage: result.user.avatar_url,
+      swigWalletAddress: result.user.swig_wallet_address,
+      createdAt: result.user.joined_at || new Date().toISOString(),
+      updatedAt: result.user.updated_at || new Date().toISOString(),
+    };
+  } catch (error) {
+    console.error('Error updating user profile:', error);
+    throw error;
+  }
+};
+
+// Delete avatar from storage
+export const deleteAvatar = async (avatarUrl: string): Promise<void> => {
+  try {
+    // Extract filename from URL for deletion
+    // URL format is typically: https://domain.com/storage/v1/object/public/avatars/filename.webp
+    const urlParts = avatarUrl.split('/');
+    const filename = urlParts[urlParts.length - 1];
+    
+    // Validate that we have a proper filename before making the request
+    if (!filename || filename === avatarUrl) {
+      console.warn('Could not extract filename from avatar URL:', avatarUrl);
+      return;
+    }
+
+    // Backend expects UUID.webp format, validate before making request
+    const filenameRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.webp$/i;
+    if (!filenameRegex.test(filename)) {
+      console.warn('Filename does not match expected format (UUID.webp):', filename);
+      return;
+    }
+    
+    const response = await fetch(`${BACKEND_BASE_URL}/api/upload/avatar/${filename}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.warn('Failed to delete old avatar:', errorData.message || 'Unknown error');
+      // Don't throw error here - we don't want to fail profile update if old image deletion fails
+    } else {
+      console.log('✅ Successfully deleted old avatar:', filename);
+    }
+  } catch (error) {
+    console.warn('Error deleting old avatar:', error);
+    // Don't throw error - we don't want to fail profile update if old image deletion fails
+  }
+};

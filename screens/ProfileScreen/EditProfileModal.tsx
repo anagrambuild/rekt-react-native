@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Alert, Image, Keyboard } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Image, Keyboard } from 'react-native';
 
 import {
   BodyMSecondary,
@@ -15,13 +15,20 @@ import {
   StyledInput,
   Title4,
 } from '@/components';
-import { useProfileContext } from '@/contexts';
+import { useAppContext, useProfileContext } from '@/contexts';
 import { useImagePicker } from '@/hooks';
+import {
+  checkUsernameAvailability,
+  deleteAvatar,
+  updateUserProfile,
+  uploadAvatar,
+} from '@/utils/backendApi';
 
 import MaterialIcon from '@expo/vector-icons/MaterialIcons';
 
 import { useTranslation } from 'react-i18next';
-import styled, { useTheme } from 'styled-components/native';
+import styled, { DefaultTheme, useTheme } from 'styled-components/native';
+import { Toast } from 'toastify-react-native';
 
 export const EditProfileModal = ({
   visible,
@@ -34,18 +41,217 @@ export const EditProfileModal = ({
 }) => {
   const theme = useTheme();
   const { t } = useTranslation();
-  const { userData, handleImageUpload, handleImageRemoval } =
-    useProfileContext();
+  const { userData, profileId } = useProfileContext();
+  const { setUserProfile } = useAppContext();
   const [username, setUsername] = useState(userData.username);
+  const [newImageUri, setNewImageUri] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [usernameError, setUsernameError] = useState('');
+  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(
+    null
+  );
   const { takePhoto, pickFromLibrary, isLoading } = useImagePicker();
 
-  const handleSave = () => {
-    onSave?.();
-    onRequestClose();
+  // Debounced username checking (same logic as SignUpForm)
+  const checkUsername = useCallback(
+    async (usernameToCheck: string) => {
+      if (
+        !usernameToCheck ||
+        usernameToCheck.length < 3 ||
+        usernameToCheck === userData.username
+      ) {
+        setUsernameAvailable(null);
+        return;
+      }
+
+      // Check username format and length first
+      if (!/^[a-zA-Z0-9_]+$/.test(usernameToCheck)) {
+        setUsernameError(
+          t('Username can only contain letters, numbers, and underscores')
+        );
+        setUsernameAvailable(false);
+        return;
+      }
+
+      if (usernameToCheck.length < 3 || usernameToCheck.length > 20) {
+        setUsernameError(t('Username must be between 3-20 characters'));
+        setUsernameAvailable(false);
+        return;
+      }
+
+      setIsCheckingUsername(true);
+      try {
+        const result = await checkUsernameAvailability(usernameToCheck);
+        setUsernameAvailable(result.available);
+
+        if (!result.available) {
+          setUsernameError(t('Username is already taken'));
+        } else {
+          setUsernameError('');
+        }
+      } catch (error) {
+        console.error('Username check failed:', error);
+        setUsernameAvailable(null);
+      } finally {
+        setIsCheckingUsername(false);
+      }
+    },
+    [t, userData.username]
+  );
+
+  // Debounce username checking
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (username && username !== userData.username) {
+        checkUsername(username);
+      }
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [username, checkUsername, userData.username]);
+
+  const handleUsernameChange = (text: string) => {
+    setUsername(text);
+    if (usernameError) setUsernameError('');
+    // Reset username validation state when user types
+    setUsernameAvailable(null);
+  };
+
+  const handleSave = async () => {
+    if (!profileId) {
+      Toast.show({
+        text1: t('Error'),
+        text2: t('Profile ID not found'),
+        type: 'error',
+      });
+      return;
+    }
+
+    // Validate username if changed
+    if (username !== userData.username) {
+      if (!username.trim()) {
+        setUsernameError(t('Username is required'));
+        return;
+      }
+
+      if (username.length < 3 || username.length > 20) {
+        setUsernameError(t('Username must be between 3-20 characters'));
+        return;
+      }
+
+      if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+        setUsernameError(
+          t('Username can only contain letters, numbers, and underscores')
+        );
+        return;
+      }
+
+      // Check username availability before proceeding
+      try {
+        const usernameCheck = await checkUsernameAvailability(username);
+        if (!usernameCheck.available) {
+          setUsernameError(t('Username is already taken'));
+          return;
+        }
+      } catch (error) {
+        console.error('Username check failed:', error);
+        Toast.show({
+          text1: t('Error'),
+          text2: t('Failed to verify username availability. Please try again.'),
+          type: 'error',
+        });
+        return;
+      }
+    }
+
+    setIsSubmitting(true);
+    try {
+      let avatarUrl: string | undefined;
+
+      // Upload new image if one was selected
+      if (newImageUri) {
+        try {
+          avatarUrl = await uploadAvatar(
+            newImageUri,
+            `avatar_${Date.now()}.jpg`
+          );
+          
+          // Only delete old avatar after successful upload of new one
+          if (avatarUrl && userData.imgSrc && typeof userData.imgSrc === 'string' && userData.imgSrc.startsWith('http')) {
+            // Don't await this - we don't want to fail the profile update if deletion fails
+            deleteAvatar(userData.imgSrc).catch(error => {
+              console.warn('Failed to delete old avatar, but continuing:', error);
+            });
+          }
+        } catch (avatarError) {
+          console.warn('Avatar upload failed:', avatarError);
+          Toast.show({
+            text1: t('Warning'),
+            text2: t(
+              'Failed to upload new profile picture, but other changes were saved.'
+            ),
+            type: 'error',
+          });
+        }
+      }
+
+      // Handle image removal (set avatar to empty)
+      if (newImageUri === '') {
+        // Delete old avatar if it exists
+        if (userData.imgSrc && typeof userData.imgSrc === 'string' && userData.imgSrc.startsWith('http')) {
+          // Don't await this - we don't want to fail the profile update if deletion fails
+          deleteAvatar(userData.imgSrc).catch(error => {
+            console.warn('Failed to delete old avatar during removal, but continuing:', error);
+          });
+        }
+        avatarUrl = ''; // Set to empty string to remove avatar
+      }
+
+      // Update profile with new data
+      const updateData: { username?: string; avatar_url?: string } = {};
+
+      if (username !== userData.username) {
+        updateData.username = username;
+      }
+
+      if (avatarUrl !== undefined) {
+        updateData.avatar_url = avatarUrl;
+      }
+
+      // Only make API call if there are changes
+      if (Object.keys(updateData).length > 0) {
+        const updatedUser = await updateUserProfile(profileId, updateData);
+
+        // Update the app context with new user data
+        setUserProfile(updatedUser);
+
+        Toast.show({
+          text1: t('Success'),
+          text2: t('Profile updated successfully'),
+          type: 'success',
+        });
+      }
+
+      onSave?.();
+      onRequestClose();
+    } catch (error) {
+      console.error('Profile update failed:', error);
+      Toast.show({
+        text1: t('Error'),
+        text2: t('Failed to update profile. Please try again.'),
+        type: 'error',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleClose = () => {
     setUsername(userData.username);
+    setNewImageUri(null);
+    setUsernameError('');
+    setUsernameAvailable(null);
     onRequestClose();
   };
 
@@ -56,7 +262,7 @@ export const EditProfileModal = ({
         onPress: async () => {
           const result = await takePhoto();
           if (result) {
-            handleImageUpload(result.uri);
+            setNewImageUri(result.uri);
           }
         },
       },
@@ -65,7 +271,7 @@ export const EditProfileModal = ({
         onPress: async () => {
           const result = await pickFromLibrary();
           if (result) {
-            handleImageUpload(result.uri);
+            setNewImageUri(result.uri);
           }
         },
       },
@@ -73,8 +279,20 @@ export const EditProfileModal = ({
     ]);
   };
 
+  const handleImageRemoval = async () => {
+    setNewImageUri(''); // Set to empty string to indicate removal
+  };
+
+  // Determine which image to show
+  const currentImageSrc =
+    newImageUri !== null
+      ? newImageUri === ''
+        ? null
+        : newImageUri // empty string means removed
+      : userData.imgSrc;
+
   const hasImage =
-    userData.imgSrc && userData.imgSrc !== '' && userData.imgSrc !== null;
+    currentImageSrc && currentImageSrc !== '' && currentImageSrc !== null;
 
   return (
     <Modal visible={visible} onRequestClose={handleClose}>
@@ -131,9 +349,9 @@ export const EditProfileModal = ({
               <Image
                 source={
                   hasImage
-                    ? typeof userData.imgSrc === 'string'
-                      ? { uri: userData.imgSrc }
-                      : userData.imgSrc
+                    ? typeof currentImageSrc === 'string'
+                      ? { uri: currentImageSrc }
+                      : currentImageSrc
                     : require('@/assets/images/app-pngs/avatar.png')
                 }
                 style={{
@@ -162,21 +380,37 @@ export const EditProfileModal = ({
                   <StyleAt>@</StyleAt>
                   <StyledInput
                     value={username}
-                    onChangeText={setUsername}
+                    onChangeText={handleUsernameChange}
                     placeholder={t('Enter your username')}
                     returnKeyType='done'
                     onSubmitEditing={() => Keyboard.dismiss()}
                   />
                 </StyledInputContainer>
+                {isCheckingUsername && (
+                  <ActivityIndicator size='small' color={theme.colors.tint} />
+                )}
+                {!isCheckingUsername &&
+                  usernameAvailable === true &&
+                  username !== userData.username && (
+                    <SuccessIndicator>✓</SuccessIndicator>
+                  )}
+                {!isCheckingUsername && usernameAvailable === false && (
+                  <ErrorIndicator>✗</ErrorIndicator>
+                )}
               </Row>
+              {usernameError ? <ErrorText>{usernameError}</ErrorText> : null}
             </Column>
           </Card>
         </Column>
         <Column $gap={8}>
-          <PrimaryButton onPress={handleSave}>
+          <PrimaryButton
+            onPress={handleSave}
+            disabled={!!usernameError || isSubmitting}
+            loading={isSubmitting}
+          >
             {t('Save changes')}
           </PrimaryButton>
-          <SecondaryButton onPress={onRequestClose}>
+          <SecondaryButton onPress={handleClose} disabled={isSubmitting}>
             {t('Cancel')}
           </SecondaryButton>
         </Column>
@@ -187,7 +421,7 @@ export const EditProfileModal = ({
 
 const StyledInputContainer = styled.View`
   position: relative;
-  width: 100%;
+  flex: 1;
 `;
 
 const StyleAt = styled.Text`
@@ -196,4 +430,23 @@ const StyleAt = styled.Text`
   top: 16px;
   color: ${({ theme }: any) => theme.colors.textSecondary};
   z-index: 1;
+`;
+
+const ErrorText = styled.Text`
+  color: ${({ theme }: { theme: DefaultTheme }) => theme.colors.loss};
+  font-size: 12px;
+  font-family: 'Geist';
+  margin-left: 4px;
+`;
+
+const SuccessIndicator = styled.Text`
+  color: ${({ theme }: { theme: DefaultTheme }) => theme.colors.profit};
+  font-size: 16px;
+  font-weight: bold;
+`;
+
+const ErrorIndicator = styled.Text`
+  color: ${({ theme }: { theme: DefaultTheme }) => theme.colors.loss};
+  font-size: 16px;
+  font-weight: bold;
 `;

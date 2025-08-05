@@ -148,7 +148,6 @@ export const ProfileProvider = ({
           const authResult = await getSecureAuth();
           if (authResult.isValid && authResult.data?.profileId) {
             setProfileId(authResult.data.profileId);
-            console.log('✅ ProfileContext updated profileId:', authResult.data.profileId);
           }
         } catch (error) {
           console.error('Error refetching profile ID:', error);
@@ -170,8 +169,6 @@ export const ProfileProvider = ({
   const handleImageUpload = async (imageUri: string) => {
     try {
       setUserImage(imageUri);
-      // TODO: Here you would typically upload the image to your backend
-      console.log('Image uploaded:', imageUri);
     } catch (error) {
       console.error('Error uploading image:', error);
       Alert.alert(
@@ -187,8 +184,6 @@ export const ProfileProvider = ({
     try {
       // Set to empty string to show no image state
       setUserImage('');
-      // TODO: Here you would typically remove the image from your backend
-      console.log('Image removed');
     } catch (error) {
       console.error('Error removing image:', error);
       Alert.alert(

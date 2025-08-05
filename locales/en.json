@@ -167,5 +167,10 @@
   "MIN": "MIN",
   "MINS": "MINS",
   "SEC": "SEC",
-  "SECS": "SECS"
+  "SECS": "SECS",
+  "Profile ID not found": "Profile ID not found",
+  "Warning": "Warning",
+  "Failed to upload new profile picture, but other changes were saved.": "Failed to upload new profile picture, but other changes were saved.",
+  "Profile updated successfully": "Profile updated successfully",
+  "Failed to update profile. Please try again.": "Failed to update profile. Please try again."
 }
