@@ -158,5 +158,14 @@
   "Use {{biometricType}} to access your account": "Use {{biometricType}} to access your account",
   "Authentication Failed": "Authentication Failed",
   "Please try again or restart the app to use a different method.": "Please try again or restart the app to use a different method.",
-  "No address found": "No address found"
+  "No address found": "No address found",
+  "ONGOING": "ONGOING",
+  "DAY": "DAY",
+  "DAYS": "DAYS", 
+  "HR": "HR",
+  "HRS": "HRS",
+  "MIN": "MIN",
+  "MINS": "MINS",
+  "SEC": "SEC",
+  "SECS": "SECS"
 }

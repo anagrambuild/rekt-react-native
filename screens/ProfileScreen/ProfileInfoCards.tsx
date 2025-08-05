@@ -23,7 +23,7 @@ export const ProfileInfoCards = () => {
   const { t } = useTranslation();
   const theme = useTheme();
   const { tradingHistory } = useHomeContext();
-  console.log('tradingHistory', tradingHistory[0]);
+
   // Calculate totals from actual trading history data
   const totalPnl = tradingHistory.reduce(
     (sum, position) => sum + position.pnl,

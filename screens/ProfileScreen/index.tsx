@@ -15,6 +15,7 @@ import { ProfileHeader } from './ProfileHeader';
 import { ProfileInfoCards } from './ProfileInfoCards';
 import { TradeActivityModal } from './TradeAcivityModal';
 import { TradeActivityCard } from './TradeActivityCard';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from 'styled-components/native';
 import { Toast } from 'toastify-react-native';
 
@@ -22,6 +23,7 @@ const screenPadding = 20;
 const paddingTop = Platform.OS === 'ios' ? 0 : 30;
 
 export const ProfileScreen = () => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const {
     view,
@@ -36,52 +38,62 @@ export const ProfileScreen = () => {
     isUserLoading,
     isOnOffRampModalVisible,
   } = useProfileContext();
-  
+
   const { tradingHistory, isLoadingHistory } = useHomeContext();
 
   // Map Position to TradeActivityCard props
   const mapPositionToTradeCard = (position: Position) => {
     // Extract symbol from asset (e.g., "SOL-PERP" -> "sol")
-    const symbol = position.asset.split('-')[0].toLowerCase() as 'btc' | 'eth' | 'sol';
-    
+    const symbol = position.asset.split('-')[0].toLowerCase() as
+      | 'btc'
+      | 'eth'
+      | 'sol';
+
     // Format duration from seconds to readable format
     const formatDuration = (seconds: number) => {
       const minutes = Math.floor(seconds / 60);
       const hours = Math.floor(minutes / 60);
       const days = Math.floor(hours / 24);
-      
-      if (days > 0) return `${days} DAY${days > 1 ? 'S' : ''}`;
-      if (hours > 0) return `${hours} HR${hours > 1 ? 'S' : ''}`;
-      return `${minutes} MIN${minutes > 1 ? 'S' : ''}`;
+
+      if (days > 0) return `${days} ${t(days > 1 ? 'DAYS' : 'DAY')}`;
+      if (hours > 0) return `${hours} ${t(hours > 1 ? 'HRS' : 'HR')}`;
+      if (minutes > 0) return `${minutes} ${t(minutes > 1 ? 'MINS' : 'MIN')}`;
+      return `${seconds} ${t(seconds !== 1 ? 'SECS' : 'SEC')}`;
     };
-    
     return {
       type: position.direction as 'long' | 'short',
       symbol,
-      amount: position.size,
+      amount: position.marginUsed,
       leverage: position.leverage,
       percentage: position.pnlPercentage,
       isProfit: position.pnl > 0,
       // Additional fields for DetailedTradeData compatibility
       entryPrice: position.entryPrice,
       exitPrice: position.exitPrice || position.currentPrice,
-      entryTime: new Date(position.openedAt).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-      }).toUpperCase(),
-      exitTime: position.closedAt 
-        ? new Date(position.closedAt).toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-            hour: 'numeric',
-            minute: '2-digit',
-          }).toUpperCase()
+      entryTime: new Date(position.openedAt)
+        .toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit',
+        })
+        .toUpperCase(),
+      exitTime: position.closedAt
+        ? new Date(position.closedAt)
+            .toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+              hour: 'numeric',
+              minute: '2-digit',
+            })
+            .toUpperCase()
         : 'OPEN',
-      duration: position.status === 'open' ? 'ONGOING' : formatDuration(position.duration),
+      duration:
+        position.status === 'open'
+          ? t('ONGOING')
+          : formatDuration(position.duration),
       profitAmount: position.pnl,
     };
   };
