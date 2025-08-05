@@ -2,18 +2,16 @@ import { createContext, useContext, useEffect, useState } from 'react';
 
 import { fetchTokenPrices, SupportedToken, TokenPrice } from '@/utils';
 import {
-  ClosePositionRequest,
-  closeTradingPosition,
   getOpenPositions,
   getTradingBalance,
   getTradingHistory,
-  OpenPositionRequest,
-  openTradingPosition,
   Position,
   TradingBalance,
 } from '@/utils/backendApi';
+import { TradingService } from '@/utils/tradingService';
 
 import { useProfileContext } from './ProfileContext';
+import { useSolana } from './SolanaContext';
 import { useWallet } from './WalletContext';
 import { useTranslation } from 'react-i18next';
 import { Toast } from 'toastify-react-native';
@@ -114,6 +112,7 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
   const { t } = useTranslation();
   const { usdcBalance } = useWallet();
   const { profileId } = useProfileContext();
+  const { connection } = useSolana();
   const [selectedToken, setSelectedToken] = useState<string>('sol');
   const [selectedTimeframe, setSelectedTimeframe] = useState<string>('1m');
   const [solTrade, setSolTrade] = useState<Trade | null>(null);
@@ -210,7 +209,7 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
     await Promise.all([refreshBalance(), refreshPositions(), refreshHistory()]);
   };
 
-  // Open a new position
+  // Open a new position using Swig trading flow
   const openPosition = async (
     asset: 'SOL-PERP' | 'BTC-PERP' | 'ETH-PERP',
     direction: 'long' | 'short',
@@ -251,51 +250,88 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
         return false;
       }
 
-      const request: OpenPositionRequest = {
-        userId: profileId,
+      // Use the new trading service for complete flow
+      const tradingService = new TradingService(connection);
+      const result = await tradingService.executeTrade({
         asset,
         direction,
         amount: validAmount,
         leverage: validLeverage,
-      };
-
-
-
-      const result = await openTradingPosition(request);
-
-      Toast.show({
-        text1: t('Position Opened'),
-        text2: t('Position opened successfully at ${{price}}', {
-          price: result.entryPrice.toFixed(2),
-        }),
-        type: 'success',
       });
 
-      // Update local trade state to reflect the successful trade
-      // Determine token from asset parameter
-      const token = asset === 'SOL-PERP' ? 'sol' : asset === 'ETH-PERP' ? 'eth' : 'btc';
-      const currentTrade = token === 'sol' ? solTrade : token === 'eth' ? ethTrade : btcTrade;
-      const updatedTrade = {
-        ...currentTrade,
-        side: direction,
-        entryPrice: result.entryPrice,
-        amount: validAmount,
-        leverage: validLeverage,
-        status: 'open' as TradeStatus,
-        timestamp: Date.now(),
-      };
+      if (result.success) {
+        Toast.show({
+          text1: t('Position Opened'),
+          text2: t('Position opened successfully!'),
+          type: 'success',
+        });
 
-      if (token === 'sol') {
-        setSolTrade(updatedTrade);
-      } else if (token === 'eth') {
-        setEthTrade(updatedTrade);
+        // Update local trade state to reflect the successful trade
+        const token =
+          asset === 'SOL-PERP' ? 'sol' : asset === 'ETH-PERP' ? 'eth' : 'btc';
+        const currentTrade =
+          token === 'sol' ? solTrade : token === 'eth' ? ethTrade : btcTrade;
+        const updatedTrade = {
+          ...currentTrade,
+          side: direction,
+          entryPrice: 0, // Will be updated when positions refresh
+          amount: validAmount,
+          leverage: validLeverage,
+          status: 'open' as TradeStatus,
+          timestamp: Date.now(),
+        };
+
+        if (token === 'sol') {
+          setSolTrade(updatedTrade);
+        } else if (token === 'eth') {
+          setEthTrade(updatedTrade);
+        } else {
+          setBtcTrade(updatedTrade);
+        }
+
+        // Refresh data after successful trade
+        await refreshAll();
+        return true;
+      } else if (result.requiresInitialization) {
+        // Handle initialization requirement
+        Toast.show({
+          text1: t('Initialization Required'),
+          text2: t(
+            'Your Drift account needs to be initialized first. Please try again.'
+          ),
+          type: 'info',
+        });
+
+        if (result.initializationData) {
+          // Attempt to initialize automatically
+          const initResult = await tradingService.initializeDriftAccount(
+            result.initializationData
+          );
+          if (initResult.success) {
+            Toast.show({
+              text1: t('Account Initialized'),
+              text2: t(
+                'Your Drift account has been initialized. Please try your trade again.'
+              ),
+              type: 'success',
+            });
+          } else {
+            Toast.show({
+              text1: t('Initialization Failed'),
+              text2: initResult.error || t('Failed to initialize account'),
+              type: 'error',
+            });
+          }
+        }
+        return false;
       } else {
-        setBtcTrade(updatedTrade);
+        Toast.show({
+          text1: t('Trade Failed'),
+          text2: result.error || t('Failed to open position'),
+          type: 'error',
+        });
+        return false;
       }
-
-      // Refresh data after successful trade
-      await refreshAll();
-      return true;
     } catch (error) {
       console.error('Error opening position:', error);
       Toast.show({
@@ -310,7 +346,7 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Close a position
+  // Close a position using Swig trading flow
   const closePosition = async (positionId: string): Promise<boolean> => {
     if (!profileId) {
       Toast.show({
@@ -324,30 +360,40 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
     setIsTrading(true);
 
     try {
-      const request: ClosePositionRequest = {
-        userId: profileId,
-        positionId,
-      };
+      // Use the new trading service for complete flow
+      const tradingService = new TradingService(connection);
+      const result = await tradingService.closePosition(positionId);
 
-      const result = await closeTradingPosition(request);
+      if (result.success) {
+        const pnlData = result.data;
+        const pnlText = pnlData?.pnl
+          ? pnlData.pnl >= 0
+            ? `+$${pnlData.pnl.toFixed(2)}`
+            : `$${pnlData.pnl.toFixed(2)}`
+          : 'N/A';
 
-      const pnlText =
-        result.pnl >= 0
-          ? `+$${result.pnl.toFixed(2)}`
-          : `$${result.pnl.toFixed(2)}`;
+        Toast.show({
+          text1: t('Position Closed'),
+          text2: pnlData?.pnl
+            ? t('Position closed with PnL: {{pnl}} ({{percentage}}%)', {
+                pnl: pnlText,
+                percentage: pnlData.pnlPercentage?.toFixed(2) || '0.00',
+              })
+            : t('Position closed successfully'),
+          type: 'success',
+        });
 
-      Toast.show({
-        text1: t('Position Closed'),
-        text2: t('Position closed with PnL: {{pnl}} ({{percentage}}%)', {
-          pnl: pnlText,
-          percentage: result.pnlPercentage.toFixed(2),
-        }),
-        type: 'success',
-      });
-
-      // Refresh data after successful close
-      await refreshAll();
-      return true;
+        // Refresh data after successful close
+        await refreshAll();
+        return true;
+      } else {
+        Toast.show({
+          text1: t('Close Failed'),
+          text2: result.error || t('Failed to close position'),
+          type: 'error',
+        });
+        return false;
+      }
     } catch (error) {
       console.error('Error closing position:', error);
       Toast.show({

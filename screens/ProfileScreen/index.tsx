@@ -1,7 +1,8 @@
 import { FlatList, Platform, SafeAreaView } from 'react-native';
 
 import { Column, Gap, PressableOpacity, Row, Title2 } from '@/components';
-import { useProfileContext } from '@/contexts';
+import { useHomeContext, useProfileContext } from '@/contexts';
+import { Position } from '@/utils/backendApi';
 
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
@@ -12,7 +13,6 @@ import { NoActivity } from './NoActivity';
 import { OnOffRampModal } from './OnOffRampModal';
 import { ProfileHeader } from './ProfileHeader';
 import { ProfileInfoCards } from './ProfileInfoCards';
-import { detailedTradeData } from './profileMockData';
 import { TradeActivityModal } from './TradeAcivityModal';
 import { TradeActivityCard } from './TradeActivityCard';
 import { useTheme } from 'styled-components/native';
@@ -36,9 +36,58 @@ export const ProfileScreen = () => {
     isUserLoading,
     isOnOffRampModalVisible,
   } = useProfileContext();
+  
+  const { tradingHistory, isLoadingHistory } = useHomeContext();
+
+  // Map Position to TradeActivityCard props
+  const mapPositionToTradeCard = (position: Position) => {
+    // Extract symbol from asset (e.g., "SOL-PERP" -> "sol")
+    const symbol = position.asset.split('-')[0].toLowerCase() as 'btc' | 'eth' | 'sol';
+    
+    // Format duration from seconds to readable format
+    const formatDuration = (seconds: number) => {
+      const minutes = Math.floor(seconds / 60);
+      const hours = Math.floor(minutes / 60);
+      const days = Math.floor(hours / 24);
+      
+      if (days > 0) return `${days} DAY${days > 1 ? 'S' : ''}`;
+      if (hours > 0) return `${hours} HR${hours > 1 ? 'S' : ''}`;
+      return `${minutes} MIN${minutes > 1 ? 'S' : ''}`;
+    };
+    
+    return {
+      type: position.direction as 'long' | 'short',
+      symbol,
+      amount: position.size,
+      leverage: position.leverage,
+      percentage: position.pnlPercentage,
+      isProfit: position.pnl > 0,
+      // Additional fields for DetailedTradeData compatibility
+      entryPrice: position.entryPrice,
+      exitPrice: position.exitPrice || position.currentPrice,
+      entryTime: new Date(position.openedAt).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      }).toUpperCase(),
+      exitTime: position.closedAt 
+        ? new Date(position.closedAt).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+          }).toUpperCase()
+        : 'OPEN',
+      duration: position.status === 'open' ? 'ONGOING' : formatDuration(position.duration),
+      profitAmount: position.pnl,
+    };
+  };
 
   const handleTradePress = (index: number) => {
-    const selectedTrade = detailedTradeData[index];
+    const selectedTrade = mapPositionToTradeCard(tradingHistory[index]);
     setSelectedTrade(selectedTrade);
     setIsTradeActivityModalVisible(true);
   };
@@ -73,21 +122,29 @@ export const ProfileScreen = () => {
           <Gap height={2} />
           <ActivityRow view={view} setView={setView} />
           {view === 'trades' ? (
-            <FlatList
-              data={detailedTradeData}
-              keyExtractor={(_, idx) => idx.toString()}
-              renderItem={({ item, index }) => (
-                <PressableOpacity onPress={() => handleTradePress(index)}>
-                  <TradeActivityCard {...item} />
-                </PressableOpacity>
-              )}
-              contentContainerStyle={{
-                gap: 4,
-                paddingBottom: 12,
-              }}
-              style={{ width: '100%' }}
-              showsVerticalScrollIndicator={false}
-            />
+            isLoadingHistory ? (
+              <NoActivity /> // Could add a loading spinner here instead
+            ) : (
+              <FlatList
+                data={tradingHistory}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item, index }) => {
+                  const mappedItem = mapPositionToTradeCard(item);
+                  return (
+                    <PressableOpacity onPress={() => handleTradePress(index)}>
+                      <TradeActivityCard {...mappedItem} />
+                    </PressableOpacity>
+                  );
+                }}
+                contentContainerStyle={{
+                  gap: 4,
+                  paddingBottom: 12,
+                }}
+                style={{ width: '100%' }}
+                showsVerticalScrollIndicator={false}
+                ListEmptyComponent={<NoActivity />}
+              />
+            )
           ) : (
             <NoActivity />
           )}
