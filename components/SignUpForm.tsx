@@ -318,6 +318,19 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
       // Step 5: Update app state with the newly created user
       setUserProfile(user);
 
+      // Clear the form after successful creation
+      setSignUpForm({
+        username: '',
+        email: '',
+        profileImage: null,
+        enableBiometrics: false,
+      });
+
+      // Clear any error states
+      setUsernameError('');
+      setEmailError('');
+      setUsernameAvailable(null);
+
       setIsSubmitting(false);
       onComplete?.();
     } catch (error) {
@@ -370,6 +383,9 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
         text2: errorMessage,
         type: 'error',
       });
+
+      // Reset submitting state so user can try again
+      setIsSubmitting(false);
     }
   };
 
