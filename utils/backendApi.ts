@@ -357,25 +357,15 @@ export const createUser = async (
     const result = await response.json();
 
     // Map backend response to frontend User interface
+    // Backend returns: { success: true, user: { id, username, email, ... }, message }
     return {
-      id: result.id || result.user_id || result.user?.id,
-      username: result.username || result.user?.username,
-      email: result.email || result.user?.email,
-      profileImage: result.avatar_url || result.user?.avatar_url,
-      swigWalletAddress:
-        result.swig_wallet_address ||
-        result.user?.swig_wallet_address ||
-        userData.swigWalletAddress,
-      createdAt:
-        result.createdAt ||
-        result.created_at ||
-        result.user?.joined_at ||
-        new Date().toISOString(),
-      updatedAt:
-        result.updatedAt ||
-        result.updated_at ||
-        result.user?.updated_at ||
-        new Date().toISOString(),
+      id: result.user.id,
+      username: result.user.username,
+      email: result.user.email,
+      profileImage: result.user.avatar_url,
+      swigWalletAddress: result.user.swig_wallet_address,
+      createdAt: result.user.joined_at || new Date().toISOString(),
+      updatedAt: result.user.updated_at || new Date().toISOString(),
     };
   } catch (error) {
     console.error('Error creating user:', error);
@@ -461,7 +451,17 @@ export const updateUserSwigWalletAddress = async (
 
     const result = await response.json();
 
-    return result;
+    // Map backend response to frontend User interface
+    return {
+      id: result.user.id,
+      username: result.user.username,
+      email: result.user.email,
+      profileImage: result.user.avatar_url,
+
+      swigWalletAddress: result.user.swig_wallet_address,
+      createdAt: result.user.joined_at || new Date().toISOString(),
+      updatedAt: result.user.updated_at || new Date().toISOString(),
+    };
   } catch (error) {
     console.error('Error updating user Swig wallet address:', error);
     throw error;
@@ -537,25 +537,26 @@ export interface OpenPositionRequest {
   leverage: number;
 }
 
-export interface OpenPositionResponse {
-  positionId: string;
-  asset: string;
-  direction: 'long' | 'short';
-  amount: number;
-  leverage: number;
-  entryPrice: number;
-  positionSize: number;
-  marginUsed: number;
-  status: 'open';
-  openedAt: string;
+export interface TransactionData {
+  serializedTransaction: string;
+  description: string;
+}
+
+export interface InitializationResponse {
+  needsInitialization: boolean;
+  initializationRequired?: boolean;
+  initializationInstructions?: TransactionData;
+  message: string;
 }
 
 export interface Position {
   id: string;
   asset: string;
   direction: 'long' | 'short';
+  status: string;
   size: number;
   entryPrice: number;
+  exitPrice: number | null;
   currentPrice: number;
   pnl: number;
   pnlPercentage: number;
@@ -563,6 +564,32 @@ export interface Position {
   liquidationPrice: number;
   marginUsed: number;
   openedAt: string;
+  closedAt: string | null;
+  duration: number;
+  fees: number;
+  points: number;
+}
+
+export interface OpenPositionResponse {
+  success: boolean;
+  data?: {
+    positionId?: string;
+    transactionData?: TransactionData;
+    needsInitialization?: boolean;
+    initializationRequired?: boolean;
+    initializationInstructions?: TransactionData;
+    // Legacy fields for direct position creation
+    asset?: string;
+    direction?: 'long' | 'short';
+    amount?: number;
+    leverage?: number;
+    entryPrice?: number;
+    positionSize?: number;
+    marginUsed?: number;
+    status?: string;
+    openedAt?: string;
+  };
+  message: string;
 }
 
 export interface ClosePositionRequest {
@@ -571,11 +598,37 @@ export interface ClosePositionRequest {
 }
 
 export interface ClosePositionResponse {
-  positionId: string;
-  exitPrice: number;
-  pnl: number;
-  pnlPercentage: number;
-  closedAt: string;
+  success: boolean;
+  data?: {
+    positionId: string;
+    transactionData?: TransactionData;
+    // Legacy fields for direct position closing
+    exitPrice?: number;
+    pnl?: number;
+    pnlPercentage?: number;
+    closedAt?: string;
+  };
+  message: string;
+}
+
+export interface SubmitTransactionRequest {
+  signedTransaction: string;
+  walletAddress?: string;
+  positionId?: string;
+}
+
+export interface SubmitTransactionResponse {
+  success: boolean;
+  data?: {
+    signature: string;
+    confirmation: {
+      slot: number;
+      confirmations: number | null;
+      confirmationStatus: string;
+      err: any;
+    };
+  };
+  message: string;
 }
 
 // Get user's trading balance
@@ -604,7 +657,14 @@ export const getTradingBalance = async (
   }
 };
 
-// Open a new trading position
+// Get USDC balance using user ID (alias for getTradingBalance for compatibility)
+export const getUSDCBalanceByUserId = async (
+  userId: string
+): Promise<TradingBalance> => {
+  return getTradingBalance(userId);
+};
+
+// Open a new trading position (returns transaction data for signing)
 export const openTradingPosition = async (
   request: OpenPositionRequest
 ): Promise<OpenPositionResponse> => {
@@ -620,17 +680,21 @@ export const openTradingPosition = async (
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(
-        errorData.error || `HTTP error! status: ${response.status}`
+        errorData.message ||
+          errorData.error ||
+          `HTTP error! status: ${response.status}`
       );
     }
 
     const result = await response.json();
 
     if (!result.success) {
-      throw new Error(result.error || 'Failed to open position');
+      throw new Error(
+        result.message || result.error || 'Failed to open position'
+      );
     }
 
-    return result.data;
+    return result;
   } catch (error) {
     console.error('Error opening trading position:', error);
     throw error;
@@ -661,7 +725,7 @@ export const getOpenPositions = async (userId: string): Promise<Position[]> => {
   }
 };
 
-// Close a trading position
+// Close a trading position (returns transaction data for signing)
 export const closeTradingPosition = async (
   request: ClosePositionRequest
 ): Promise<ClosePositionResponse> => {
@@ -677,19 +741,60 @@ export const closeTradingPosition = async (
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(
-        errorData.error || `HTTP error! status: ${response.status}`
+        errorData.message ||
+          errorData.error ||
+          `HTTP error! status: ${response.status}`
       );
     }
 
     const result = await response.json();
 
     if (!result.success) {
-      throw new Error(result.error || 'Failed to close position');
+      throw new Error(
+        result.message || result.error || 'Failed to close position'
+      );
     }
 
-    return result.data;
+    return result;
   } catch (error) {
     console.error('Error closing trading position:', error);
+    throw error;
+  }
+};
+
+// Submit signed transaction to blockchain
+export const submitSignedTransaction = async (
+  request: SubmitTransactionRequest
+): Promise<SubmitTransactionResponse> => {
+  try {
+    const response = await fetch(`${BACKEND_BASE_URL}/api/trading/submit`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData.message ||
+          errorData.error ||
+          `HTTP error! status: ${response.status}`
+      );
+    }
+
+    const result = await response.json();
+
+    if (!result.success) {
+      throw new Error(
+        result.message || result.error || 'Failed to submit transaction'
+      );
+    }
+
+    return result;
+  } catch (error) {
+    console.error('Error submitting signed transaction:', error);
     throw error;
   }
 };
@@ -757,7 +862,6 @@ export const getUserByWalletAddress = async (
       username: result.user.username,
       email: result.user.email,
       profileImage: result.user.avatar_url,
-
       swigWalletAddress: result.user.swig_wallet_address,
       createdAt: result.user.joined_at || new Date().toISOString(),
       updatedAt: result.user.updated_at || new Date().toISOString(),

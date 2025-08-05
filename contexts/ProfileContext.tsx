@@ -1,11 +1,26 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { Alert } from 'react-native';
 
-import { DetailedTradeData } from '@/screens/ProfileScreen/profileMockData';
 import { getSecureAuth } from '@/utils/secureAuth';
 
 import { useWallet } from './WalletContext';
 import { useTranslation } from 'react-i18next';
+
+// DetailedTradeData type moved inline since we no longer use mock data
+interface DetailedTradeData {
+  type: 'long' | 'short';
+  symbol: 'btc' | 'eth' | 'sol';
+  amount: number;
+  leverage: number;
+  percentage: number;
+  isProfit: boolean;
+  entryPrice: number;
+  exitPrice: number;
+  entryTime: string;
+  exitTime: string;
+  duration: string;
+  profitAmount: number;
+}
 
 export interface User {
   username: string;
@@ -34,6 +49,7 @@ interface ProfileContextType {
   handleWithdraw: () => void;
   handleHistory: () => void;
   profileId: string | null;
+  isUserLoading: boolean;
 }
 
 export const ProfileContext = createContext<ProfileContextType>({
@@ -57,6 +73,7 @@ export const ProfileContext = createContext<ProfileContextType>({
   handleWithdraw: () => {},
   handleHistory: () => {},
   profileId: null,
+  isUserLoading: false,
 });
 
 export const useProfileContext = () => {
@@ -112,11 +129,43 @@ export const ProfileProvider = ({
     }
   }, [userProfile?.profileImage]);
 
+  // Reset internal state when userProfile becomes null (on logout)
+  // OR refetch profileId when userProfile is set (on login/signup)
+  useEffect(() => {
+    if (!userProfile) {
+      // User logged out - reset everything
+      setProfileId(null);
+      setUserImage('');
+      setView('trades');
+      setIsEditProfileModalVisible(false);
+      setIsTradeActivityModalVisible(false);
+      setSelectedTrade(null);
+      setIsOnOffRampModalVisible(false);
+    } else {
+      // User logged in or new user created - refetch profileId from secure storage
+      const refetchProfileId = async () => {
+        try {
+          const authResult = await getSecureAuth();
+          if (authResult.isValid && authResult.data?.profileId) {
+            setProfileId(authResult.data.profileId);
+            console.log('✅ ProfileContext updated profileId:', authResult.data.profileId);
+          }
+        } catch (error) {
+          console.error('Error refetching profile ID:', error);
+        }
+      };
+      refetchProfileId();
+    }
+  }, [userProfile]);
+
   const userData: User = {
     username: userProfile?.username || '',
     imgSrc: userImage,
     balance: usdcBalance || 0,
   };
+
+  // Determine if user data is still loading
+  const isUserLoading = !userProfile;
 
   const handleImageUpload = async (imageUri: string) => {
     try {
@@ -192,6 +241,7 @@ export const ProfileProvider = ({
         handleWithdraw,
         handleHistory,
         profileId,
+        isUserLoading,
       }}
     >
       {children}
