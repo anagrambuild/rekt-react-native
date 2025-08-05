@@ -1,3 +1,5 @@
+import { ActivityIndicator } from 'react-native';
+
 import rektBomb from '@/assets/images/app-pngs/rekt-bomb.png';
 import UsdcIcon from '@/assets/images/app-svgs/usdc.svg';
 import {
@@ -14,7 +16,6 @@ import { useHomeContext } from '@/contexts';
 import { Trade } from '@/contexts/HomeContext';
 
 import { LongArrow, ShortArrow } from './long-short-buttons';
-import { liquidationPrices } from './mockData';
 import { Image } from 'expo-image';
 import { useTranslation } from 'react-i18next';
 import styled, { DefaultTheme, useTheme } from 'styled-components/native';
@@ -26,20 +27,50 @@ interface LiveTradeViewProps {
 export const LiveTradeView = ({ trade }: LiveTradeViewProps) => {
   const { t } = useTranslation();
   const theme = useTheme();
-  const { selectedToken, setSolTrade, setEthTrade, setBtcTrade } =
-    useHomeContext();
+  const {
+    selectedToken,
+    setSolTrade,
+    setEthTrade,
+    setBtcTrade,
+    closePosition,
+    openPositions,
+    isTrading,
+  } = useHomeContext();
 
-  // Mock values for now
-  const currentValue = 250.2;
-  const profitPercent = 128.22;
-  const isProfit = profitPercent >= 0;
-  const rektAt =
-    liquidationPrices[selectedToken as keyof typeof liquidationPrices];
+  // Find the actual position for this trade
+  const currentPosition = openPositions.find(
+    (pos) =>
+      pos.asset === `${selectedToken.toUpperCase()}-PERP` &&
+      pos.direction === trade.side
+  );
 
-  const handleClose = () => {
-    if (selectedToken === 'sol') setSolTrade(null);
-    else if (selectedToken === 'eth') setEthTrade(null);
-    else setBtcTrade(null);
+  // Use real position data only
+  const rektAt = currentPosition?.liquidationPrice;
+
+  // Current value = initial margin + PnL (what the investment is worth now)
+  const currentValue = currentPosition
+    ? currentPosition.marginUsed + currentPosition.pnl
+    : trade.amount;
+  const profitPercent = currentPosition?.pnlPercentage || 128.22;
+  const isProfit = currentPosition ? currentPosition.pnl >= 0 : null;
+
+  const handleClose = async () => {
+    if (currentPosition?.id) {
+      // Close the actual position via backend
+      const success = await closePosition(currentPosition.id);
+      if (success) {
+        // Clear local trade state after successful close
+        if (selectedToken === 'sol') setSolTrade(null);
+        else if (selectedToken === 'eth') setEthTrade(null);
+        else setBtcTrade(null);
+      }
+    } else {
+      // Fallback: just clear local state if no backend position found
+      console.warn('No backend position found, clearing local state only');
+      if (selectedToken === 'sol') setSolTrade(null);
+      else if (selectedToken === 'eth') setEthTrade(null);
+      else setBtcTrade(null);
+    }
   };
 
   return (
@@ -56,15 +87,25 @@ export const LiveTradeView = ({ trade }: LiveTradeViewProps) => {
               {trade.leverage}x {t(trade.side === 'long' ? 'Long' : 'Short')}
             </BodyMEmphasized>
           </Row>
-          <SellNowButton onPress={handleClose}>
-            <SellNowText>{t('Sell now')}</SellNowText>
+          <SellNowButton onPress={handleClose} disabled={isTrading}>
+            {isTrading ? (
+              <ActivityIndicator size='small' color={theme.colors.background} />
+            ) : (
+              <SellNowText>{t('Sell now')}</SellNowText>
+            )}
           </SellNowButton>
         </Row>
 
         <InnerCard>
           <Row $alignItems='flex-end'>
             <Column $gap={4} $alignItems='flex-start' $width='auto'>
-              <Title5>${currentValue.toFixed(2)}</Title5>
+              <Title5>
+                $
+                {currentValue.toLocaleString('en-US', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </Title5>
               <BodyMSecondary>{t('Current value')}</BodyMSecondary>
             </Column>
             <Column $gap={4} $alignItems='flex-end' $width='auto'>
@@ -83,7 +124,9 @@ export const LiveTradeView = ({ trade }: LiveTradeViewProps) => {
               <RektIcon source={rektBomb} />
               <BodyMSecondary>{t('Rekt at')}</BodyMSecondary>
             </Row>
-            <BodySEmphasized>${rektAt}</BodySEmphasized>
+            <BodySEmphasized>
+              {rektAt ? `$${rektAt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : t('N/A')}
+            </BodySEmphasized>
           </Row>
         </InnerCard>
         <InnerCard>
@@ -92,7 +135,13 @@ export const LiveTradeView = ({ trade }: LiveTradeViewProps) => {
               <UsdcIcon width={20} height={20} />
               <BodyMSecondary>{t('Amount invested')}</BodyMSecondary>
             </Row>
-            <BodySEmphasized>${trade.amount}</BodySEmphasized>
+            <BodySEmphasized>
+              $
+              {trade.amount.toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+            </BodySEmphasized>
           </Row>
         </InnerCard>
       </Column>
@@ -100,13 +149,19 @@ export const LiveTradeView = ({ trade }: LiveTradeViewProps) => {
   );
 };
 
-const SellNowButton = styled(PressableOpacity)`
-  background-color: ${({ theme }: { theme: DefaultTheme }) =>
-    theme.colors.textPrimary};
+interface SellNowButtonProps {
+  theme: DefaultTheme;
+  disabled?: boolean;
+}
+
+const SellNowButton = styled(PressableOpacity)<{ disabled?: boolean }>`
+  background-color: ${({ theme, disabled }: SellNowButtonProps) =>
+    disabled ? theme.colors.textSecondary : theme.colors.textPrimary};
   border-radius: 100px;
   padding: 6px 12px;
   align-items: center;
   justify-content: center;
+  opacity: ${({ disabled }: SellNowButtonProps) => (disabled ? 0.6 : 1)};
 `;
 
 const SellNowText = styled(BodySEmphasized)`

@@ -22,8 +22,8 @@ if (process.env.DEPLOY_ENVIRONMENT === 'preview') {
   slug = 'rekt-react-native';
   version = '0.0.1';
   //   easProjectId = 'PREVIEW_PROJECT_ID'; // Optional: Only if you want a separate project in Expo dashboard
-  icon = './assets/images/mock-pngs/liam.png';
-  androidIcon = './assets/images/mock-pngs/liam.png';
+  icon = './assets/images/rekt-icon-ios.png';
+  androidIcon = './assets/images/rekt-icon-android.png';
   packageName = 'com.anagramxyz.rektreactnativepreview';
   bundleIdentifier = 'com.anagramxyz.rektreactnativepreview';
   scheme = 'rektreactnativepreview';
@@ -42,8 +42,8 @@ if (process.env.DEPLOY_ENVIRONMENT === 'production') {
   // owner = 'anagram-xyz';
   // version = '1.0.0';
   // easProjectId = '...';
-  // icon = './assets/images/prod-icon.png';
-  // androidIcon = './assets/images/prod-adaptive-icon.png';
+  //  icon = './assets/images/rekt-icon-ios.png';
+  // androidIcon = './assets/images/rekt-icon-android.png';
   // packageName = 'com.anagramxyz.rektreactnativeprod';
   // bundleIdentifier = 'com.anagramxyz.rektreactnativeprod';
   // scheme = 'rektreactnativeprod';

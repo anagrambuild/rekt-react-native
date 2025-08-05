@@ -16,6 +16,7 @@ import {
   SecondaryButton,
   TertiaryButton,
 } from '@/components';
+import { useAppContext } from '@/contexts';
 import { useProfileContext } from '@/contexts/ProfileContext';
 
 import Feather from '@expo/vector-icons/Feather';
@@ -28,16 +29,18 @@ import { useTranslation } from 'react-i18next';
 import styled, { DefaultTheme, useTheme } from 'styled-components/native';
 import { Toast } from 'toastify-react-native';
 
-const address = '2iJwJUr8y8hepoFzZUTqhci52S1xnJPuFjAzT1VQBsst';
-
 export const TransferIn = ({
   setView,
 }: {
   setView: (view: 'balance' | 'transfer' | 'card') => void;
 }) => {
+  const { userProfile } = useAppContext();
   const { setIsOnOffRampModalVisible } = useProfileContext();
+
   const theme = useTheme();
   const { t } = useTranslation();
+
+  const address = userProfile?.swigWalletAddress || t('No address found');
 
   const [isTransferred, setIsTransferred] = useState(false);
 

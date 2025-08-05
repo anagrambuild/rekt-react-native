@@ -9,98 +9,31 @@ import {
   TransactionMessage,
   VersionedTransaction,
 } from '@solana/web3.js';
-import {
-  Actions,
-  createEd25519AuthorityInfo,
-  findSwigPda,
-} from '@swig-wallet/classic';
+import { Actions, createEd25519AuthorityInfo } from '@swig-wallet/classic';
 import { getCreateV1InstructionDataCodec } from '@swig-wallet/coder';
 
 import bs58 from 'bs58';
 import { Buffer } from 'buffer';
+import Constants from 'expo-constants';
 import * as Linking from 'expo-linking';
 import { toByteArray } from 'react-native-quick-base64';
 import nacl from 'tweetnacl';
 
-/**
- * Diagnostic function to validate Swig account creation parameters
- */
-export const validateSwigAccountParams = (
-  id: Uint8Array,
-  swigAddress: PublicKey,
-  payer: PublicKey,
-  authorityInfo: any,
-  actions: any
-) => {
-  console.log('🔍 [DIAGNOSTIC] Validating Swig account parameters...');
-
-  // Check ID
-  console.log('- ID length:', id.length, '(should be 32)');
-  console.log('- ID bytes:', Array.from(id).slice(0, 8), '... (first 8 bytes)');
-
-  // Check addresses
-  console.log('- Payer:', payer.toBase58());
-  console.log('- Swig Address:', swigAddress.toBase58());
-
-  // Deep inspect authority info structure
-  console.log(
-    '- Authority Info Structure:',
-    JSON.stringify(authorityInfo, null, 2)
-  );
-  console.log('- Authority has ed25519 field:', 'ed25519' in authorityInfo);
-  console.log('- Authority ed25519 value:', authorityInfo.ed25519);
-
-  // Try different ways to access the public key
-  let authorityPubkey = 'NOT FOUND';
-  let authorityMatches = false;
-
-  // Check if authority.data contains the public key bytes
-  if (authorityInfo.data && Array.isArray(Object.values(authorityInfo.data))) {
-    const dataBytes = Object.values(authorityInfo.data) as number[];
-    if (dataBytes.length === 32) {
-      try {
-        const authorityPublicKey = new PublicKey(new Uint8Array(dataBytes));
-        authorityPubkey = authorityPublicKey.toBase58();
-        authorityMatches = authorityPubkey === payer.toBase58();
-      } catch (error) {
-        console.log('- Error creating PublicKey from data:', error);
-      }
-    }
-  }
-
-  // Fallback to other possible structures
-  if (authorityPubkey === 'NOT FOUND') {
-    authorityPubkey =
-      authorityInfo.ed25519?.publicKey?.toBase58() ||
-      authorityInfo.publicKey?.toBase58() ||
-      authorityInfo.pubkey?.toBase58() ||
-      'NOT FOUND';
-  }
-
-  console.log('- Authority PublicKey:', authorityPubkey);
-  console.log('- Authority Type:', authorityInfo.type, '(1 = Ed25519)');
-  console.log('- Payer == Authority:', authorityMatches);
-
-  // Check actions
-  console.log('- Actions:', JSON.stringify(actions, null, 2));
-
-  // Validate PDA derivation
-  try {
-    const derivedAddress = findSwigPda(id);
-    console.log(
-      '- PDA derivation matches:',
-      derivedAddress.toBase58() === swigAddress.toBase58()
-    );
-  } catch (error) {
-    console.log('- PDA derivation error:', error);
-  }
-
-  console.log('🔍 [DIAGNOSTIC] Validation complete');
-};
+// Program IDs (constants on Solana)
+const TOKEN_PROGRAM_ID = new PublicKey(
+  'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'
+);
+const ASSOCIATED_TOKEN_PROGRAM_ID = new PublicKey(
+  'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL'
+);
+const SYSVAR_RENT_PUBKEY = new PublicKey(
+  'SysvarRent111111111111111111111111111111111'
+);
 
 // Type definition for mobile Swig creation result
 export interface MobileSwigCreationResult {
   swigAddress: PublicKey;
+  usdcTokenAccount?: PublicKey;
   transactionSignature: string;
   success: boolean;
   error?: string;
@@ -119,7 +52,7 @@ const initializeMWA = async () => {
       );
       transact = mwaTransact;
     } catch (error) {
-      console.log(
+      console.error(
         'Mobile wallet adapter not available on this platform',
         error
       );
@@ -128,7 +61,111 @@ const initializeMWA = async () => {
 };
 
 /**
- * Creates a Swig account using Phantom wallet deep linking (iOS)
+ * Find Associated Token Account address using only web3.js
+ */
+const findAssociatedTokenAddress = async (
+  walletAddress: PublicKey,
+  tokenMintAddress: PublicKey
+): Promise<PublicKey> => {
+  const [address] = await PublicKey.findProgramAddress(
+    [
+      walletAddress.toBuffer(),
+      TOKEN_PROGRAM_ID.toBuffer(),
+      tokenMintAddress.toBuffer(),
+    ],
+    ASSOCIATED_TOKEN_PROGRAM_ID
+  );
+  return address;
+};
+
+/**
+ * Create Associated Token Account instruction using only web3.js
+ */
+const createAssociatedTokenAccountInstruction = (
+  payer: PublicKey,
+  associatedToken: PublicKey,
+  owner: PublicKey,
+  mint: PublicKey
+): TransactionInstruction => {
+  // The instruction data for createAssociatedTokenAccount is empty (0 bytes)
+  const data = Buffer.alloc(0);
+
+  const keys = [
+    { pubkey: payer, isSigner: true, isWritable: true },
+    { pubkey: associatedToken, isSigner: false, isWritable: true },
+    { pubkey: owner, isSigner: false, isWritable: false },
+    { pubkey: mint, isSigner: false, isWritable: false },
+    { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+    { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+    { pubkey: SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false },
+  ];
+
+  return new TransactionInstruction({
+    keys,
+    programId: ASSOCIATED_TOKEN_PROGRAM_ID,
+    data,
+  });
+};
+
+/**
+ * Check if Associated Token Account exists
+ */
+const checkAssociatedTokenAccountExists = async (
+  connection: Connection,
+  associatedTokenAddress: PublicKey
+): Promise<boolean> => {
+  try {
+    const accountInfo = await connection.getAccountInfo(associatedTokenAddress);
+    const exists = accountInfo !== null;
+    return exists;
+  } catch (error) {
+    console.error('❌ Error checking associated token account:', error);
+    return false;
+  }
+};
+
+/**
+ * Create USDC ATA instructions helper
+ */
+const createUsdcATAInstructions = async (
+  connection: Connection,
+  swigAddress: PublicKey,
+  payerAddress: PublicKey,
+  usdcMint: PublicKey
+): Promise<{
+  usdcTokenAccount: PublicKey;
+  createATAInstruction?: TransactionInstruction;
+}> => {
+  // Find the ATA address
+  const usdcTokenAccount = await findAssociatedTokenAddress(
+    swigAddress,
+    usdcMint
+  );
+
+  // Check if it already exists
+  const exists = await checkAssociatedTokenAccountExists(
+    connection,
+    usdcTokenAccount
+  );
+
+  if (exists) {
+    // ATA already exists, no instruction needed
+    return { usdcTokenAccount };
+  }
+
+  // Create the instruction to create the ATA
+  const createATAInstruction = createAssociatedTokenAccountInstruction(
+    payerAddress, // payer
+    usdcTokenAccount, // the ATA address
+    swigAddress, // owner
+    usdcMint // mint
+  );
+
+  return { usdcTokenAccount, createATAInstruction };
+};
+
+/**
+ * Creates a Swig account with USDC ATA using Phantom wallet deep linking (iOS)
  */
 export const createSwigAccountWithPhantom = async (
   connection: Connection,
@@ -151,11 +188,32 @@ export const createSwigAccountWithPhantom = async (
   );
 
   try {
+    // Get USDC mint address from app config
+    const usdcMint = new PublicKey(
+      Constants.expoConfig?.extra?.usdcMint ||
+        'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v' // Mainnet USDC fallback
+    );
+
+    // Create USDC ATA instructions
+    const { usdcTokenAccount, createATAInstruction } =
+      await createUsdcATAInstructions(
+        connection,
+        swigAddress,
+        userPublicKey,
+        usdcMint
+      );
+
     // Create authority info for the user's public key
     const rootAuthorityInfo = createEd25519AuthorityInfo(userPublicKey);
 
-    // Set up actions - only manageAuthority for root (matching tutorial)
-    const rootActions = Actions.set().manageAuthority().get();
+    // Set up actions - manageAuthority AND USDC token permissions in one transaction
+    const rootActions = Actions.set()
+      .manageAuthority()
+      .tokenLimit({
+        mint: usdcMint,
+        amount: BigInt(1000 * 10 ** 6), // 1000 USDC (6 decimals)
+      })
+      .get();
 
     // Create the Swig account instruction manually with correct address
     // We need to calculate the bump seed for the PDA
@@ -175,7 +233,7 @@ export const createSwigAccountWithPhantom = async (
       bump,
     });
 
-    // Create the instruction manually with correct accounts
+    // Create the Swig creation instruction
     const createSwigIx = new TransactionInstruction({
       programId: SWIG_PROGRAM_ID,
       keys: [
@@ -198,35 +256,13 @@ export const createSwigAccountWithPhantom = async (
       data: Buffer.from(instructionData),
     });
 
-    console.log(
-      '🔧 [MANUAL] Created manual instruction with correct address:',
-      swigAddress.toBase58()
-    );
-
-    // DEBUG: Check if the instruction's account matches our derived PDA
-    console.log('🔍 [CRITICAL DEBUG] Instruction accounts:');
-    createSwigIx.keys.forEach((key, index) => {
-      console.log(
-        `  Account ${index}: ${key.pubkey.toBase58()} (signer: ${
-          key.isSigner
-        }, writable: ${key.isWritable})`
-      );
-    });
-    console.log(
-      '🔍 [CRITICAL DEBUG] Expected Swig Address:',
-      swigAddress.toBase58()
-    );
-    console.log(
-      '🔍 [CRITICAL DEBUG] Instruction Account 0:',
-      createSwigIx.keys[0]?.pubkey.toBase58()
-    );
-    console.log(
-      '🔍 [CRITICAL DEBUG] Addresses match:',
-      createSwigIx.keys[0]?.pubkey.toBase58() === swigAddress.toBase58()
-    );
-
-    // Create transaction
+    // Create transaction with Swig creation and optionally ATA creation
     const transaction = new Transaction().add(createSwigIx);
+
+    // Add ATA creation instruction if needed
+    if (createATAInstruction) {
+      transaction.add(createATAInstruction);
+    }
 
     // Get recent blockhash
     const { blockhash } = await connection.getLatestBlockhash();
@@ -287,17 +323,11 @@ export const createSwigAccountWithPhantom = async (
         resolve: async (responseData: any) => {
           clearTimeout(timeout);
           try {
-            console.log('📤 Processing Swig creation response from Phantom...');
-            console.log('Response data:', responseData);
-
             // Check if we got a signature (signAndSendTransaction response)
             if (responseData.signature) {
-              console.log(
-                '✅ Received transaction signature:',
-                responseData.signature
-              );
               resolve({
                 swigAddress,
+                usdcTokenAccount,
                 transactionSignature: responseData.signature,
                 success: true,
               });
@@ -306,33 +336,8 @@ export const createSwigAccountWithPhantom = async (
 
             // Check if we got a signed transaction (signTransaction response)
             if (responseData.transaction) {
-              console.log('📤 Sending signed Swig creation transaction...');
-
               // Decode the signed transaction
               const signedTransaction = bs58.decode(responseData.transaction);
-
-              // Extract and verify the signer from the signed transaction
-              try {
-                const tx = Transaction.from(signedTransaction);
-                const actualSigner = tx.signatures[0]?.publicKey?.toBase58();
-                console.log(
-                  '🔍 [iOS DEBUG] Actual signer from transaction:',
-                  actualSigner
-                );
-                console.log(
-                  '🔍 [iOS DEBUG] Expected signer (userPublicKey):',
-                  userPublicKey.toBase58()
-                );
-                console.log(
-                  '🔍 [iOS DEBUG] Signers match:',
-                  actualSigner === userPublicKey.toBase58()
-                );
-              } catch (signerError) {
-                console.log(
-                  '🔍 [iOS DEBUG] Could not extract signer:',
-                  signerError
-                );
-              }
               // Send the signed transaction
               const signature = await connection.sendRawTransaction(
                 signedTransaction,
@@ -340,11 +345,6 @@ export const createSwigAccountWithPhantom = async (
                   skipPreflight: false,
                   preflightCommitment: 'confirmed',
                 }
-              );
-
-              console.log(
-                '⏳ Confirming Swig creation transaction:',
-                signature
               );
 
               // Confirm the transaction
@@ -356,10 +356,9 @@ export const createSwigAccountWithPhantom = async (
                 ).lastValidBlockHeight,
               });
 
-              console.log('✅ Swig creation transaction confirmed!');
-
               resolve({
                 swigAddress,
+                usdcTokenAccount,
                 transactionSignature: signature,
                 success: true,
               });
@@ -400,8 +399,7 @@ export const createSwigAccountWithPhantom = async (
 };
 
 /**
- * Creates a Swig account using Mobile Wallet Adapter (Android)
- * Following the EXACT same pattern as the working MWA test transaction
+ * Creates a Swig account with USDC ATA using Mobile Wallet Adapter (Android)
  */
 export const createSwigAccountWithMWA = async (
   connection: Connection,
@@ -459,35 +457,32 @@ export const createSwigAccountWithMWA = async (
       SWIG_PROGRAM_ID
     );
 
-    console.log(
-      '🔧 [FIXED] Using manual PDA derivation:',
-      swigAddress.toBase58()
+    // Get USDC mint address from app config
+    const usdcMint = new PublicKey(
+      Constants.expoConfig?.extra?.usdcMint ||
+        'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v' // Mainnet USDC fallback
     );
+
+    // Create USDC ATA instructions
+    const { usdcTokenAccount, createATAInstruction } =
+      await createUsdcATAInstructions(
+        connection,
+        swigAddress,
+        authorizedPubkey,
+        usdcMint
+      );
 
     // Create authority info for the authorized public key
-    console.log(
-      '🔧 Creating Ed25519 authority info for:',
-      authorizedPubkey.toBase58()
-    );
     const rootAuthorityInfo = createEd25519AuthorityInfo(authorizedPubkey);
-    console.log('🔧 Authority info created:', rootAuthorityInfo);
 
-    // Set up actions - only manageAuthority for root (matching tutorial)
-    const rootActions = Actions.set().manageAuthority().get();
-
-    // Create the Swig account instruction
-    console.log('🔧 Creating Swig instruction...');
-    console.log('- Payer:', authorizedPubkey.toBase58());
-    console.log('- Swig Address:', swigAddress.toBase58());
-
-    // Validate parameters before creating instruction
-    validateSwigAccountParams(
-      id,
-      swigAddress,
-      authorizedPubkey,
-      rootAuthorityInfo,
-      rootActions
-    );
+    // Set up actions - manageAuthority AND USDC token permissions in one transaction
+    const rootActions = Actions.set()
+      .manageAuthority()
+      .tokenLimit({
+        mint: usdcMint,
+        amount: BigInt(1000 * 10 ** 6), // 1000 USDC (6 decimals)
+      })
+      .get();
 
     // Create the Swig account instruction manually with correct address
     // We need to calculate the bump seed for the PDA
@@ -507,7 +502,7 @@ export const createSwigAccountWithMWA = async (
       bump,
     });
 
-    // Create the instruction manually with correct accounts
+    // Create the Swig creation instruction
     const createSwigIx = new TransactionInstruction({
       programId: SWIG_PROGRAM_ID,
       keys: [
@@ -530,53 +525,26 @@ export const createSwigAccountWithMWA = async (
       data: Buffer.from(instructionData),
     });
 
-    console.log(
-      '🔧 [MANUAL] Created manual instruction with correct address:',
-      swigAddress.toBase58()
-    );
+    // Prepare instructions array
+    const instructions = [createSwigIx];
 
-    // DEBUG: Check if the instruction's account matches our derived PDA
-    console.log('🔍 [CRITICAL DEBUG] Instruction accounts:');
-    createSwigIx.keys.forEach((key, index) => {
-      console.log(
-        `  Account ${index}: ${key.pubkey.toBase58()} (signer: ${
-          key.isSigner
-        }, writable: ${key.isWritable})`
-      );
-    });
-    console.log(
-      '🔍 [CRITICAL DEBUG] Expected Swig Address:',
-      swigAddress.toBase58()
-    );
-    console.log(
-      '🔍 [CRITICAL DEBUG] Instruction Account 0:',
-      createSwigIx.keys[0]?.pubkey.toBase58()
-    );
-    console.log(
-      '🔍 [CRITICAL DEBUG] Addresses match:',
-      createSwigIx.keys[0]?.pubkey.toBase58() === swigAddress.toBase58()
-    );
+    // Add ATA creation instruction if needed
+    if (createATAInstruction) {
+      instructions.push(createATAInstruction);
+    }
 
-    console.log('✅ Swig instruction created');
-
-    // Create the transaction using VersionedTransaction (same as working test)
-
-    // Create the transaction message
-    console.log('🔧 Building transaction message...');
+    // Create the transaction message with all instructions
     const txMessage = new TransactionMessage({
       payerKey: authorizedPubkey,
       recentBlockhash: latestBlockhash.blockhash,
-      instructions: [createSwigIx],
+      instructions,
     }).compileToV0Message();
 
     // Construct the Versioned Transaction
     const versionedTransaction = new VersionedTransaction(txMessage);
-    console.log('✅ Transaction built successfully');
 
     // Step 4: Use MWA ONLY for signing (minimal operation, same as working test)
-    console.log('🔐 Starting MWA signing process...');
     const signResult = await transact(async (wallet: any) => {
-      console.log('🔐 Re-authorizing with cached token...');
       // Re-authorize with the cached token from previous auth
       await wallet.authorize({
         cluster: cluster,
@@ -588,12 +556,10 @@ export const createSwigAccountWithMWA = async (
         auth_token: authResult.auth_token, // Use the token from previous auth
       });
 
-      console.log('🔐 Requesting transaction signature...');
       const signedTransactions = await wallet.signTransactions({
         transactions: [versionedTransaction],
       });
 
-      console.log('✅ Transaction signed successfully');
       return signedTransactions[0]; // Simple return
     });
 
@@ -611,11 +577,9 @@ export const createSwigAccountWithMWA = async (
       lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
     });
 
-    console.log('✅ Swig account created with MWA:', swigAddress.toBase58());
-    console.log('✅ Transaction signature:', txSignature);
-
     return {
       swigAddress,
+      usdcTokenAccount,
       transactionSignature: txSignature,
       success: true,
     };
@@ -706,7 +670,7 @@ export const createTestTransaction = async (
     SystemProgram.transfer({
       fromPubkey: userPublicKey,
       toPubkey: testRecipientAddress,
-      lamports: 200, // 100 lamports (0.0000001 SOL) - minimal test amount
+      lamports: 200, // 200 lamports (0.0000002 SOL) - minimal test amount
     })
   );
 

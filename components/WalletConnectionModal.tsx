@@ -1,11 +1,13 @@
-import { Alert, Linking } from 'react-native';
+import { Alert, Linking, View } from 'react-native';
 
+import PhantomIcon from '@/assets/images/app-svgs/phantom.svg';
 import { useWallet } from '@/contexts';
 
 import { Column } from './common/containers';
 import { Modal } from './common/Modal';
 import Constants from 'expo-constants';
 import { useTranslation } from 'react-i18next';
+import { SvgProps } from 'react-native-svg';
 import styled, { DefaultTheme } from 'styled-components/native';
 
 // Use require for bs58 to avoid PRNG issues
@@ -23,6 +25,7 @@ interface WalletOption {
   deepLink: string;
   appStoreUrl: string;
   enabled: boolean;
+  icon?: React.ComponentType<SvgProps>;
 }
 
 export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
@@ -40,6 +43,7 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
       appStoreUrl:
         'https://apps.apple.com/app/phantom-solana-wallet/id1598432977',
       enabled: true,
+      icon: PhantomIcon,
     },
     {
       id: 'solflare',
@@ -87,7 +91,7 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
             const keyPair = getDappKeyPair();
             const publicKeyBuffer = Buffer.from(keyPair.publicKey);
             const encodedPublicKey = bs58.encode(publicKeyBuffer);
-            
+
             const connectUrl = `https://phantom.app/ul/v1/connect?dapp_encryption_public_key=${encodedPublicKey}&cluster=${cluster}&app_url=${encodeURIComponent(
               appUrl
             )}&redirect_link=${encodeURIComponent(appUrl)}`;
@@ -144,8 +148,12 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
             >
               <WalletButtonContent>
                 <WalletName $enabled={wallet.enabled}>{wallet.name}</WalletName>
-                {!wallet.enabled && (
+                {!wallet.enabled ? (
                   <ComingSoonText>{t('Coming Soon')}</ComingSoonText>
+                ) : (
+                  <View>
+                    {wallet.icon && <wallet.icon height={32} width={32} />}
+                  </View>
                 )}
               </WalletButtonContent>
             </WalletButton>

@@ -1,11 +1,11 @@
 import PointsIcon from '@/assets/images/app-svgs/points.svg';
 import UsdcIcon from '@/assets/images/app-svgs/usdc.svg';
 import RektLogo from '@/assets/images/rekt-logo.svg';
+import { useHomeContext, useWallet } from '@/contexts';
 
 import { usePreventRemove } from '@react-navigation/native';
 
 import { Column, Gap, Row, ScreenContainer, Title4 } from '../../components';
-import { useHomeContext } from '../../contexts';
 import { AnimatedBannerRow } from './AnimatedBannerRow';
 import { LiveTradeView } from './LiveTradeView';
 import { LongButton, ShortButton } from './long-short-buttons';
@@ -18,6 +18,7 @@ import { useTranslation } from 'react-i18next';
 export const HomeScreen = () => {
   const { t } = useTranslation();
   const router = useRouter();
+  const { usdcBalance, isLoadingBalance } = useWallet();
   const {
     selectedToken,
     solTrade,
@@ -26,6 +27,7 @@ export const HomeScreen = () => {
     setEthTrade,
     btcTrade,
     setBtcTrade,
+    openPositions,
   } = useHomeContext();
 
   usePreventRemove(true, () => {});
@@ -45,15 +47,30 @@ export const HomeScreen = () => {
       ? setEthTrade
       : setBtcTrade;
 
-  // Default to 'short' if no trade yet
+  // Set trade side, creating a draft trade if none exists
   const setTradeSide = (side: 'long' | 'short') => {
     if (trade) {
       setTrade({ ...trade, side });
+    } else {
+      // Create a new draft trade with the selected side
+      setTrade({
+        side,
+        entryPrice: 0,
+        amount: 10,
+        leverage: 1,
+        status: 'draft',
+        isMaxLeverageOn: false,
+      });
     }
-    // Do not create a new trade here; only update if one exists
   };
 
-  const isActiveTrade = trade && trade.status === 'open';
+  // Check for active trades - either from local state or actual open positions
+  const currentPosition = openPositions.find((position) => {
+    const tokenMap = { sol: 'SOL-PERP', eth: 'ETH-PERP', btc: 'BTC-PERP' };
+    return position.asset === tokenMap[selectedToken as keyof typeof tokenMap];
+  });
+  
+  const isActiveTrade = (trade && trade.status === 'open') || !!currentPosition;
 
   return (
     <ScreenContainer>
@@ -63,7 +80,12 @@ export const HomeScreen = () => {
             <RektLogo width={60} height={60} />
             <Row $justifyContent='flex-end' $gap={16} $width='auto'>
               <TokenChip Icon={PointsIcon} value='58K' />
-              <TokenChip Icon={UsdcIcon} value='69000' />
+              <TokenChip
+                Icon={UsdcIcon}
+                value={
+                  isLoadingBalance ? '...' : (usdcBalance || 0).toLocaleString()
+                }
+              />
             </Row>
           </Row>
 
@@ -80,7 +102,15 @@ export const HomeScreen = () => {
           </Row>
         )}
         {isActiveTrade ? (
-          <LiveTradeView trade={trade} />
+          <LiveTradeView trade={trade || {
+            side: currentPosition?.direction || 'long',
+            entryPrice: currentPosition?.entryPrice || 0,
+            amount: currentPosition?.marginUsed || 0,
+            leverage: currentPosition?.leverage || 1,
+            status: 'open',
+            pnl: currentPosition?.pnl || 0,
+            timestamp: currentPosition?.openedAt ? new Date(currentPosition.openedAt).getTime() : Date.now(),
+          }} />
         ) : (
           <Row $padding={0}>
             <ShortButton

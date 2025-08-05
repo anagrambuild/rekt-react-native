@@ -1,5 +1,3 @@
-import { useState } from 'react';
-
 import skull from '@/assets/images/app-pngs/skull.png';
 import {
   BodyM,
@@ -18,41 +16,57 @@ import { useHomeContext } from '@/contexts/HomeContext';
 import { Image } from 'expo-image';
 import { useTranslation } from 'react-i18next';
 
-export const SliderCard = () => {
+export const SliderCard = ({
+  leverage,
+  amount,
+}: {
+  leverage: number;
+  amount: number;
+}) => {
   const { t } = useTranslation();
-  const { selectedToken, solTrade, ethTrade, btcTrade } = useHomeContext();
+  const { 
+    selectedToken,
+    solTrade,
+    setSolTrade,
+    ethTrade,
+    setEthTrade,
+    btcTrade,
+    setBtcTrade
+  } = useHomeContext();
 
-  const amount =
-    selectedToken === 'sol'
-      ? solTrade?.amount ?? 10
-      : selectedToken === 'eth'
-      ? ethTrade?.amount ?? 10
-      : btcTrade?.amount ?? 10;
+  // Get current trade state based on selected token
+  const getCurrentTrade = () => {
+    switch (selectedToken) {
+      case 'sol': return solTrade;
+      case 'eth': return ethTrade;
+      case 'btc': return btcTrade;
+      default: return solTrade;
+    }
+  };
 
-  const leverage =
-    selectedToken === 'sol'
-      ? solTrade?.leverage ?? 1
-      : selectedToken === 'eth'
-      ? ethTrade?.leverage ?? 1
-      : btcTrade?.leverage ?? 1;
+  const setCurrentTrade = (trade: any) => {
+    switch (selectedToken) {
+      case 'sol': setSolTrade(trade); break;
+      case 'eth': setEthTrade(trade); break;
+      case 'btc': setBtcTrade(trade); break;
+      default: setSolTrade(trade); break;
+    }
+  };
 
-  const [isSolMaxLeverageOn, setIsSolMaxLeverageOn] = useState(false);
-  const [isEthMaxLeverageOn, setIsEthMaxLeverageOn] = useState(false);
-  const [isBtcMaxLeverageOn, setIsBtcMaxLeverageOn] = useState(false);
+  const currentTrade = getCurrentTrade();
+  const isMaxLeverageOn = currentTrade?.isMaxLeverageOn || false;
 
-  const isMaxLeverageOn =
-    selectedToken === 'sol'
-      ? isSolMaxLeverageOn
-      : selectedToken === 'eth'
-      ? isEthMaxLeverageOn
-      : isBtcMaxLeverageOn;
-
-  const setIsMaxLeverageOn =
-    selectedToken === 'sol'
-      ? setIsSolMaxLeverageOn
-      : selectedToken === 'eth'
-      ? setIsEthMaxLeverageOn
-      : setIsBtcMaxLeverageOn;
+  const setIsMaxLeverageOn = (value: boolean) => {
+    setCurrentTrade({
+      ...currentTrade,
+      side: currentTrade?.side || 'short',
+      entryPrice: currentTrade?.entryPrice || 0,
+      amount: currentTrade?.amount || 10,
+      leverage: currentTrade?.leverage || 1,
+      status: 'draft',
+      isMaxLeverageOn: value,
+    });
+  };
 
   return (
     <Card $padding={16} style={{ gap: 8 }}>
@@ -61,7 +75,7 @@ export const SliderCard = () => {
           <BodySEmphasized>{t('Leverage')}</BodySEmphasized>
           {(leverage >= 100 || isMaxLeverageOn) && (
             <Switch
-              onPress={() => setIsMaxLeverageOn((prev) => !prev)}
+              onPress={() => setIsMaxLeverageOn(!isMaxLeverageOn)}
               isOn={isMaxLeverageOn}
               icon={
                 <PulsatingContainer>
@@ -83,7 +97,7 @@ export const SliderCard = () => {
           </Row>
         </Column>
       </Column>
-      <HorizontalSlider isMaxLeverageOn={isMaxLeverageOn} />
+      <HorizontalSlider />
     </Card>
   );
 };

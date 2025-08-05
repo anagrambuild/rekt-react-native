@@ -7,11 +7,8 @@ Big items
 
 polishing (mismatches from designs)
 
-- animated socials at the top of the screen
-- flame for splash screen
 - add commas for number strings
 - linear gradient on active tab
-- icons for long and short segment control
 - make an ArcSlider
 - HORIZONTAL SLIDER
   - ios has a bug - going beyond 100 leverage and then switching tokens and coming back the handle is in the wrong position - i made a hacky fix to reset it but that trips out android and makes it worse - so i only implement for ios - but it flashes like a glitch on ios
@@ -26,10 +23,35 @@ WIRING UP REAL DATA
 
 Liam's feedback:
 
-- Could we add haptic feedback to the slider so that every time that you go, the phone buzzes a little bit also, can we control the like intensity of the feedback the vibrant so I’m thinking you know maybe we have an increase by 10% every time it goes up or something like that
-  Same with adding and subtracting funds
-
-  - don't allow swipeback on screens - refactor home tabs/stack
+- add haptic on decreasing leverage?
+- don't allow swipeback on screens - refactor home tabs/stack
 
 - Profile screen
+
   - profile modal - add a fling gesture to close it
+
+  before hackathon end:
+
+  - get real trades working on chain
+  - get balance of usdc of swig wallet, not authority wallet
+    (note - getting it from solana/web3.js because drift gives an error)
+  - usdc token amount did not show until restart ✅
+  - profile not found error on trade after account creation ✅
+  - CREATE USDC token ATA on account creation ✅
+  - fix fake wallet address in profile ✅
+  - show trade history from db in profile 🚫
+  - use biometrics on app join ✅
+  - ios app icon ✅
+
+  - UI does not update when receiving USDC
+  - get real historical data for token prices
+  - load chart data faster?
+
+after hackathon
+
+- update profile
+- fetch usdc balance from backend
+- should not allow a trade with no usdc
+- wire up trade again button to really work
+- check biometric on android
+- get real price data for individual trade history and regular price charts

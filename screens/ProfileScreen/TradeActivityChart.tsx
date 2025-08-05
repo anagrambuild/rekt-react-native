@@ -2,11 +2,6 @@ import { Dimensions } from 'react-native';
 
 import { BodyXSMonoEmphasized } from '@/components';
 import { Trade } from '@/contexts';
-import {
-  btcPriceData,
-  ethPriceData,
-  solPriceData,
-} from '@/screens/HomeScreen/mockData';
 
 import { LineChart } from 'react-native-gifted-charts';
 import styled, { DefaultTheme, useTheme } from 'styled-components/native';
@@ -23,12 +18,23 @@ export const TradeActivityChart = ({
   const theme = useTheme();
   const chartHeight = 120; // Smaller height for modal
 
-  const data =
-    symbol === 'sol'
-      ? solPriceData
-      : symbol === 'eth'
-      ? ethPriceData
-      : btcPriceData;
+  // Generate simple mock data for the chart
+  // In a real app, this would fetch historical price data for the trade period
+  const generateMockData = (basePrice: number) => {
+    const data = [];
+    for (let i = 0; i < 10; i++) {
+      const variation = (Math.random() - 0.5) * 0.02; // ±1% variation
+      data.push({
+        value: basePrice * (1 + variation),
+        timestamp: Date.now() - (9 - i) * 60000, // 1 minute intervals
+      });
+    }
+    return data;
+  };
+
+  // Use entry price from trade as base price, with fallback values
+  const basePrice = trade?.entryPrice || (symbol === 'sol' ? 150 : symbol === 'eth' ? 2500 : 45000);
+  const data = generateMockData(basePrice);
 
   const chartWidth = Dimensions.get('window').width * 0.8 - 62; // Adjusted for modal
 

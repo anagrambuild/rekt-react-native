@@ -7,7 +7,6 @@ import {
   PressableOpacity,
 } from '@/components';
 import { Row } from '@/components/common/containers';
-import { useHomeContext } from '@/contexts/HomeContext';
 
 import MaterialIcon from '@expo/vector-icons/MaterialIcons';
 
@@ -17,42 +16,15 @@ import { useTheme } from 'styled-components/native';
 
 export const AmountCard = ({
   setAmountModalVisible,
+  amount,
+  setAmount,
 }: {
   setAmountModalVisible: (visible: boolean) => void;
+  amount: number;
+  setAmount: (amount: number) => void;
 }) => {
   const { t } = useTranslation();
   const theme = useTheme();
-  const {
-    selectedToken,
-    solTrade,
-    setSolTrade,
-    ethTrade,
-    setEthTrade,
-    btcTrade,
-    setBtcTrade,
-  } = useHomeContext();
-
-  const trade =
-    selectedToken === 'sol'
-      ? solTrade
-      : selectedToken === 'eth'
-      ? ethTrade
-      : btcTrade;
-
-  const setTrade =
-    selectedToken === 'sol'
-      ? setSolTrade
-      : selectedToken === 'eth'
-      ? setEthTrade
-      : setBtcTrade;
-
-  const amount = trade?.amount ?? 10;
-
-  const setAmount = (newAmount: number) => {
-    if (trade) {
-      setTrade({ ...trade, amount: newAmount });
-    }
-  };
 
   return (
     <Card $padding={8}>
@@ -73,7 +45,7 @@ export const AmountCard = ({
             name='remove'
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setAmount(Math.max(0, amount - 1));
+              setAmount(Math.max(10, amount - 1));
             }}
           />
           <BodyM>{`$${amount}`}</BodyM>

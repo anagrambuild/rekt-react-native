@@ -1,12 +1,26 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import { Alert } from 'react-native';
 
-import {
-  DetailedTradeData,
-  userMockData,
-} from '@/screens/ProfileScreen/profileMockData';
+import { getSecureAuth } from '@/utils/secureAuth';
 
+import { useWallet } from './WalletContext';
 import { useTranslation } from 'react-i18next';
+
+// DetailedTradeData type moved inline since we no longer use mock data
+interface DetailedTradeData {
+  type: 'long' | 'short';
+  symbol: 'btc' | 'eth' | 'sol';
+  amount: number;
+  leverage: number;
+  percentage: number;
+  isProfit: boolean;
+  entryPrice: number;
+  exitPrice: number;
+  entryTime: string;
+  exitTime: string;
+  duration: string;
+  profitAmount: number;
+}
 
 export interface User {
   username: string;
@@ -28,13 +42,14 @@ interface ProfileContextType {
   userData: User;
   handleImageUpload: (imageUri: string) => Promise<void>;
   handleImageRemoval: () => Promise<void>;
-  handleLinkPress: () => void;
   isOnOffRampModalVisible: boolean;
   setIsOnOffRampModalVisible: (visible: boolean) => void;
   handleTransferIn: () => void;
   handleCardPayment: () => void;
   handleWithdraw: () => void;
   handleHistory: () => void;
+  profileId: string | null;
+  isUserLoading: boolean;
 }
 
 export const ProfileContext = createContext<ProfileContextType>({
@@ -51,13 +66,14 @@ export const ProfileContext = createContext<ProfileContextType>({
   userData: { username: '', imgSrc: '', balance: 0 },
   handleImageUpload: async () => {},
   handleImageRemoval: async () => {},
-  handleLinkPress: () => {},
   isOnOffRampModalVisible: false,
   setIsOnOffRampModalVisible: () => {},
   handleTransferIn: () => {},
   handleCardPayment: () => {},
   handleWithdraw: () => {},
   handleHistory: () => {},
+  profileId: null,
+  isUserLoading: false,
 });
 
 export const useProfileContext = () => {
@@ -66,10 +82,13 @@ export const useProfileContext = () => {
 
 export const ProfileProvider = ({
   children,
+  userProfile,
 }: {
   children: React.ReactNode;
+  userProfile: any | null;
 }) => {
   const { t } = useTranslation();
+  const { usdcBalance } = useWallet();
   const [view, setView] = useState<'trades' | 'minigame'>('trades');
   const [isEditProfileModalVisible, setIsEditProfileModalVisible] =
     useState(false);
@@ -78,26 +97,78 @@ export const ProfileProvider = ({
   const [selectedTrade, setSelectedTrade] = useState<DetailedTradeData | null>(
     null
   );
-  const [userImage, setUserImage] = useState<string | number>(
-    userMockData.imgSrc
-  );
   const [isOnOffRampModalVisible, setIsOnOffRampModalVisible] = useState(false);
 
+  // State for profile ID and user data
+  const [profileId, setProfileId] = useState<string | null>(null);
+
+  // Fetch profile ID from secure storage
+  useEffect(() => {
+    const getProfileId = async () => {
+      try {
+        const authResult = await getSecureAuth();
+        if (authResult.isValid && authResult.data?.profileId) {
+          setProfileId(authResult.data.profileId);
+        }
+      } catch (error) {
+        console.error('Error getting profile ID:', error);
+      }
+    };
+    getProfileId();
+  }, []);
+
+  // User image state - start with userProfile image or empty string
+  const [userImage, setUserImage] = useState<string | number>(
+    userProfile?.profileImage || ''
+  );
+
+  // Update user image when userProfile data changes
+  useEffect(() => {
+    if (userProfile?.profileImage) {
+      setUserImage(userProfile.profileImage);
+    }
+  }, [userProfile?.profileImage]);
+
+  // Reset internal state when userProfile becomes null (on logout)
+  // OR refetch profileId when userProfile is set (on login/signup)
+  useEffect(() => {
+    if (!userProfile) {
+      // User logged out - reset everything
+      setProfileId(null);
+      setUserImage('');
+      setView('trades');
+      setIsEditProfileModalVisible(false);
+      setIsTradeActivityModalVisible(false);
+      setSelectedTrade(null);
+      setIsOnOffRampModalVisible(false);
+    } else {
+      // User logged in or new user created - refetch profileId from secure storage
+      const refetchProfileId = async () => {
+        try {
+          const authResult = await getSecureAuth();
+          if (authResult.isValid && authResult.data?.profileId) {
+            setProfileId(authResult.data.profileId);
+          }
+        } catch (error) {
+          console.error('Error refetching profile ID:', error);
+        }
+      };
+      refetchProfileId();
+    }
+  }, [userProfile]);
+
   const userData: User = {
-    username: userMockData.username,
+    username: userProfile?.username || '',
     imgSrc: userImage,
-    balance: userMockData.balance,
+    balance: usdcBalance || 0,
   };
 
-  const handleLinkPress = () => {
-    console.log('link');
-  };
+  // Determine if user data is still loading
+  const isUserLoading = !userProfile;
 
   const handleImageUpload = async (imageUri: string) => {
     try {
       setUserImage(imageUri);
-      // TODO: Here you would typically upload the image to your backend
-      console.log('Image uploaded:', imageUri);
     } catch (error) {
       console.error('Error uploading image:', error);
       Alert.alert(
@@ -105,7 +176,7 @@ export const ProfileProvider = ({
         t('Failed to update profile picture. Please try again.')
       );
       // Revert to previous image on error
-      setUserImage(userMockData.imgSrc);
+      setUserImage(userProfile?.profileImage || '');
     }
   };
 
@@ -113,8 +184,6 @@ export const ProfileProvider = ({
     try {
       // Set to empty string to show no image state
       setUserImage('');
-      // TODO: Here you would typically remove the image from your backend
-      console.log('Image removed');
     } catch (error) {
       console.error('Error removing image:', error);
       Alert.alert(
@@ -160,13 +229,14 @@ export const ProfileProvider = ({
         userData,
         handleImageUpload,
         handleImageRemoval,
-        handleLinkPress,
         isOnOffRampModalVisible,
         setIsOnOffRampModalVisible,
         handleTransferIn,
         handleCardPayment,
         handleWithdraw,
         handleHistory,
+        profileId,
+        isUserLoading,
       }}
     >
       {children}

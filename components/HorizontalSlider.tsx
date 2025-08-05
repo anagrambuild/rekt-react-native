@@ -11,11 +11,7 @@ import styled, { useTheme } from 'styled-components/native';
 // could not get the image to work on dev build
 // const sliderHandle = require('../assets/images/app-pngs/slider-handle.png');
 
-export const HorizontalSlider = ({
-  isMaxLeverageOn,
-}: {
-  isMaxLeverageOn: boolean;
-}) => {
+export const HorizontalSlider = () => {
   const {
     selectedToken,
     solTrade,
@@ -25,6 +21,19 @@ export const HorizontalSlider = ({
     btcTrade,
     setBtcTrade,
   } = useHomeContext();
+
+  // Get current trade state based on selected token
+  const getCurrentTrade = () => {
+    switch (selectedToken) {
+      case 'sol': return solTrade;
+      case 'eth': return ethTrade;
+      case 'btc': return btcTrade;
+      default: return solTrade;
+    }
+  };
+
+  const currentTrade = getCurrentTrade();
+  const isMaxLeverageOn = currentTrade?.isMaxLeverageOn || false;
 
   // Map slider value (0-steps) to leverage (1-max)
   const getLeverageFromSlider = (sliderValue: number) =>
@@ -50,7 +59,8 @@ export const HorizontalSlider = ({
               entryPrice: 0,
               amount: 10,
               leverage: newLeverage,
-              status: 'closed',
+              status: 'draft',
+              isMaxLeverageOn: false,
             }
       );
     } else if (selectedToken === 'eth') {
@@ -62,7 +72,8 @@ export const HorizontalSlider = ({
               entryPrice: 0,
               amount: 10,
               leverage: newLeverage,
-              status: 'closed',
+              status: 'draft',
+              isMaxLeverageOn: false,
             }
       );
     } else {
@@ -74,7 +85,8 @@ export const HorizontalSlider = ({
               entryPrice: 0,
               amount: 10,
               leverage: newLeverage,
-              status: 'closed',
+              status: 'draft',
+              isMaxLeverageOn: false,
             }
       );
     }

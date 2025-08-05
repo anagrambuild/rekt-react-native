@@ -10,10 +10,14 @@ import {
 } from 'react';
 import { Alert, Linking, Platform } from 'react-native';
 
-import { PublicKey } from '@solana/web3.js';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { clusterApiUrl, Connection, PublicKey } from '@solana/web3.js';
 
+import { getUserByWalletAddress } from '../utils/backendApi';
+import { getSecureAuth, storeSecureAuth } from '../utils/secureAuth';
 import { Buffer } from 'buffer';
 import Constants from 'expo-constants';
+import * as LocalAuthentication from 'expo-local-authentication';
 import { useTranslation } from 'react-i18next';
 import nacl from 'tweetnacl';
 
@@ -50,10 +54,14 @@ export interface WalletContextState {
   getDappKeyPair: () => nacl.BoxKeyPair;
   sharedSecret: Uint8Array | null;
   session: string | null;
+  usdcBalance: number | null;
+  isLoadingBalance: boolean;
+  balanceError: string | null;
   connect: () => Promise<void>;
   disconnect: () => void;
   setShowWalletModal: (show: boolean) => void;
   handleWalletConnect: (publicKey: string) => void;
+  refreshBalance: () => Promise<void>;
 }
 
 const WalletContext = createContext<WalletContextState>({
@@ -67,10 +75,14 @@ const WalletContext = createContext<WalletContextState>({
   }),
   sharedSecret: null,
   session: null,
+  usdcBalance: null,
+  isLoadingBalance: false,
+  balanceError: null,
   connect: async () => {},
   disconnect: () => {},
   setShowWalletModal: () => {},
   handleWalletConnect: () => {},
+  refreshBalance: async () => {},
 });
 
 export const useWallet = () => {
@@ -83,9 +95,17 @@ export const useWallet = () => {
 
 interface WalletProviderProps {
   children: ReactNode;
+  setIsLoggedIn: (value: boolean) => void;
+  setUserProfile: (profile: any) => void;
+  setRequiresBiometric: (value: boolean) => void;
 }
 
-export const WalletProvider = ({ children }: WalletProviderProps) => {
+export const WalletProvider = ({
+  children,
+  setIsLoggedIn,
+  setUserProfile,
+  setRequiresBiometric,
+}: WalletProviderProps) => {
   const { t } = useTranslation();
 
   // Initialize from persistent state
@@ -126,9 +146,97 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
     persistentWalletState.session
   );
 
+  // USDC balance state
+  const [usdcBalance, setUsdcBalance] = useState<number | null>(null);
+  const [isLoadingBalance, setIsLoadingBalance] = useState(false);
+  const [balanceError, setBalanceError] = useState<string | null>(null);
+
   // Get Solana network from Expo config
   const solanaNetwork =
     Constants.expoConfig?.extra?.solanaNetwork || 'solana:devnet';
+
+  // Get USDC mint address from config
+  const usdcMint =
+    Constants.expoConfig?.extra?.usdcMint ||
+    'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
+
+  // Helper function to handle login with biometric check
+  const handleUserLogin = async (user: any) => {
+    setUserProfile(user);
+
+    // Check if biometrics are enabled for this user
+    const biometricEnabled = await AsyncStorage.getItem('biometric_enabled');
+
+    if (biometricEnabled === 'true') {
+      // Check if biometrics are available on device
+      const isSupported = await LocalAuthentication.hasHardwareAsync();
+      const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+
+      if (isSupported && isEnrolled) {
+        // Require biometric authentication before logging in
+        setRequiresBiometric(true);
+      } else {
+        // Biometrics not available, log in directly
+        setIsLoggedIn(true);
+      }
+    } else {
+      // Biometrics not enabled, log in directly
+      setIsLoggedIn(true);
+    }
+  };
+
+  // Function to fetch USDC balance using stored wallet address
+  const refreshBalance = useCallback(async () => {
+    setIsLoadingBalance(true);
+    setBalanceError(null);
+
+    try {
+      // Get wallet address from secure storage
+      const authResult = await getSecureAuth();
+      if (!authResult.isValid || !authResult.data?.walletAddress) {
+        setUsdcBalance(null);
+        setBalanceError('No wallet address found');
+        return;
+      }
+
+      const swigWalletAddress = authResult.data.swigAddress;
+      const swigWalletPublicKey = new PublicKey(swigWalletAddress);
+
+      const cluster = solanaNetwork.includes('mainnet')
+        ? 'mainnet-beta'
+        : 'devnet';
+      const connection = new Connection(clusterApiUrl(cluster), 'confirmed');
+
+      // Get token accounts for the wallet
+      const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
+        swigWalletPublicKey,
+        {
+          mint: new PublicKey(usdcMint),
+        }
+      );
+
+      if (tokenAccounts.value.length === 0) {
+        // No USDC token account found
+        setUsdcBalance(0);
+      } else {
+        // Get the balance from the first token account
+        const balance =
+          tokenAccounts.value[0].account.data.parsed.info.tokenAmount.uiAmount;
+        setUsdcBalance(balance || 0);
+      }
+    } catch (error) {
+      console.error('Error fetching USDC balance:', error);
+      setBalanceError('Failed to fetch USDC balance');
+      setUsdcBalance(null);
+    } finally {
+      setIsLoadingBalance(false);
+    }
+  }, [solanaNetwork, usdcMint]);
+
+  // Fetch balance when app loads (using stored wallet address)
+  useEffect(() => {
+    refreshBalance();
+  }, [refreshBalance]);
 
   const connectAndroid = useCallback(async () => {
     if (!isAndroid || !transact) {
@@ -164,6 +272,32 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
         if (mountedRef.current) {
           setPublicKey(pubKey);
           setConnected(true);
+
+          // Check for existing user (same as iOS flow)
+          try {
+            const publicKeyString = pubKey.toBase58();
+            const existingUser = await getUserByWalletAddress(publicKeyString);
+
+            if (existingUser) {
+              // Store user data in secure storage
+              await storeSecureAuth(
+                publicKeyString,
+                existingUser.swigWalletAddress || '',
+                existingUser.id
+              );
+
+              // Set user profile and handle biometric check
+              await handleUserLogin(existingUser);
+            } else {
+              console.log('👤 No existing user found, will need to sign up');
+            }
+          } catch (userLookupError) {
+            console.error(
+              'Error looking up user by wallet address:',
+              userLookupError
+            );
+            // Don't show error to user, just continue with normal flow
+          }
         }
         return true;
       }
@@ -174,22 +308,48 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
       return false;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAndroid, transact, solanaNetwork, t]);
+  }, [isAndroid, transact, solanaNetwork, t, setIsLoggedIn, setUserProfile]);
 
   const handleWalletConnect = useCallback(
-    (publicKeyString: string) => {
+    async (publicKeyString: string) => {
       try {
         const pubKey = new PublicKey(publicKeyString);
         setPublicKey(pubKey);
         setConnected(true);
         setConnecting(false);
+
+        // Check if user exists with this wallet address
+        try {
+          const existingUser = await getUserByWalletAddress(publicKeyString);
+
+          if (existingUser) {
+            // Store user data in secure storage
+            await storeSecureAuth(
+              publicKeyString,
+              existingUser.swigWalletAddress || '',
+              existingUser.id
+            );
+
+            // Set user profile and handle biometric check
+            await handleUserLogin(existingUser);
+          } else {
+            console.log('👤 No existing user found, will need to sign up');
+          }
+        } catch (userLookupError) {
+          console.error(
+            'Error looking up user by wallet address:',
+            userLookupError
+          );
+          // Don't show error to user, just continue with normal flow
+        }
       } catch (error) {
         console.error('Invalid public key:', error);
         Alert.alert(t('Connection Failed'), t('Invalid wallet address'));
         setConnecting(false);
       }
     },
-    [t]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [t, setIsLoggedIn, setUserProfile]
   );
 
   // Handle incoming URL schemes (wallet responses)
@@ -237,9 +397,7 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
   useEffect(() => {
     if (isAndroid) return; // Only run on iOS
 
-    const handleiOSUrl = (url: string) => {
-      console.log('🔍 [DEBUG] Received iOS URL:', url);
-
+    const handleiOSUrl = async (url: string) => {
       // Check for error response first
       if (url.includes('errorCode')) {
         try {
@@ -351,7 +509,7 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
               else if (connectData.public_key && connectData.session) {
                 setSharedSecret(sharedSecretDapp);
                 setSession(connectData.session);
-                handleWalletConnect(connectData.public_key);
+                await handleWalletConnect(connectData.public_key);
               }
             } else {
               throw new Error('Unable to decrypt iOS response data');
@@ -480,13 +638,13 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
     // Handle initial URL if app was opened via deep link
     Linking.getInitialURL().then((url) => {
       if (url) {
-        handleiOSUrl(url);
+        handleiOSUrl(url).catch(console.error);
       }
     });
 
     // Listen for URL changes while app is running
     const subscription = Linking.addEventListener('url', (event) => {
-      handleiOSUrl(event.url);
+      handleiOSUrl(event.url).catch(console.error);
     });
 
     return () => {
@@ -531,6 +689,11 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
     setPublicKey(null);
     setSharedSecret(null);
     setSession(null);
+
+    // Clear balance state
+    setUsdcBalance(null);
+    setBalanceError(null);
+    setIsLoadingBalance(false);
   }, []);
 
   const value: WalletContextState = {
@@ -541,10 +704,14 @@ export const WalletProvider = ({ children }: WalletProviderProps) => {
     getDappKeyPair,
     sharedSecret,
     session,
+    usdcBalance,
+    isLoadingBalance,
+    balanceError,
     connect,
     disconnect,
     setShowWalletModal,
     handleWalletConnect,
+    refreshBalance,
   };
 
   return (

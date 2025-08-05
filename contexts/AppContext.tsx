@@ -7,7 +7,9 @@ import {
   useRef,
   useState,
 } from 'react';
-import { AppState } from 'react-native';
+import { AppState, Platform } from 'react-native';
+
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { detectLanguage, initializeI18n } from '../i18n';
 import { getUserByProfileId } from '../utils/backendApi';
@@ -16,7 +18,7 @@ import { HomeProvider } from './HomeContext';
 import { ProfileProvider } from './ProfileContext';
 import { SolanaProvider } from './SolanaContext';
 import { WalletProvider } from './WalletContext';
-
+import * as LocalAuthentication from 'expo-local-authentication';
 type SignUpFormData = {
   username: string;
   email: string;
@@ -36,6 +38,9 @@ type AppContextType = {
   userProfile: any | null;
   setUserProfile: Dispatch<SetStateAction<any | null>>;
   checkingAuth: boolean;
+  requiresBiometric: boolean;
+  setRequiresBiometric: Dispatch<SetStateAction<boolean>>;
+  authenticateWithBiometrics: () => Promise<boolean>;
 };
 
 export const AppContext = createContext<AppContextType>({
@@ -55,6 +60,9 @@ export const AppContext = createContext<AppContextType>({
   userProfile: null,
   setUserProfile: () => {},
   checkingAuth: false,
+  requiresBiometric: false,
+  setRequiresBiometric: () => {},
+  authenticateWithBiometrics: async () => false,
 });
 
 export const AppProvider = ({ children }: { children: React.ReactNode }) => {
@@ -70,6 +78,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   });
   const [userProfile, setUserProfile] = useState<any | null>(null);
   const [checkingAuth, setCheckingAuth] = useState(true);
+  const [requiresBiometric, setRequiresBiometric] = useState(false);
   const appState = useRef(AppState.currentState);
 
   // Check for existing authentication on app startup
@@ -83,12 +92,34 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 
           if (user) {
             setUserProfile(user);
-            setIsLoggedIn(true);
-          } else {
-            console.log('⚠️ User profile not found in database');
+
+            // Check if biometrics are enabled for this user
+            const biometricEnabled = await AsyncStorage.getItem(
+              'biometric_enabled'
+            );
+
+            if (biometricEnabled === 'true') {
+              // Check if biometrics are available on device
+              const isSupported = await LocalAuthentication.hasHardwareAsync();
+              const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+
+              if (isSupported && isEnrolled) {
+                // Skip biometrics on Android due to dialog dismissal issues
+                if (Platform.OS === 'android') {
+                  setRequiresBiometric(false);
+                  setIsLoggedIn(true);
+                } else {
+                  setRequiresBiometric(true);
+                }
+              } else {
+                // Biometrics not available, log in directly
+                setIsLoggedIn(true);
+              }
+            } else {
+              // Biometrics not enabled, log in directly
+              setIsLoggedIn(true);
+            }
           }
-        } else {
-          console.log('No valid auth data found:', authResult.reason);
         }
       } catch (error) {
         console.error('Error checking existing auth:', error);
@@ -99,6 +130,31 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 
     checkExistingAuth();
   }, []);
+
+  // Biometric authentication function
+  const authenticateWithBiometrics = async (): Promise<boolean> => {
+    try {
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: 'Authenticate to access your account',
+        cancelLabel: 'Cancel',
+        fallbackLabel: 'Use Passcode',
+        disableDeviceFallback: false,
+        requireConfirmation: false,
+      });
+
+      if (result.success) {
+        setRequiresBiometric(false);
+        setTimeout(() => {
+          setIsLoggedIn(true);
+        }, 100);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Biometric authentication error:', error);
+      return false;
+    }
+  };
 
   useEffect(() => {
     // Initial i18n load
@@ -145,11 +201,18 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         userProfile,
         setUserProfile,
         checkingAuth,
+        requiresBiometric,
+        setRequiresBiometric,
+        authenticateWithBiometrics,
       }}
     >
       <SolanaProvider>
-        <WalletProvider>
-          <ProfileProvider>
+        <WalletProvider
+          setIsLoggedIn={setIsLoggedIn}
+          setUserProfile={setUserProfile}
+          setRequiresBiometric={setRequiresBiometric}
+        >
+          <ProfileProvider userProfile={userProfile}>
             <HomeProvider>{children}</HomeProvider>
           </ProfileProvider>
         </WalletProvider>
