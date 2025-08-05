@@ -9,11 +9,10 @@ import {
   PressableOpacity,
   Row,
 } from '@/components';
-import { useProfileContext, useWallet } from '@/contexts';
+import { useHomeContext, useProfileContext, useWallet } from '@/contexts';
 
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
-import { userMockData } from './profileMockData';
 import { useTranslation } from 'react-i18next';
 import styled, { DefaultTheme, useTheme } from 'styled-components/native';
 
@@ -23,6 +22,18 @@ const borderRadius = 8;
 export const ProfileInfoCards = () => {
   const { t } = useTranslation();
   const theme = useTheme();
+  const { tradingHistory } = useHomeContext();
+  console.log('tradingHistory', tradingHistory[0]);
+  // Calculate totals from actual trading history data
+  const totalPnl = tradingHistory.reduce(
+    (sum, position) => sum + position.pnl,
+    0
+  );
+  const totalPoints = tradingHistory.reduce(
+    (sum, position) => sum + (position.points || 0),
+    0
+  );
+  const isProfit = totalPnl > 0;
   const { setIsOnOffRampModalVisible } = useProfileContext();
   const { usdcBalance, isLoadingBalance } = useWallet();
   return (
@@ -60,14 +71,12 @@ export const ProfileInfoCards = () => {
             <Row $gap={6} $width='auto'>
               <Body1
                 style={{
-                  color: userMockData.isProfit
-                    ? theme.colors.profit
-                    : theme.colors.loss,
+                  color: isProfit ? theme.colors.profit : theme.colors.loss,
                 }}
               >
-                {userMockData.percentage.toLocaleString()}%
+                {totalPnl.toFixed(2)}%
               </Body1>
-              <PnL isProfit={userMockData.isProfit} />
+              <PnL isProfit={isProfit} />
             </Row>
           </Column>
         </Card>
@@ -78,7 +87,7 @@ export const ProfileInfoCards = () => {
               {t('Points').toUpperCase()}
             </BodyXSMonoSecondary>
             <Row $gap={6} $width='auto'>
-              <Body1>{userMockData.points.toLocaleString()}</Body1>
+              <Body1>{totalPoints.toLocaleString()}</Body1>
               <PointsIcon width={iconSize} height={iconSize} />
             </Row>
           </Column>
