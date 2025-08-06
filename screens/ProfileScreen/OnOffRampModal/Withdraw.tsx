@@ -16,6 +16,7 @@ import {
   Title5,
 } from '@/components';
 import { useProfileContext } from '@/contexts/ProfileContext';
+import { truncateAddress } from '@/utils';
 
 import MaterialIcon from '@expo/vector-icons/MaterialIcons';
 
@@ -36,7 +37,8 @@ export const Withdraw = ({
 }) => {
   const theme = useTheme();
   const { t } = useTranslation();
-  const { userData, withdrawalAddress } = useProfileContext();
+  const { userData, withdrawalAddress, setWithdrawalAmount } =
+    useProfileContext();
 
   const [amount, setAmount] = useState('');
 
@@ -54,16 +56,12 @@ export const Withdraw = ({
       return;
     }
     // Handle withdrawal logic here
+    setWithdrawalAmount(amount);
     setView('withdrawal success');
   };
 
   const isWithdrawDisabled =
     !amount || parseFloat(amount) === 0 || !withdrawalAddress;
-
-  const truncateAddress = (address: string) => {
-    if (address.length <= 12) return address;
-    return `${address.slice(0, 6)}...${address.slice(-6)}`;
-  };
 
   const networkFee = 0.0;
   const amountToReceive = amount ? parseFloat(amount) - networkFee : 0;

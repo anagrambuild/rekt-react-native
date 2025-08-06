@@ -7,6 +7,7 @@ import { Balance } from './Balance';
 import { TransferIn } from './TransferIn';
 import { Withdraw } from './Withdraw';
 import { WithdrawalAddress } from './WithdrawalAddress';
+import { WithdrawalSuccess } from './WithdrawalSuccess';
 
 export const OnOffRampModal = () => {
   const { isOnOffRampModalVisible, setIsOnOffRampModalVisible } =
@@ -30,6 +31,7 @@ export const OnOffRampModal = () => {
       {view === 'transfer' && <TransferIn setView={setView} />}
       {view === 'withdraw' && <Withdraw setView={setView} />}
       {view === 'withdrawal address' && <WithdrawalAddress setView={setView} />}
+      {view === 'withdrawal success' && <WithdrawalSuccess />}
     </Modal>
   );
 };

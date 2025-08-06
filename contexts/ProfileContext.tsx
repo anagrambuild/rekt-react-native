@@ -52,6 +52,8 @@ interface ProfileContextType {
   isUserLoading: boolean;
   withdrawalAddress: string;
   setWithdrawalAddress: (address: string) => void;
+  withdrawalAmount: string;
+  setWithdrawalAmount: (amount: string) => void;
 }
 
 export const ProfileContext = createContext<ProfileContextType>({
@@ -78,6 +80,8 @@ export const ProfileContext = createContext<ProfileContextType>({
   isUserLoading: false,
   withdrawalAddress: '',
   setWithdrawalAddress: () => {},
+  withdrawalAmount: '',
+  setWithdrawalAmount: () => {},
 });
 
 export const useProfileContext = () => {
@@ -106,6 +110,7 @@ export const ProfileProvider = ({
   // State for profile ID and user data
   const [profileId, setProfileId] = useState<string | null>(null);
   const [withdrawalAddress, setWithdrawalAddress] = useState('');
+  const [withdrawalAmount, setWithdrawalAmount] = useState('');
 
   // Fetch profile ID from secure storage
   useEffect(() => {
@@ -147,6 +152,7 @@ export const ProfileProvider = ({
       setSelectedTrade(null);
       setIsOnOffRampModalVisible(false);
       setWithdrawalAddress('');
+      setWithdrawalAmount('');
     } else {
       // User logged in or new user created - refetch profileId from secure storage
       const refetchProfileId = async () => {
@@ -245,6 +251,8 @@ export const ProfileProvider = ({
         isUserLoading,
         withdrawalAddress,
         setWithdrawalAddress,
+        withdrawalAmount,
+        setWithdrawalAmount,
       }}
     >
       {children}
