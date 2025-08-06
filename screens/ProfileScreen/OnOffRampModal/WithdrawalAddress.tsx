@@ -38,11 +38,16 @@ export const WithdrawalAddress = ({
 }) => {
   const theme = useTheme();
   const { t } = useTranslation();
-  const { withdrawalAddress, setWithdrawalAddress } = useProfileContext();
+  const {
+    withdrawalAddress,
+    setWithdrawalAddress,
+    acknowledgeValidAddress,
+    setAcknowledgeValidAddress,
+    acknowledgeNoReversal,
+    setAcknowledgeNoReversal,
+  } = useProfileContext();
 
   const [address, setAddress] = useState(withdrawalAddress);
-  const [acknowledgeValidAddress, setAcknowledgeValidAddress] = useState(false);
-  const [acknowledgeNoReversal, setAcknowledgeNoReversal] = useState(false);
 
   const handleBack = () => setView('withdraw');
 
@@ -51,6 +56,9 @@ export const WithdrawalAddress = ({
       const clipboardContent = await Clipboard.getStringAsync();
       if (clipboardContent) {
         setAddress(clipboardContent);
+        // Reset acknowledgments when address changes
+        setAcknowledgeValidAddress(false);
+        setAcknowledgeNoReversal(false);
       }
     } catch (error) {
       console.error('Error pasting from clipboard:', error);
@@ -100,7 +108,14 @@ export const WithdrawalAddress = ({
           />
           <AddressInput
             value={address}
-            onChangeText={setAddress}
+            onChangeText={(text: string) => {
+              setAddress(text);
+              // Reset acknowledgments when address changes
+              if (text !== withdrawalAddress) {
+                setAcknowledgeValidAddress(false);
+                setAcknowledgeNoReversal(false);
+              }
+            }}
             placeholder={t('Enter Solana wallet address')}
             placeholderTextColor={theme.colors.textSecondary}
             numberOfLines={3}

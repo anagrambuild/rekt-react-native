@@ -54,6 +54,10 @@ interface ProfileContextType {
   setWithdrawalAddress: (address: string) => void;
   withdrawalAmount: string;
   setWithdrawalAmount: (amount: string) => void;
+  acknowledgeValidAddress: boolean;
+  setAcknowledgeValidAddress: (acknowledged: boolean) => void;
+  acknowledgeNoReversal: boolean;
+  setAcknowledgeNoReversal: (acknowledged: boolean) => void;
 }
 
 export const ProfileContext = createContext<ProfileContextType>({
@@ -82,6 +86,10 @@ export const ProfileContext = createContext<ProfileContextType>({
   setWithdrawalAddress: () => {},
   withdrawalAmount: '',
   setWithdrawalAmount: () => {},
+  acknowledgeValidAddress: false,
+  setAcknowledgeValidAddress: () => {},
+  acknowledgeNoReversal: false,
+  setAcknowledgeNoReversal: () => {},
 });
 
 export const useProfileContext = () => {
@@ -111,6 +119,8 @@ export const ProfileProvider = ({
   const [profileId, setProfileId] = useState<string | null>(null);
   const [withdrawalAddress, setWithdrawalAddress] = useState('');
   const [withdrawalAmount, setWithdrawalAmount] = useState('');
+  const [acknowledgeValidAddress, setAcknowledgeValidAddress] = useState(false);
+  const [acknowledgeNoReversal, setAcknowledgeNoReversal] = useState(false);
 
   // Fetch profile ID from secure storage
   useEffect(() => {
@@ -153,6 +163,8 @@ export const ProfileProvider = ({
       setIsOnOffRampModalVisible(false);
       setWithdrawalAddress('');
       setWithdrawalAmount('');
+      setAcknowledgeValidAddress(false);
+      setAcknowledgeNoReversal(false);
     } else {
       // User logged in or new user created - refetch profileId from secure storage
       const refetchProfileId = async () => {
@@ -253,6 +265,10 @@ export const ProfileProvider = ({
         setWithdrawalAddress,
         withdrawalAmount,
         setWithdrawalAmount,
+        acknowledgeValidAddress,
+        setAcknowledgeValidAddress,
+        acknowledgeNoReversal,
+        setAcknowledgeNoReversal,
       }}
     >
       {children}
