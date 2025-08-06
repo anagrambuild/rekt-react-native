@@ -50,6 +50,14 @@ interface ProfileContextType {
   handleHistory: () => void;
   profileId: string | null;
   isUserLoading: boolean;
+  withdrawalAddress: string;
+  setWithdrawalAddress: (address: string) => void;
+  withdrawalAmount: string;
+  setWithdrawalAmount: (amount: string) => void;
+  acknowledgeValidAddress: boolean;
+  setAcknowledgeValidAddress: (acknowledged: boolean) => void;
+  acknowledgeNoReversal: boolean;
+  setAcknowledgeNoReversal: (acknowledged: boolean) => void;
 }
 
 export const ProfileContext = createContext<ProfileContextType>({
@@ -74,6 +82,14 @@ export const ProfileContext = createContext<ProfileContextType>({
   handleHistory: () => {},
   profileId: null,
   isUserLoading: false,
+  withdrawalAddress: '',
+  setWithdrawalAddress: () => {},
+  withdrawalAmount: '',
+  setWithdrawalAmount: () => {},
+  acknowledgeValidAddress: false,
+  setAcknowledgeValidAddress: () => {},
+  acknowledgeNoReversal: false,
+  setAcknowledgeNoReversal: () => {},
 });
 
 export const useProfileContext = () => {
@@ -101,6 +117,10 @@ export const ProfileProvider = ({
 
   // State for profile ID and user data
   const [profileId, setProfileId] = useState<string | null>(null);
+  const [withdrawalAddress, setWithdrawalAddress] = useState('');
+  const [withdrawalAmount, setWithdrawalAmount] = useState('');
+  const [acknowledgeValidAddress, setAcknowledgeValidAddress] = useState(false);
+  const [acknowledgeNoReversal, setAcknowledgeNoReversal] = useState(false);
 
   // Fetch profile ID from secure storage
   useEffect(() => {
@@ -141,6 +161,10 @@ export const ProfileProvider = ({
       setIsTradeActivityModalVisible(false);
       setSelectedTrade(null);
       setIsOnOffRampModalVisible(false);
+      setWithdrawalAddress('');
+      setWithdrawalAmount('');
+      setAcknowledgeValidAddress(false);
+      setAcknowledgeNoReversal(false);
     } else {
       // User logged in or new user created - refetch profileId from secure storage
       const refetchProfileId = async () => {
@@ -237,6 +261,14 @@ export const ProfileProvider = ({
         handleHistory,
         profileId,
         isUserLoading,
+        withdrawalAddress,
+        setWithdrawalAddress,
+        withdrawalAmount,
+        setWithdrawalAmount,
+        acknowledgeValidAddress,
+        setAcknowledgeValidAddress,
+        acknowledgeNoReversal,
+        setAcknowledgeNoReversal,
       }}
     >
       {children}

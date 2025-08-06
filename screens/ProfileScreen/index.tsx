@@ -1,4 +1,10 @@
-import { FlatList, Platform, SafeAreaView } from 'react-native';
+import {
+  ActivityIndicator,
+  FlatList,
+  Platform,
+  SafeAreaView,
+  View,
+} from 'react-native';
 
 import { Column, Gap, PressableOpacity, Row, Title2 } from '@/components';
 import { useHomeContext, useProfileContext } from '@/contexts';
@@ -135,7 +141,18 @@ export const ProfileScreen = () => {
           <ActivityRow view={view} setView={setView} />
           {view === 'trades' ? (
             isLoadingHistory ? (
-              <NoActivity /> // Could add a loading spinner here instead
+              <View
+                style={{
+                  flex: 1,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+              >
+                <ActivityIndicator
+                  size='small'
+                  color={theme.colors.textSecondary}
+                />
+              </View>
             ) : (
               <FlatList
                 data={tradingHistory}

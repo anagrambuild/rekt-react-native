@@ -32,7 +32,14 @@ import { Toast } from 'toastify-react-native';
 export const TransferIn = ({
   setView,
 }: {
-  setView: (view: 'balance' | 'transfer' | 'card') => void;
+  setView: (
+    view:
+      | 'balance'
+      | 'transfer'
+      | 'withdraw'
+      | 'withdrawal address'
+      | 'withdrawal success'
+  ) => void;
 }) => {
   const { userProfile } = useAppContext();
   const { setIsOnOffRampModalVisible } = useProfileContext();
