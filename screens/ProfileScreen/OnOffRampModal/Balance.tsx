@@ -27,14 +27,19 @@ import styled, { DefaultTheme, useTheme } from 'styled-components/native';
 export const Balance = ({
   setView,
 }: {
-  setView: (view: 'transfer' | 'card') => void;
+  setView: (
+    view: 'transfer' | 'withdraw' | 'withdrawal address' | 'withdrawal success'
+  ) => void;
 }) => {
   const theme = useTheme();
   const { t } = useTranslation();
-  const { userData, handleWithdraw, handleHistory } = useProfileContext();
+  const { userData, handleHistory } = useProfileContext();
 
   const goToTransfer = () => {
     setView('transfer');
+  };
+  const goToWithdraw = () => {
+    setView('withdraw');
   };
   const goToCard = () => {
     // setView('card');
@@ -69,13 +74,12 @@ export const Balance = ({
           {userData.balance > 0 && (
             <Row $width='auto' $gap={8}>
               <ModalIconButton
-                onPress={handleWithdraw}
+                onPress={goToWithdraw}
                 icon={
                   <AntDesign
                     name='minuscircle'
                     size={12}
                     color={theme.colors.textPrimary}
-                    onPress={handleHistory}
                   />
                 }
               >
