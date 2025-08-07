@@ -8,10 +8,10 @@ import {
   LogoBanner,
   Row,
   ScreenContainer,
-  Title4,
 } from '../../components';
 import { CandleChartCard } from './CandleChartCard';
 import { LongButton, ShortButton } from './green-red-buttons';
+import { PredictionSection } from './PredictionSection';
 import { useTranslation } from 'react-i18next';
 
 export const MiniGameScreen = () => {
@@ -43,11 +43,7 @@ export const MiniGameScreen = () => {
       </Column>
       <Gap height={12} />
       <Column $gap={16}>
-        {!isActiveTrade && (
-          <Row style={{ paddingStart: 16 }}>
-            <Title4>{t('Predict next candle')}</Title4>
-          </Row>
-        )}
+        {!isActiveTrade && <PredictionSection />}
 
         <Row $padding={0}>
           <LongButton
