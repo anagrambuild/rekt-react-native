@@ -193,5 +193,9 @@
   "Warning": "Warning",
   "Failed to upload new profile picture, but other changes were saved.": "Failed to upload new profile picture, but other changes were saved.",
   "Profile updated successfully": "Profile updated successfully",
-  "Failed to update profile. Please try again.": "Failed to update profile. Please try again."
+  "Failed to update profile. Please try again.": "Failed to update profile. Please try again.",
+  "Red": "Red",
+  "Green": "Green",
+  "$1 on green candle": "$1 on green candle",
+  "$1 on red candle": "$1 on red candle"
 }
