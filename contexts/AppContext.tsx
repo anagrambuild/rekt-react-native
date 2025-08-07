@@ -15,6 +15,7 @@ import { detectLanguage, initializeI18n } from '../i18n';
 import { getUserByProfileId } from '../utils/backendApi';
 import { getSecureAuth } from '../utils/secureAuth';
 import { HomeProvider } from './HomeContext';
+import { MiniGameProvider } from './MiniGameContext';
 import { ProfileProvider } from './ProfileContext';
 import { SolanaProvider } from './SolanaContext';
 import { WalletProvider } from './WalletContext';
@@ -213,7 +214,9 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
           setRequiresBiometric={setRequiresBiometric}
         >
           <ProfileProvider userProfile={userProfile}>
-            <HomeProvider>{children}</HomeProvider>
+            <HomeProvider>
+              <MiniGameProvider>{children}</MiniGameProvider>
+            </HomeProvider>
           </ProfileProvider>
         </WalletProvider>
       </SolanaProvider>
