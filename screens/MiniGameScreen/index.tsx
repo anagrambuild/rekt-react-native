@@ -10,7 +10,7 @@ import {
   ScreenContainer,
   Title4,
 } from '../../components';
-import { PriceChartCard } from '../HomeScreen/PriceChartCard';
+import { CandleChartCard } from './CandleChartCard';
 import { LongButton, ShortButton } from './green-red-buttons';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -76,13 +76,13 @@ export const MiniGameScreen = () => {
       <Column $gap={16}>
         <LogoBanner />
 
-        <PriceChartCard showLiquidation={!!isActiveTrade} />
+        <CandleChartCard showLiquidation={!!isActiveTrade} />
       </Column>
       <Gap height={12} />
       <Column $gap={16}>
         {!isActiveTrade && (
           <Row style={{ paddingStart: 16 }}>
-            <Title4>{t('Ride the market')}</Title4>
+            <Title4>{t('Predict next candle')}</Title4>
           </Row>
         )}
 

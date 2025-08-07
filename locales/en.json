@@ -197,5 +197,6 @@
   "Red": "Red",
   "Green": "Green",
   "$1 on green candle": "$1 on green candle",
-  "$1 on red candle": "$1 on red candle"
+  "$1 on red candle": "$1 on red candle",
+  "Predict next candle": "Predict next candle"
 }

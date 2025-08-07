@@ -1,10 +1,10 @@
 import { Card, Picker, ScrollRow, TokenTab } from '@/components';
 import { useHomeContext } from '@/contexts';
 
-import { PriceChart } from './PriceChart';
+import { PriceChart } from '../HomeScreen/PriceChart';
 import styled from 'styled-components/native';
 
-export const PriceChartCard = ({
+export const CandleChartCard = ({
   showLiquidation = false,
 }: {
   showLiquidation?: boolean;
