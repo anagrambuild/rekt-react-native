@@ -108,7 +108,7 @@ export const PredictionSection = () => {
                       {candle.amount}
                     </ResultText>
                   ) : (
-                    <PendingText>?</PendingText>
+                    <PendingText>{`? ${candle.amount || '$0'}`}</PendingText>
                   )}
                   <Image
                     source={

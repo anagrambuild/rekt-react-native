@@ -122,18 +122,19 @@ interface ShortButtonProps {
   onPress?: () => void;
   title: string;
   subtitle: string;
+  disabled?: boolean;
 }
 
-export const ShortButton = ({ onPress, title, subtitle }: ShortButtonProps) => {
+export const ShortButton = ({ onPress, title, subtitle, disabled = false }: ShortButtonProps) => {
   const theme = useTheme();
 
   return (
     <LargeButtonContainer
-      onPress={onPress}
+      onPress={disabled ? undefined : onPress}
       style={({ pressed }: { pressed: boolean }) => [
         {
           borderColor: theme.colors.borderLoss,
-          opacity: pressed ? 0.7 : 1,
+          opacity: disabled ? 0.3 : pressed ? 0.7 : 1,
         },
       ]}
     >
@@ -170,18 +171,19 @@ interface LongButtonProps {
   onPress?: () => void;
   title: string;
   subtitle: string;
+  disabled?: boolean;
 }
 
-export const LongButton = ({ onPress, title, subtitle }: LongButtonProps) => {
+export const LongButton = ({ onPress, title, subtitle, disabled = false }: LongButtonProps) => {
   const theme = useTheme();
 
   return (
     <LargeButtonContainer
-      onPress={onPress}
+      onPress={disabled ? undefined : onPress}
       style={({ pressed }: { pressed: boolean }) => [
         {
           borderColor: theme.colors.borderProfit,
-          opacity: pressed ? 0.7 : 1,
+          opacity: disabled ? 0.3 : pressed ? 0.7 : 1,
         },
       ]}
     >
