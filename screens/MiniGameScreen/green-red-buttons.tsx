@@ -125,18 +125,19 @@ interface ShortButtonProps {
   disabled?: boolean;
 }
 
-export const ShortButton = ({ onPress, title, subtitle, disabled = false }: ShortButtonProps) => {
+export const ShortButton = ({
+  onPress,
+  title,
+  subtitle,
+  disabled = false,
+}: ShortButtonProps) => {
   const theme = useTheme();
 
   return (
     <LargeButtonContainer
       onPress={disabled ? undefined : onPress}
-      style={({ pressed }: { pressed: boolean }) => [
-        {
-          borderColor: theme.colors.borderLoss,
-          opacity: disabled ? 0.3 : pressed ? 0.7 : 1,
-        },
-      ]}
+      disabled={disabled}
+      style={{ borderColor: theme.colors.borderLoss }}
     >
       <View style={{ flex: 1, borderRadius: 16, overflow: 'hidden' }}>
         {/* Background image as bottom layer */}
@@ -174,18 +175,19 @@ interface LongButtonProps {
   disabled?: boolean;
 }
 
-export const LongButton = ({ onPress, title, subtitle, disabled = false }: LongButtonProps) => {
+export const LongButton = ({
+  onPress,
+  title,
+  subtitle,
+  disabled = false,
+}: LongButtonProps) => {
   const theme = useTheme();
 
   return (
     <LargeButtonContainer
       onPress={disabled ? undefined : onPress}
-      style={({ pressed }: { pressed: boolean }) => [
-        {
-          borderColor: theme.colors.borderProfit,
-          opacity: disabled ? 0.3 : pressed ? 0.7 : 1,
-        },
-      ]}
+      disabled={disabled}
+      style={{ borderColor: theme.colors.borderProfit }}
     >
       <View style={{ flex: 1, borderRadius: 16, overflow: 'hidden' }}>
         {/* Background image as bottom layer */}
