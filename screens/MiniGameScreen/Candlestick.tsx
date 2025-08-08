@@ -1,15 +1,9 @@
 import React from 'react';
 
+import { CandleData } from '@/utils/miniGameData';
+
 import Svg, { Line, Rect } from 'react-native-svg';
 import { useTheme } from 'styled-components/native';
-
-export interface CandleData {
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  timestamp: number;
-}
 
 interface CandlestickProps {
   data: CandleData;

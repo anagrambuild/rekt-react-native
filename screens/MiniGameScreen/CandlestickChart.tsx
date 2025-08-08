@@ -1,9 +1,10 @@
 import React from 'react';
 import { View } from 'react-native';
 
-import { useMiniGameContext } from '@/contexts';
+import { useMiniGameContext } from '@/contexts/MiniGameContext';
+import { CandleData } from '@/utils/miniGameData';
 
-import { CandleData, Candlestick } from './Candlestick';
+import { Candlestick } from './Candlestick';
 import Svg, { Line } from 'react-native-svg';
 import { useTheme } from 'styled-components/native';
 
@@ -91,42 +92,4 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
 };
 
 // Utility function to generate dummy OHLC data
-export const generateDummyCandleData = (
-  count: number = 10,
-  startPrice: number = 65000
-): CandleData[] => {
-  const data: CandleData[] = [];
-  let basePrice = startPrice;
-
-  for (let i = 0; i < count; i++) {
-    // Generate some realistic price movement
-    const volatility = basePrice * 0.02; // 2% volatility
-    const trend = (Math.random() - 0.5) * volatility * 0.5; // Small trend
-
-    // Generate OHLC values
-    const open = basePrice;
-    const priceChange = (Math.random() - 0.5) * volatility;
-    const close = open + priceChange + trend;
-
-    // High and low should encompass open and close
-    const minOC = Math.min(open, close);
-    const maxOC = Math.max(open, close);
-    const wickRange = volatility * 0.3;
-
-    const high = maxOC + Math.random() * wickRange;
-    const low = minOC - Math.random() * wickRange;
-
-    data.push({
-      open: Math.round(open * 100) / 100,
-      high: Math.round(high * 100) / 100,
-      low: Math.round(low * 100) / 100,
-      close: Math.round(close * 100) / 100,
-      timestamp: Date.now() - (count - i) * 60000, // 1 minute intervals
-    });
-
-    // Update base price for next candle
-    basePrice = close;
-  }
-
-  return data;
-};
+export { generateDummyCandleData } from '@/utils/miniGameData';
