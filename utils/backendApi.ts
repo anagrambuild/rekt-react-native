@@ -878,13 +878,16 @@ export const updateUserProfile = async (
   userData: { username?: string; email?: string; avatar_url?: string }
 ): Promise<User> => {
   try {
-    const response = await fetch(`${BACKEND_BASE_URL}/api/users/profile/${userId}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(userData),
-    });
+    const response = await fetch(
+      `${BACKEND_BASE_URL}/api/users/profile/${userId}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+      }
+    );
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -915,6 +918,52 @@ export const updateUserProfile = async (
   }
 };
 
+// Swig Wallet Balance Types and Functions
+
+export interface SwigWalletBalanceResponse {
+  balance: number;
+  formatted: string;
+  source: string;
+  status: string;
+  tokenAccount?: string;
+  error?: string;
+}
+
+// Get USDC balance from Swig wallet address
+export const getSwigWalletBalance = async (
+  swigWalletAddress: string
+): Promise<SwigWalletBalanceResponse> => {
+  try {
+    const response = await fetch(
+      `${BACKEND_BASE_URL}/api/wallet/balance/${swigWalletAddress}`
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData.message || `HTTP error! status: ${response.status}`
+      );
+    }
+
+    const result = await response.json();
+
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to get Swig wallet balance');
+    }
+    return result.data;
+  } catch (error) {
+    console.error('Error getting Swig wallet balance:', error);
+    // Return zero balance on error to match backend behavior
+    return {
+      balance: 0,
+      formatted: '$0.00',
+      source: 'swig_wallet',
+      status: 'error',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+};
+
 // Delete avatar from storage
 export const deleteAvatar = async (avatarUrl: string): Promise<void> => {
   try {
@@ -922,7 +971,7 @@ export const deleteAvatar = async (avatarUrl: string): Promise<void> => {
     // URL format is typically: https://domain.com/storage/v1/object/public/avatars/filename.webp
     const urlParts = avatarUrl.split('/');
     const filename = urlParts[urlParts.length - 1];
-    
+
     // Validate that we have a proper filename before making the request
     if (!filename || filename === avatarUrl) {
       console.warn('Could not extract filename from avatar URL:', avatarUrl);
@@ -930,19 +979,29 @@ export const deleteAvatar = async (avatarUrl: string): Promise<void> => {
     }
 
     // Backend expects UUID.webp format, validate before making request
-    const filenameRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.webp$/i;
+    const filenameRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.webp$/i;
     if (!filenameRegex.test(filename)) {
-      console.warn('Filename does not match expected format (UUID.webp):', filename);
+      console.warn(
+        'Filename does not match expected format (UUID.webp):',
+        filename
+      );
       return;
     }
-    
-    const response = await fetch(`${BACKEND_BASE_URL}/api/upload/avatar/${filename}`, {
-      method: 'DELETE',
-    });
+
+    const response = await fetch(
+      `${BACKEND_BASE_URL}/api/upload/avatar/${filename}`,
+      {
+        method: 'DELETE',
+      }
+    );
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.warn('Failed to delete old avatar:', errorData.message || 'Unknown error');
+      console.warn(
+        'Failed to delete old avatar:',
+        errorData.message || 'Unknown error'
+      );
       // Don't throw error here - we don't want to fail profile update if old image deletion fails
     } else {
       console.log('✅ Successfully deleted old avatar:', filename);
