@@ -2,10 +2,12 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView } from 'react-native';
 
 import grayBlock from '@/assets/images/app-pngs/gray-block.png';
+import grayBlockQuestionMark from '@/assets/images/app-pngs/gray-block-question-mark.png';
 import greenBlock from '@/assets/images/app-pngs/green-block.png';
 import redBlock from '@/assets/images/app-pngs/red-block.png';
 import EmptyIcon from '@/assets/images/app-svgs/empty.svg';
 import { Column, Row, Title4 } from '@/components';
+import { useMiniGameContext } from '@/contexts';
 
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -19,28 +21,65 @@ export const PredictionSection = () => {
   const [timeLeft, setTimeLeft] = useState(50);
   const scrollViewRef = useRef<ScrollView>(null);
 
-  // Countdown timer effect
+  const { getCurrentPrediction, isInDecisionMode } = useMiniGameContext();
+
+  const currentPrediction = getCurrentPrediction();
+  const inDecisionMode = isInDecisionMode();
+
+  // Countdown timer effect - independent of game context
   useEffect(() => {
     const timer = setInterval(() => {
-      setTimeLeft((prev) => (prev > 0 ? prev - 1 : 50));
+      setTimeLeft((prev) => {
+        if (prev > 0) {
+          return prev - 1;
+        } else {
+          // After countdown reaches 0, wait 10 seconds then restart at 50
+          setTimeout(() => {
+            setTimeLeft(50);
+          }, 10000);
+          return 0;
+        }
+      });
     }, 1000);
 
     return () => clearInterval(timer);
   }, []);
 
-  // Mock data for previous candle results
-  const previousCandles = useMemo(
-    () => [
-      { result: null, amount: null },
-      { result: null, amount: null },
-      { result: null, amount: null },
-      { result: 'green', amount: '$2' },
-      { result: 'red', amount: '$0' },
-      { result: 'green', amount: '$1' },
-      { result: 'pending', amount: null },
-    ],
-    []
-  );
+  // Create display data combining finished candles and current pending candle
+  const previousCandles = useMemo(() => {
+    const displayCandles = [];
+
+    // Add some empty slots for visual consistency
+    for (let i = 0; i < 4; i++) {
+      displayCandles.push({ result: null, amount: null, prediction: null });
+    }
+    
+    // Add recently finished candles (you could store these in context if needed)
+    // For now, we'll show some mock finished ones
+    displayCandles.push(
+      { result: 'green', amount: '$2', prediction: 'green' },
+      { result: 'red', amount: '$0', prediction: 'red' },
+      { result: 'green', amount: '$1', prediction: 'green' }
+    );
+    // Always show a pending block - either with current prediction or default $0
+    if (currentPrediction) {
+      const status = inDecisionMode ? 'decision' : 'pending';
+      displayCandles.push({
+        result: status,
+        amount: `$${currentPrediction.betAmount}`,
+        prediction: currentPrediction.prediction, // Add prediction info
+      });
+    } else {
+      // Show default pending block with $0
+      displayCandles.push({
+        result: 'pending',
+        amount: '$0',
+        prediction: null, // No prediction yet
+      });
+    }
+
+    return displayCandles;
+  }, [currentPrediction, inDecisionMode]);
 
   // Auto-scroll to the end when component mounts or data changes
   useEffect(() => {
@@ -82,7 +121,7 @@ export const PredictionSection = () => {
                   ? theme.colors.profit
                   : candle.result === 'red'
                   ? theme.colors.loss
-                  : candle.result === 'pending'
+                  : candle.result === 'pending' || candle.result === 'decision'
                   ? theme.colors.accentPurpleLight
                   : 'transparent',
               shadowOffset: { width: 0, height: 2 },
@@ -103,7 +142,8 @@ export const PredictionSection = () => {
                 style={{ flex: 1, borderRadius: 8 }}
               >
                 <BlockCard $result={candle.result}>
-                  {candle.result !== 'pending' ? (
+                  {candle.result !== 'pending' &&
+                  candle.result !== 'decision' ? (
                     <ResultText $result={candle.result}>
                       {candle.amount}
                     </ResultText>
@@ -116,6 +156,12 @@ export const PredictionSection = () => {
                         ? greenBlock
                         : candle.result === 'red'
                         ? redBlock
+                        : (candle.result === 'pending' || candle.result === 'decision') && candle.prediction
+                        ? candle.prediction === 'green'
+                          ? greenBlock
+                          : redBlock
+                        : candle.result === 'pending'
+                        ? grayBlockQuestionMark
                         : grayBlock
                     }
                     style={{ width: 24, height: 24 }}
@@ -156,22 +202,24 @@ const TimerText = styled.Text`
 `;
 
 const BlockCardWrapper = styled.View<{
-  $result: 'green' | 'red' | 'pending' | null;
+  $result: 'green' | 'red' | 'pending' | 'decision' | null;
 }>`
   border-radius: 8px;
   overflow: hidden;
 `;
 
-const BlockCard = styled.View<{ $result: 'green' | 'red' | 'pending' | null }>`
+const BlockCard = styled.View<{
+  $result: 'green' | 'red' | 'pending' | 'decision' | null;
+}>`
   border-radius: 8px;
   border-top-width: ${({
     $result,
   }: {
-    $result: 'green' | 'red' | 'pending' | null;
+    $result: 'green' | 'red' | 'pending' | 'decision' | null;
   }) => {
     if ($result === 'green') return '2px';
     if ($result === 'red') return '2px';
-    if ($result === 'pending') return '2px';
+    if ($result === 'pending' || $result === 'decision') return '2px';
     return '0px';
   }};
   border-top-color: ${({
@@ -179,11 +227,12 @@ const BlockCard = styled.View<{ $result: 'green' | 'red' | 'pending' | null }>`
     $result,
   }: {
     theme: DefaultTheme;
-    $result: 'green' | 'red' | 'pending' | null;
+    $result: 'green' | 'red' | 'pending' | 'decision' | null;
   }) => {
     if ($result === 'green') return theme.colors.profit;
     if ($result === 'red') return theme.colors.loss;
-    if ($result === 'pending') return theme.colors.accentPurple;
+    if ($result === 'pending' || $result === 'decision')
+      return theme.colors.accentPurple;
     return 'transparent';
   }};
   padding: 16px;
