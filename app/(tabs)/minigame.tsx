@@ -1,12 +1,7 @@
-import { ScreenContainer } from '@/components/common/containers';
-import { Title1 } from '@/components/common/texts';
+import { MiniGameScreen } from '@/screens';
 
 const Minigame = () => {
-  return (
-    <ScreenContainer>
-      <Title1>Minigame</Title1>
-    </ScreenContainer>
-  );
+  return <MiniGameScreen />;
 };
 
 export default Minigame;

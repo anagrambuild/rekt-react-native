@@ -11,9 +11,12 @@ import {
 import { Alert, Linking, Platform } from 'react-native';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { clusterApiUrl, Connection, PublicKey } from '@solana/web3.js';
+import { PublicKey } from '@solana/web3.js';
 
-import { getUserByWalletAddress } from '../utils/backendApi';
+import {
+  getSwigWalletBalance,
+  getUserByWalletAddress,
+} from '../utils/backendApi';
 import { getSecureAuth, storeSecureAuth } from '../utils/secureAuth';
 import { Buffer } from 'buffer';
 import Constants from 'expo-constants';
@@ -151,14 +154,8 @@ export const WalletProvider = ({
   const [isLoadingBalance, setIsLoadingBalance] = useState(false);
   const [balanceError, setBalanceError] = useState<string | null>(null);
 
-  // Get Solana network from Expo config
   const solanaNetwork =
     Constants.expoConfig?.extra?.solanaNetwork || 'solana:devnet';
-
-  // Get USDC mint address from config
-  const usdcMint =
-    Constants.expoConfig?.extra?.usdcMint ||
-    'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
 
   // Helper function to handle login with biometric check
   const handleUserLogin = async (user: any) => {
@@ -200,29 +197,18 @@ export const WalletProvider = ({
       }
 
       const swigWalletAddress = authResult.data.swigAddress;
-      const swigWalletPublicKey = new PublicKey(swigWalletAddress);
+      if (!swigWalletAddress) {
+        setUsdcBalance(null);
+        setBalanceError('No Swig wallet address found');
+        return;
+      }
+      const balanceData = await getSwigWalletBalance(swigWalletAddress);
 
-      const cluster = solanaNetwork.includes('mainnet')
-        ? 'mainnet-beta'
-        : 'devnet';
-      const connection = new Connection(clusterApiUrl(cluster), 'confirmed');
-
-      // Get token accounts for the wallet
-      const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
-        swigWalletPublicKey,
-        {
-          mint: new PublicKey(usdcMint),
-        }
-      );
-
-      if (tokenAccounts.value.length === 0) {
-        // No USDC token account found
-        setUsdcBalance(0);
+      if (balanceData.status === 'error') {
+        setBalanceError(balanceData.error || 'Failed to fetch USDC balance');
+        setUsdcBalance(null);
       } else {
-        // Get the balance from the first token account
-        const balance =
-          tokenAccounts.value[0].account.data.parsed.info.tokenAmount.uiAmount;
-        setUsdcBalance(balance || 0);
+        setUsdcBalance(balanceData.balance);
       }
     } catch (error) {
       console.error('Error fetching USDC balance:', error);
@@ -231,7 +217,7 @@ export const WalletProvider = ({
     } finally {
       setIsLoadingBalance(false);
     }
-  }, [solanaNetwork, usdcMint]);
+  }, []);
 
   // Fetch balance when app loads (using stored wallet address)
   useEffect(() => {

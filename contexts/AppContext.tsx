@@ -15,6 +15,7 @@ import { detectLanguage, initializeI18n } from '../i18n';
 import { getUserByProfileId } from '../utils/backendApi';
 import { getSecureAuth } from '../utils/secureAuth';
 import { HomeProvider } from './HomeContext';
+import { MiniGameProvider } from './MiniGameContext';
 import { ProfileProvider } from './ProfileContext';
 import { SolanaProvider } from './SolanaContext';
 import { WalletProvider } from './WalletContext';
@@ -40,6 +41,8 @@ type AppContextType = {
   checkingAuth: boolean;
   requiresBiometric: boolean;
   setRequiresBiometric: Dispatch<SetStateAction<boolean>>;
+  hasBreeze: boolean;
+  setHasBreeze: Dispatch<SetStateAction<boolean>>;
   authenticateWithBiometrics: () => Promise<boolean>;
 };
 
@@ -62,6 +65,8 @@ export const AppContext = createContext<AppContextType>({
   checkingAuth: false,
   requiresBiometric: false,
   setRequiresBiometric: () => {},
+  hasBreeze: false,
+  setHasBreeze: () => {},
   authenticateWithBiometrics: async () => false,
 });
 
@@ -79,6 +84,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const [userProfile, setUserProfile] = useState<any | null>(null);
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [requiresBiometric, setRequiresBiometric] = useState(false);
+  const [hasBreeze, setHasBreeze] = useState(false);
   const appState = useRef(AppState.currentState);
 
   // Check for existing authentication on app startup
@@ -203,6 +209,8 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         checkingAuth,
         requiresBiometric,
         setRequiresBiometric,
+        hasBreeze,
+        setHasBreeze,
         authenticateWithBiometrics,
       }}
     >
@@ -213,7 +221,9 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
           setRequiresBiometric={setRequiresBiometric}
         >
           <ProfileProvider userProfile={userProfile}>
-            <HomeProvider>{children}</HomeProvider>
+            <HomeProvider>
+              <MiniGameProvider>{children}</MiniGameProvider>
+            </HomeProvider>
           </ProfileProvider>
         </WalletProvider>
       </SolanaProvider>

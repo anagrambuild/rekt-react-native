@@ -16,7 +16,6 @@ polishing (mismatches from designs)
 - AmountModal.tsx - there is a flicker in the UI when the user tries to add a 3rd digit in the decimal column
 - PRICE CHART - overflow:hidden causes problems - cuts off the top of labels and dotted lines go beyond the chart to the right
 
-- fetch usdc balance from backend
 - socket or polling for usdc token amount
 - get real historical data for token prices
 - load chart data faster?

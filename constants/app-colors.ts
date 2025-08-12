@@ -44,6 +44,10 @@ export const primaryRedDark = '#B22A1A';
 export const primaryPurple = '#A259FF';
 export const primaryPurpleLight = '#E0B3FF';
 export const primaryPurpleDark = '#6B1FA2';
+export const timerPurple = '#6757D8';
+export const accentPurple = '#8F66F7';
+export const accentPurpleLight = '#9D7AE9';
+export const accentPurpleDark = '#31156E';
 
 // Yellow
 export const primaryYellow = '#FFD600';

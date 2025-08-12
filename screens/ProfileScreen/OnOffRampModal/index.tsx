@@ -4,6 +4,7 @@ import { Modal } from '@/components';
 import { useProfileContext } from '@/contexts';
 
 import { Balance } from './Balance';
+import { ConfirmBreeze } from './ConfirmBreeze';
 import { TransferIn } from './TransferIn';
 import { Withdraw } from './Withdraw';
 import { WithdrawalAddress } from './WithdrawalAddress';
@@ -19,6 +20,7 @@ export const OnOffRampModal = () => {
     | 'withdraw'
     | 'withdrawal address'
     | 'withdrawal success'
+    | 'confirm breeze'
   >('balance');
 
   const onRequestClose = () => {
@@ -32,6 +34,7 @@ export const OnOffRampModal = () => {
       {view === 'withdraw' && <Withdraw setView={setView} />}
       {view === 'withdrawal address' && <WithdrawalAddress setView={setView} />}
       {view === 'withdrawal success' && <WithdrawalSuccess />}
+      {view === 'confirm breeze' && <ConfirmBreeze setView={setView} />}
     </Modal>
   );
 };

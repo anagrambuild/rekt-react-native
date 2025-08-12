@@ -1,8 +1,7 @@
-import { Card, Picker, ScrollRow } from '@/components';
+import { Card, Picker, ScrollRow, TokenTab } from '@/components';
 import { useHomeContext } from '@/contexts';
 
 import { PriceChart } from './PriceChart';
-import { TokenTab } from './TokenTab';
 import styled from 'styled-components/native';
 
 export const PriceChartCard = ({

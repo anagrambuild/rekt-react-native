@@ -1,3 +1,6 @@
+import { useMemo, useRef, useState } from 'react';
+import { View } from 'react-native';
+
 import coinIcon from '@/assets/images/app-pngs/coin.png';
 import UsdcIcon from '@/assets/images/app-svgs/usdc.svg';
 import WalletSecondaryIcon from '@/assets/images/app-svgs/wallet-secondary.svg';
@@ -11,15 +14,17 @@ import {
   Divider,
   IconButton,
   ModalIconButton,
+  PressableOpacity,
   Row,
   Title2,
 } from '@/components';
-import { useProfileContext } from '@/contexts';
+import { useAppContext, useProfileContext } from '@/contexts';
 
 import AntDesign from '@expo/vector-icons/AntDesign';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
+import { EarningsCard } from './EarningsCard';
 import { Image } from 'expo-image';
 import { useTranslation } from 'react-i18next';
 import styled, { DefaultTheme, useTheme } from 'styled-components/native';
@@ -28,24 +33,66 @@ export const Balance = ({
   setView,
 }: {
   setView: (
-    view: 'transfer' | 'withdraw' | 'withdrawal address' | 'withdrawal success'
+    view:
+      | 'transfer'
+      | 'withdraw'
+      | 'withdrawal address'
+      | 'withdrawal success'
+      | 'confirm breeze'
   ) => void;
 }) => {
   const theme = useTheme();
   const { t } = useTranslation();
   const { userData, handleHistory } = useProfileContext();
-
+  const { hasBreeze } = useAppContext();
+  const usdcIconRef = useRef<View>(null);
+  const [usdcIconPosition, setUsdcIconPosition] = useState({ x: 0, y: 0 });
+  const earningAmountRef = useRef<View | null>(null);
+  const [earningAmountPosition, setEarningAmountPosition] = useState({
+    x: 0,
+    y: 0,
+  });
+  console.log('usdcIconPosition', usdcIconPosition);
   const goToTransfer = () => {
     setView('transfer');
   };
   const goToWithdraw = () => {
     setView('withdraw');
   };
+  const goToConfirmBreeze = () => {
+    setView('confirm breeze');
+  };
   const goToCard = () => {
     // setView('card');
     console.log('go to card');
   };
 
+  const handleUsdcIconLayout = () => {
+    if (usdcIconRef.current) {
+      usdcIconRef.current.measure((_x, _y, _width, _height, pageX, pageY) => {
+        setUsdcIconPosition({ x: pageX, y: pageY });
+      });
+    }
+  };
+
+  const handleEarningAmountLayout = () => {
+    if (earningAmountRef.current) {
+      earningAmountRef.current.measure(
+        (_x, _y, _width, _height, pageX, pageY) => {
+          setEarningAmountPosition({ x: pageX, y: pageY });
+        }
+      );
+    }
+  };
+
+  // TODO: Add a variable to calculate the distance between the usdc icon and the earning amount
+  const distance = useMemo(() => {
+    return Math.sqrt(
+      Math.pow(usdcIconPosition.x - earningAmountPosition.x, 2) +
+        Math.pow(usdcIconPosition.y - earningAmountPosition.y, 2)
+    );
+  }, [usdcIconPosition, earningAmountPosition]);
+  console.log('distance', distance);
   return (
     <Column $gap={24} $alignItems='flex-start' $padding={8}>
       {/* Header Section */}
@@ -67,7 +114,9 @@ export const Balance = ({
                   maximumFractionDigits: 2,
                 })}
               </Title2>
-              <UsdcIcon width={20} height={20} />
+              <View ref={usdcIconRef} onLayout={handleUsdcIconLayout}>
+                <UsdcIcon width={20} height={20} />
+              </View>
             </Row>
           </Column>
 
@@ -97,13 +146,27 @@ export const Balance = ({
       </Column>
 
       {/* APY Section */}
-      <Card $padding={16}>
-        <Column $width='auto' $gap={4} $alignItems='flex-start'>
-          <Image source={coinIcon} style={{ width: 64, height: 64 }} />
-          <BodyMEmphasized>{t('Earn 5% APY on your balance')}</BodyMEmphasized>
-          <BodyMSecondary>{t('Put your idle dollars to work')}</BodyMSecondary>
-        </Column>
-      </Card>
+      {hasBreeze ? (
+        <EarningsCard
+          targetUsdcPosition={usdcIconPosition}
+          handleEarningAmountLayout={handleEarningAmountLayout}
+          earningAmountRef={earningAmountRef}
+        />
+      ) : (
+        <Card $padding={16}>
+          <PressableOpacity onPress={goToConfirmBreeze}>
+            <Column $width='auto' $gap={4} $alignItems='flex-start'>
+              <Image source={coinIcon} style={{ width: 64, height: 64 }} />
+              <BodyMEmphasized>
+                {t('Earn 5% APY on your balance')}
+              </BodyMEmphasized>
+              <BodyMSecondary>
+                {t('Put your idle dollars to work')}
+              </BodyMSecondary>
+            </Column>
+          </PressableOpacity>
+        </Card>
+      )}
 
       {/* Deposit Options Section */}
       <Column $gap={4} $width='100%' $alignItems='flex-start'>

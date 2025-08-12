@@ -4,8 +4,8 @@ import EthSelected from '@/assets/images/app-svgs/eth-selected.svg';
 import EthUnselected from '@/assets/images/app-svgs/eth-unselected.svg';
 import SolSelected from '@/assets/images/app-svgs/sol-selected.svg';
 import SolUnselected from '@/assets/images/app-svgs/sol-unselected.svg';
-import { BodyS, PressableOpacity } from '@/components';
 
+import { BodyS, PressableOpacity } from './common';
 import styled, { DefaultTheme } from 'styled-components/native';
 
 interface TabContainerProps {

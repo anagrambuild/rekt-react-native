@@ -1,6 +1,9 @@
 import { DarkTheme } from '@react-navigation/native';
 
 import {
+  accentPurple,
+  accentPurpleDark,
+  accentPurpleLight,
   activeSegment,
   amber,
   bg,
@@ -39,6 +42,7 @@ import {
   secondaryTapped,
   segmentedControl,
   tabActive,
+  timerPurple,
   white,
 } from './app-colors';
 
@@ -88,6 +92,10 @@ export const darkTheme = {
     liquidLine: amber,
     liquidBorder: orangeDark,
     liquidBg: orangeDeep,
+    timerPurple,
+    accentPurple,
+    accentPurpleLight,
+    accentPurpleDark,
   },
 };
 
@@ -137,6 +145,10 @@ export const lightTheme = {
     liquidLine: amber,
     liquidBorder: orangeDark,
     liquidBg: orangeDeep,
+    timerPurple,
+    accentPurple,
+    accentPurpleLight,
+    accentPurpleDark,
   },
 };
 
