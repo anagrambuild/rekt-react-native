@@ -720,7 +720,7 @@ export const getOpenPositions = async (userId: string): Promise<Position[]> => {
 
     return result.data;
   } catch (error) {
-    console.error('Error getting open positions:', error);
+    // console.error('Error getting open positions:', error);
     throw error;
   }
 };
@@ -825,7 +825,7 @@ export const getTradingHistory = async (
 
     return result.data;
   } catch (error) {
-    console.error('Error getting trading history:', error);
+    // console.error('Error getting trading history:', error);
     throw error;
   }
 };

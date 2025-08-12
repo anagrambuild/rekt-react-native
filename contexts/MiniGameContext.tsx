@@ -378,6 +378,7 @@ export const MiniGameProvider = ({
       low: Math.round(low * 100) / 100,
       close: Math.round(close * 100) / 100,
       timestamp: Date.now(),
+      result: 'pending',
     };
   };
 

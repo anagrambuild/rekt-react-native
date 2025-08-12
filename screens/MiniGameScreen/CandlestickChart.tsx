@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View } from 'react-native';
 
 import { useMiniGameContext } from '@/contexts/MiniGameContext';
@@ -28,6 +28,7 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
   bottomOffset = 20,
 }) => {
   const theme = useTheme();
+  const [viewHeight, setViewHeight] = useState(0);
 
   const { selectedToken } = useMiniGameContext();
 
@@ -56,15 +57,25 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
         y1={y}
         x2={chartAreaWidth}
         y2={y}
-        stroke={theme.colors.secondary}
+        stroke={theme.colors.textPrimary}
         strokeWidth={0.5}
         opacity={0.3}
+        strokeDasharray='5,5'
       />
     );
   }
 
   return (
-    <View style={{ width, height }}>
+    <View
+      onLayout={(event) => {
+        const { height: layoutHeight } = event.nativeEvent.layout;
+        setViewHeight(layoutHeight);
+      }}
+      style={{
+        width,
+        height,
+      }}
+    >
       <Svg width={chartAreaWidth} height={height}>
         {/* Grid lines */}
         {gridLines}
@@ -83,6 +94,7 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
               maxPrice={maxPrice}
               height={plotHeight}
               topOffset={topOffset}
+              viewHeight={viewHeight}
             />
           );
         })}

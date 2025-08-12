@@ -175,7 +175,7 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
       const positions = await getOpenPositions(profileId);
       setOpenPositions(positions);
     } catch (error) {
-      console.error('Error refreshing positions:', error);
+      // console.error('Error refreshing positions:', error);
       setPositionsError(
         error instanceof Error ? error.message : 'Failed to load positions'
       );
@@ -195,7 +195,7 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
       const history = await getTradingHistory(profileId);
       setTradingHistory(history);
     } catch (error) {
-      console.error('Error refreshing history:', error);
+      // console.error('Error refreshing history:', error);
       setHistoryError(
         error instanceof Error ? error.message : 'Failed to load history'
       );

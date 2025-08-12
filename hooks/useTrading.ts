@@ -141,7 +141,7 @@ export const useTrading = (
       const userPositions = await tradingManager.getPositions();
       setPositions(userPositions);
     } catch (error) {
-      console.error('Error refreshing positions:', error);
+      // console.error('Error refreshing positions:', error);
       setState((prev) => ({
         ...prev,
         error:

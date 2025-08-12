@@ -1,5 +1,8 @@
 import React from 'react';
+import { Image } from 'react-native';
 
+import questionCandle from '@/assets/images/app-pngs/question-candle.png';
+import { Column } from '@/components/common/containers';
 import { CandleData } from '@/utils/miniGameData';
 
 import Svg, { Line, Rect } from 'react-native-svg';
@@ -13,6 +16,7 @@ interface CandlestickProps {
   maxPrice: number;
   height: number;
   topOffset: number;
+  viewHeight: number;
 }
 
 export const Candlestick: React.FC<CandlestickProps> = ({
@@ -23,6 +27,7 @@ export const Candlestick: React.FC<CandlestickProps> = ({
   maxPrice,
   height,
   topOffset,
+  viewHeight,
 }) => {
   const theme = useTheme();
   const { open, high, low, close } = data;
@@ -57,6 +62,34 @@ export const Candlestick: React.FC<CandlestickProps> = ({
   // Colors
   const candleColor = isBullish ? theme.colors.profit : theme.colors.loss;
   const wickColor = isBullish ? theme.colors.profit : theme.colors.loss;
+
+  if (data.result === 'pending') {
+    return (
+      <Column
+        style={{
+          height: viewHeight,
+          width,
+          // backgroundColor: 'red',
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'absolute',
+          right: 0,
+          top: 0,
+        }}
+      >
+        <Image
+          source={questionCandle}
+          style={{
+            width: 24,
+            height: 24,
+            // position: 'absolute',
+            // top: 0,
+            // left: 0,
+          }}
+        />
+      </Column>
+    );
+  }
 
   return (
     <Svg>
