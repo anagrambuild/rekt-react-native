@@ -1,10 +1,10 @@
 import React from 'react';
-import { Image } from 'react-native';
 
 import questionCandle from '@/assets/images/app-pngs/question-candle.png';
 import { Column } from '@/components/common/containers';
 import { CandleData } from '@/utils/miniGameData';
 
+import { Image } from 'expo-image';
 import Svg, { Line, Rect } from 'react-native-svg';
 import { useTheme } from 'styled-components/native';
 

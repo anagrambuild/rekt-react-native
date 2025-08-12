@@ -11,6 +11,7 @@ import {
   Divider,
   IconButton,
   ModalIconButton,
+  PressableOpacity,
   Row,
   Title2,
 } from '@/components';
@@ -28,7 +29,12 @@ export const Balance = ({
   setView,
 }: {
   setView: (
-    view: 'transfer' | 'withdraw' | 'withdrawal address' | 'withdrawal success'
+    view:
+      | 'transfer'
+      | 'withdraw'
+      | 'withdrawal address'
+      | 'withdrawal success'
+      | 'confirm breeze'
   ) => void;
 }) => {
   const theme = useTheme();
@@ -40,6 +46,9 @@ export const Balance = ({
   };
   const goToWithdraw = () => {
     setView('withdraw');
+  };
+  const goToConfirmBreeze = () => {
+    setView('confirm breeze');
   };
   const goToCard = () => {
     // setView('card');
@@ -98,11 +107,17 @@ export const Balance = ({
 
       {/* APY Section */}
       <Card $padding={16}>
-        <Column $width='auto' $gap={4} $alignItems='flex-start'>
-          <Image source={coinIcon} style={{ width: 64, height: 64 }} />
-          <BodyMEmphasized>{t('Earn 5% APY on your balance')}</BodyMEmphasized>
-          <BodyMSecondary>{t('Put your idle dollars to work')}</BodyMSecondary>
-        </Column>
+        <PressableOpacity onPress={goToConfirmBreeze}>
+          <Column $width='auto' $gap={4} $alignItems='flex-start'>
+            <Image source={coinIcon} style={{ width: 64, height: 64 }} />
+            <BodyMEmphasized>
+              {t('Earn 5% APY on your balance')}
+            </BodyMEmphasized>
+            <BodyMSecondary>
+              {t('Put your idle dollars to work')}
+            </BodyMSecondary>
+          </Column>
+        </PressableOpacity>
       </Card>
 
       {/* Deposit Options Section */}
