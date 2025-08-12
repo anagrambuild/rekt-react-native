@@ -12,6 +12,7 @@ import {
   Row,
   SecondaryButton,
 } from '@/components';
+import { useAppContext } from '@/contexts';
 
 import MaterialIcon from '@expo/vector-icons/MaterialIcons';
 
@@ -33,8 +34,14 @@ export const ConfirmBreeze = ({
 }) => {
   const { t } = useTranslation();
   const theme = useTheme();
+  const { setHasBreeze } = useAppContext();
 
   const handleBack = () => {
+    setView('balance');
+  };
+
+  const handleEnableYields = () => {
+    setHasBreeze(true);
     setView('balance');
   };
 
@@ -120,7 +127,9 @@ export const ConfirmBreeze = ({
         </Row>
       </BreezeCard>
       <Column $gap={8} $width='100%'>
-        <PrimaryButton>{t('Enable yields')}</PrimaryButton>
+        <PrimaryButton onPress={handleEnableYields}>
+          {t('Enable yields')}
+        </PrimaryButton>
         <SecondaryButton>{t('Maybe later')}</SecondaryButton>
       </Column>
     </Column>
