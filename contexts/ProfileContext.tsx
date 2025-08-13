@@ -1,8 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Alert } from 'react-native';
 
-import { useWallet } from '@/contexts';
-
+import { useWallet } from './WalletContext';
 import { useTranslation } from 'react-i18next';
 
 // DetailedTradeData type moved inline since we no longer use mock data

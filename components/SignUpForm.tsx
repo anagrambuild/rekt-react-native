@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 
 import RektLogo from '@/assets/images/rekt-logo.svg';
-import { useAppContext } from '@/contexts';
+import { useAppContext, useAuth } from '@/contexts';
 import { useSolana } from '@/contexts/SolanaContext';
 import { useWallet } from '@/contexts/WalletContext';
 import { useBiometrics, useImagePicker } from '@/hooks';
@@ -44,6 +44,7 @@ interface SignUpFormProps {
 
 export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
   const { t } = useTranslation();
+  const { signUp, loading: authLoading } = useAuth();
   const { connected, publicKey, getDappKeyPair, sharedSecret, session } =
     useWallet();
   const { connection } = useSolana();
@@ -56,6 +57,7 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [usernameError, setUsernameError] = useState('');
   const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(
     null
@@ -123,9 +125,14 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
   };
 
   const emailInputRef = useRef<TextInput>(null);
+  const passwordInputRef = useRef<TextInput>(null);
 
   const onNext = () => {
     emailInputRef.current?.focus();
+  };
+
+  const onEmailNext = () => {
+    passwordInputRef.current?.focus();
   };
 
   const handleEmailChange = (text: string) => {
@@ -139,6 +146,20 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(text)) {
         setEmailError(t('Please enter a valid email address'));
+      }
+    }
+  };
+
+  const handlePasswordChange = (text: string) => {
+    setSignUpForm((prev) => ({ ...prev, password: text }));
+
+    // Clear previous error
+    if (passwordError) setPasswordError('');
+
+    // Validate password if not empty
+    if (text.trim() && text.length > 0) {
+      if (text.length < 5) {
+        setPasswordError(t('Password must be at least 5 characters'));
       }
     }
   };
@@ -170,6 +191,18 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
   const validateForm = () => {
     if (!signUpForm.username.trim()) {
       setUsernameError(t('Username is required'));
+      return false;
+    }
+    if (!signUpForm.email.trim()) {
+      setEmailError(t('Email is required'));
+      return false;
+    }
+    if (!signUpForm.password.trim()) {
+      setPasswordError(t('Password is required'));
+      return false;
+    }
+    if (signUpForm.password.length < 5) {
+      setPasswordError(t('Password must be at least 5 characters'));
       return false;
     }
     return true;
@@ -253,7 +286,17 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
 
     setIsSubmitting(true);
     try {
-      // Step 1: Create Swig account
+      // Step 1: Create Supabase user account
+      const supabaseResult = await signUp(
+        signUpForm.email,
+        signUpForm.password
+      );
+      console.log('supabaseResult', supabaseResult);
+      if (!supabaseResult.success) {
+        throw new Error(supabaseResult.error || 'Supabase signup failed');
+      }
+
+      // Step 2: Create Swig account
       const solanaNetwork =
         Constants.expoConfig?.extra?.solanaNetwork || 'solana:devnet';
       const dappKeyPair = getDappKeyPair();
@@ -278,7 +321,7 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
           ? swigResult.swigAddress
           : swigResult.swigAddress.toBase58();
 
-      // Step 2: Upload avatar if provided
+      // Step 3: Upload avatar if provided
       let avatarUrl: string | undefined;
       if (signUpForm.profileImage) {
         try {
@@ -295,7 +338,7 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
         }
       }
 
-      // Step 2b: Create user in database
+      // Step 4: Create user in database
       const user = await createUser({
         username: signUpForm.username,
         email: signUpForm.email,
@@ -304,20 +347,21 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
         profileImage: avatarUrl, // Use uploaded avatar URL instead of local path
       });
 
-      // Step 3: Store biometric preference if enabled
+      // Step 5: Store biometric preference if enabled
       if (signUpForm.enableBiometrics) {
         await AsyncStorage.setItem('biometric_enabled', 'true');
       } else {
         await AsyncStorage.setItem('biometric_enabled', 'false');
       }
 
-      // Step 5: Update app state with the newly created user
+      // Step 6: Update app state with the newly created user
       setUserProfile(user);
 
       // Clear the form after successful creation
       setSignUpForm({
         username: '',
         email: '',
+        password: '',
         profileImage: null,
         enableBiometrics: false,
       });
@@ -325,6 +369,7 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
       // Clear any error states
       setUsernameError('');
       setEmailError('');
+      setPasswordError('');
       setUsernameAvailable(null);
 
       setIsSubmitting(false);
@@ -371,6 +416,10 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
           errorMessage = t(
             'Network error. Please check your connection and try again.'
           );
+        } else if (errorMsg.includes('supabase')) {
+          errorMessage = t(
+            'Authentication failed. Please check your email and password and try again.'
+          );
         }
       }
 
@@ -384,7 +433,6 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
       setIsSubmitting(false);
     }
   };
-
   // Show loading screen when submitting (after user returns from Phantom)
   if (isSubmitting) {
     return (
@@ -468,11 +516,24 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
               onChangeText={handleEmailChange}
               keyboardType='email-address'
               textContentType='emailAddress'
-              returnKeyType='done'
-              onSubmitEditing={Keyboard.dismiss}
+              returnKeyType='next'
+              onSubmitEditing={onEmailNext}
               ref={emailInputRef}
             />
             {emailError ? <ErrorText>{emailError}</ErrorText> : null}
+
+            {/* Password Input */}
+            <Input
+              label={t('Password')}
+              placeholder={t('Enter your password')}
+              value={signUpForm.password}
+              onChangeText={handlePasswordChange}
+              secureTextEntry
+              returnKeyType='done'
+              onSubmitEditing={Keyboard.dismiss}
+              ref={passwordInputRef}
+            />
+            {passwordError ? <ErrorText>{passwordError}</ErrorText> : null}
 
             {/* Biometric Switch */}
             {isSupported && isEnrolled && (
@@ -506,8 +567,8 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
         {/* Submit Button */}
         <PrimaryButton
           onPress={handleSubmit}
-          disabled={!!usernameError || isSubmitting}
-          loading={isSubmitting}
+          disabled={isSubmitting || authLoading}
+          style={{ marginTop: 24 }}
         >
           {t('Complete Sign Up')}
         </PrimaryButton>
