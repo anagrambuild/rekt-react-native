@@ -48,11 +48,13 @@ export const Balance = ({
   const usdcIconRef = useRef<View>(null);
   const [usdcIconPosition, setUsdcIconPosition] = useState({ x: 0, y: 0 });
   const earningAmountRef = useRef<View | null>(null);
+  const earningAmountTextRef = useRef<View | null>(null);
   const [earningAmountPosition, setEarningAmountPosition] = useState({
     x: 0,
     y: 0,
   });
   console.log('usdcIconPosition', usdcIconPosition);
+  console.log('earningAmountPosition', earningAmountPosition);
   const goToTransfer = () => {
     setView('transfer');
   };
@@ -76,8 +78,8 @@ export const Balance = ({
   };
 
   const handleEarningAmountLayout = () => {
-    if (earningAmountRef.current) {
-      earningAmountRef.current.measure(
+    if (earningAmountTextRef.current) {
+      earningAmountTextRef.current.measure(
         (_x, _y, _width, _height, pageX, pageY) => {
           setEarningAmountPosition({ x: pageX, y: pageY });
         }
@@ -85,14 +87,15 @@ export const Balance = ({
     }
   };
 
-  // TODO: Add a variable to calculate the distance between the usdc icon and the earning amount
-  const distance = useMemo(() => {
-    return Math.sqrt(
-      Math.pow(usdcIconPosition.x - earningAmountPosition.x, 2) +
-        Math.pow(usdcIconPosition.y - earningAmountPosition.y, 2)
-    );
+  // Calculate the target position for the floating USDC icon animation
+  // This represents the translation needed from the earnings amount position to the USDC icon position
+  const targetPosition = useMemo(() => {
+    return {
+      x: usdcIconPosition.x - earningAmountPosition.x,
+      y: earningAmountPosition.y - usdcIconPosition.y,
+    };
   }, [usdcIconPosition, earningAmountPosition]);
-  console.log('distance', distance);
+  console.log('targetPosition', targetPosition);
   return (
     <Column $gap={24} $alignItems='flex-start' $padding={8}>
       {/* Header Section */}
@@ -109,10 +112,11 @@ export const Balance = ({
             <BodyMSecondary>{t('Your balance')}</BodyMSecondary>
             <Row $width='auto' $gap={4} $justifyContent='flex-start'>
               <Title2>
-                {userData.balance.toLocaleString('en-US', {
+                {/* {userData.balance.toLocaleString('en-US', {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
-                })}
+                })} */}
+                18000000000.00
               </Title2>
               <View ref={usdcIconRef} onLayout={handleUsdcIconLayout}>
                 <UsdcIcon width={20} height={20} />
@@ -148,9 +152,10 @@ export const Balance = ({
       {/* APY Section */}
       {hasBreeze ? (
         <EarningsCard
-          targetUsdcPosition={usdcIconPosition}
+          targetPosition={targetPosition}
           handleEarningAmountLayout={handleEarningAmountLayout}
           earningAmountRef={earningAmountRef}
+          earningAmountTextRef={earningAmountTextRef}
         />
       ) : (
         <Card $padding={16}>

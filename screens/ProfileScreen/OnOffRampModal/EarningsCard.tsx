@@ -17,15 +17,17 @@ import { useTranslation } from 'react-i18next';
 import styled, { useTheme } from 'styled-components/native';
 
 interface EarningsCardProps {
-  targetUsdcPosition: { x: number; y: number };
+  targetPosition: { x: number; y: number };
   handleEarningAmountLayout: () => void;
   earningAmountRef: React.RefObject<View | null>;
+  earningAmountTextRef: React.RefObject<View | null>;
 }
 
 export const EarningsCard = ({
-  targetUsdcPosition,
+  targetPosition,
   handleEarningAmountLayout,
   earningAmountRef,
+  earningAmountTextRef,
 }: EarningsCardProps) => {
   const { t } = useTranslation();
   const theme = useTheme();
@@ -49,10 +51,15 @@ export const EarningsCard = ({
           {/* Text content */}
           <Column $gap={4} $alignItems='flex-start'>
             <BodyMEmphasized>{t('Earnings so far')}</BodyMEmphasized>
-            <Row $gap={8} $alignItems='center' $justifyContent='flex-start'>
+            <Row $alignItems='center' $justifyContent='flex-start'>
               <BodyMSecondary>$0.0000002</BodyMSecondary>
+              <View
+                ref={earningAmountTextRef}
+                onLayout={handleEarningAmountLayout}
+                style={{ width: 8, height: 1 }}
+              />
               {/* Floating USDC Icon Animation - starts near the $ amount text */}
-              <FloatingUsdcIcon size={16} targetPosition={targetUsdcPosition} />
+              <FloatingUsdcIcon size={16} targetPosition={targetPosition} />
             </Row>
           </Column>
         </Row>
