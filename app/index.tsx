@@ -9,6 +9,7 @@ import {
   PrimaryButton,
   ScreenContainer,
   SignUpForm,
+  TertiaryButton,
   WalletConnectionModal,
 } from '@/components';
 import { useAppContext, useWallet } from '@/contexts';
@@ -27,16 +28,8 @@ const Index = () => {
     setShowSignUpForm,
     requiresBiometric,
   } = useAppContext();
-  const {
-    connect,
-    connecting,
-    connected,
-    showWalletModal,
-    setShowWalletModal,
-    supabaseUser,
-    supabaseLoading,
-    supabaseError,
-  } = useWallet();
+  const { connecting, connected, showWalletModal, setShowWalletModal } =
+    useWallet();
   const { t } = useTranslation();
   const [isCheckingConnection, setIsCheckingConnection] = useState(true);
   const [forceRefresh, setForceRefresh] = useState(0);
@@ -46,16 +39,7 @@ const Index = () => {
     setShowSignUpForm(false);
   };
 
-  // Initial connection check - give some time for Supabase session to load
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsCheckingConnection(false);
-    }, 1000); // Allow time for Supabase session check
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Function to check if user is logged in and redirect
+  // Check if user is already authenticated and redirect to tabs
   useEffect(() => {
     if (isLoggedIn && !requiresBiometric) {
       setForceRefresh((prev) => prev + 1);
@@ -66,26 +50,26 @@ const Index = () => {
     }
   }, [isLoggedIn, requiresBiometric]);
 
-  // Handle wallet connection success - now triggers Supabase auth
+  // Initial connection check - give some time for session to load
   useEffect(() => {
-    if (connected && supabaseUser) {
-      // User is connected and authenticated with Supabase
-      // Show loading for a brief moment to smooth the transition
+    const timer = setTimeout(() => {
+      setIsCheckingConnection(false);
+    }, 1000); // Allow time for session check
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Handle wallet connection success
+  useEffect(() => {
+    if (connected) {
+      // User is connected to wallet, show signup form
       setIsCheckingConnection(true);
       setTimeout(() => {
         setShowSignUpForm(true);
         setIsCheckingConnection(false);
       }, 800); // Brief delay for smooth transition
     }
-  }, [connected, supabaseUser, setShowSignUpForm]);
-
-  // Show Supabase auth errors
-  useEffect(() => {
-    if (supabaseError) {
-      // You might want to show this error in a toast or alert
-      console.error('Supabase auth error:', supabaseError);
-    }
-  }, [supabaseError]);
+  }, [connected, setShowSignUpForm]);
 
   const player = useVideoPlayer(midFireUrl, (player) => {
     player.loop = true;
@@ -133,8 +117,8 @@ const Index = () => {
     };
   }, [scaleAnim, translateYAnim, welcomeOpacity]);
 
-  // Show loading screen while checking connection, connecting, or loading Supabase
-  if (isCheckingConnection || connecting || supabaseLoading) {
+  // Show loading screen while checking connection or connecting
+  if (isCheckingConnection || connecting) {
     return <LoadingScreen />;
   }
 
@@ -143,8 +127,8 @@ const Index = () => {
     return <BiometricAuthScreen key='biometric-auth' />;
   }
 
-  // Show sign-up form after successful wallet connection and Supabase auth
-  if (showSignUpForm && supabaseUser) {
+  // Show sign-up form when requested or when wallet is connected
+  if (showSignUpForm) {
     return (
       <ScreenContainer
         alignItems='stretch'
@@ -168,6 +152,11 @@ const Index = () => {
         </Column>
       </ScreenContainer>
     );
+  }
+
+  // Check if user is already authenticated and should be redirected
+  if (isLoggedIn && !requiresBiometric) {
+    return <LoadingScreen />; // Show loading while redirecting
   }
 
   return (
@@ -198,9 +187,12 @@ const Index = () => {
           </AnimatedTitle1>
         </Column>
         <AnimatedButtonsContainer style={{ opacity: welcomeOpacity }}>
-          <PrimaryButton onPress={connect} disabled={connecting}>
-            {connecting ? t('Connecting...') : t('Connect wallet')}
+          <PrimaryButton onPress={() => setShowSignUpForm(true)}>
+            {t('Sign up')}
           </PrimaryButton>
+          <TertiaryButton onPress={() => setShowSignUpForm(true)}>
+            {t('Login')}
+          </TertiaryButton>
         </AnimatedButtonsContainer>
         <VideoView
           player={player}

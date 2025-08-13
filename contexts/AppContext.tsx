@@ -14,6 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { detectLanguage, initializeI18n } from '../i18n';
 import { getUserByProfileId } from '../utils/backendApi';
 import { supabase } from '../utils/supabase';
+import { AuthProvider } from './AuthContext';
 import { HomeProvider } from './HomeContext';
 import { MiniGameProvider } from './MiniGameContext';
 import { ProfileProvider } from './ProfileContext';
@@ -24,6 +25,7 @@ import * as LocalAuthentication from 'expo-local-authentication';
 type SignUpFormData = {
   username: string;
   email: string;
+  password: string;
   profileImage: string | null;
   enableBiometrics: boolean;
 };
@@ -57,6 +59,7 @@ export const AppContext = createContext<AppContextType>({
   signUpForm: {
     username: '',
     email: '',
+    password: '',
     profileImage: null,
     enableBiometrics: false,
   },
@@ -79,6 +82,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const [signUpForm, setSignUpForm] = useState<SignUpFormData>({
     username: '',
     email: '',
+    password: '',
     profileImage: null,
     enableBiometrics: false,
   });
@@ -131,9 +135,27 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
                 // Biometrics not enabled, log in directly
                 setIsLoggedIn(true);
               }
+            } else {
+              // User profile not found - this means the user needs to complete signup
+              console.log(
+                '📝 User authenticated but profile not found - showing signup form'
+              );
+              setShowSignUpForm(true);
+              setCheckingAuth(false);
+              return; // Exit early since we're showing signup form
             }
           } catch (error) {
             console.error('Error fetching user profile:', error);
+
+            // If we get a 404 or other error fetching profile, show signup form
+            if (error instanceof Error && error.message.includes('404')) {
+              console.log(
+                '📝 User profile not found (404) - showing signup form'
+              );
+              setShowSignUpForm(true);
+              setCheckingAuth(false);
+              return; // Exit early since we're showing signup form
+            }
           }
         }
       } catch (error) {
@@ -145,6 +167,14 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 
     checkExistingAuth();
   }, []);
+
+  // Watch for userProfile changes and automatically log in when profile is set
+  useEffect(() => {
+    if (userProfile && !isLoggedIn) {
+      console.log('✅ User profile set, automatically logging in');
+      setIsLoggedIn(true);
+    }
+  }, [userProfile, isLoggedIn]);
 
   // Biometric authentication function
   const authenticateWithBiometrics = async (): Promise<boolean> => {
@@ -223,19 +253,21 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         authenticateWithBiometrics,
       }}
     >
-      <SolanaProvider>
-        <WalletProvider
-          setIsLoggedIn={setIsLoggedIn}
-          setUserProfile={setUserProfile}
-          setRequiresBiometric={setRequiresBiometric}
-        >
-          <ProfileProvider userProfile={userProfile}>
-            <HomeProvider>
-              <MiniGameProvider>{children}</MiniGameProvider>
-            </HomeProvider>
-          </ProfileProvider>
-        </WalletProvider>
-      </SolanaProvider>
+      <AuthProvider>
+        <SolanaProvider>
+          <WalletProvider
+            setIsLoggedIn={setIsLoggedIn}
+            setUserProfile={setUserProfile}
+            setRequiresBiometric={setRequiresBiometric}
+          >
+            <ProfileProvider userProfile={userProfile}>
+              <HomeProvider>
+                <MiniGameProvider>{children}</MiniGameProvider>
+              </HomeProvider>
+            </ProfileProvider>
+          </WalletProvider>
+        </SolanaProvider>
+      </AuthProvider>
     </AppContext.Provider>
   );
 };
