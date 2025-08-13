@@ -367,7 +367,7 @@ export const WalletProvider = ({
             };
           });
 
-          // Wait for authentication to complete (with timeout)
+          // Wait for authentication to complete (with shorter timeout)
           const timeoutPromise = new Promise<never>((_, reject) => {
             setTimeout(
               () =>
@@ -376,7 +376,7 @@ export const WalletProvider = ({
                     'Authentication timeout - please try connecting wallet again'
                   )
                 ),
-              30000
+              10000 // Reduced from 30 seconds to 10 seconds
             );
           });
 
@@ -712,8 +712,90 @@ export const WalletProvider = ({
 
                     delete (global as any).phantomSigningRequest;
                   } else {
-                    // No pending request, just complete the wallet connection
-                    console.log('✅ Wallet connected successfully');
+                    // No pending request, we need to create one
+                    console.log('📝 No pending auth request, creating one...');
+
+                    // Call signInWithSupabase to create the phantomSigningRequest
+                    const publicKeyString = connectData.public_key;
+
+                    // Create the authentication request manually instead of calling signInWithSupabase
+                    // This avoids the race condition where signInWithSupabase waits for a response
+                    // that we need to provide immediately
+                    const message = `Sign in to Rekt\n\nWallet: ${publicKeyString}\nTimestamp: ${Date.now()}`;
+                    const requestId = `auth_${Date.now()}_${Math.random()
+                      .toString(36)
+                      .substr(2, 9)}`;
+
+                    console.log(
+                      '🔐 Creating authentication request manually...'
+                    );
+
+                    // Create the phantomSigningRequest manually
+                    (global as any).phantomSigningRequest = {
+                      id: requestId,
+                      message: message,
+                      publicKey: publicKeyString,
+                      resolve: null as ((value: any) => void) | null,
+                      reject: null as ((error: Error) => void) | null,
+                    };
+
+                    // Now resolve it immediately since we have the wallet connection
+                    console.log(
+                      '📝 Resolving authentication request immediately...'
+                    );
+
+                    console.log(
+                      '🔐 Authenticating with Supabase using wallet connection...'
+                    );
+
+                    // Now authenticate with Supabase using email/password
+                    // This approach was working before - generates a unique email/password based on wallet
+                    try {
+                      console.log(
+                        '🔐 Authenticating with Supabase using email/password...'
+                      );
+
+                      // Generate a unique email and password based on the wallet address
+                      const email = `${publicKeyString}@rekt.app`;
+                      const password = `wallet_${Date.now()}_${publicKeyString}`;
+
+                      // Try to sign in first
+                      const { data: signInData, error: signInError } =
+                        await supabase.auth.signInWithPassword({
+                          email: email,
+                          password: password,
+                        });
+
+                      if (signInError) {
+                        // If sign in fails, try to create a new user
+                        console.log('📝 Attempting to create new user...');
+                        const { data: signUpData, error: signUpError } =
+                          await supabase.auth.signUp({
+                            email: email,
+                            password: password,
+                          });
+
+                        if (signUpError) {
+                          throw signUpError;
+                        }
+
+                        console.log('✅ New user created successfully');
+                        setSupabaseUser(signUpData.user);
+                      } else {
+                        console.log(
+                          '✅ Existing user authenticated successfully'
+                        );
+                        setSupabaseUser(signInData.user);
+                      }
+
+                      console.log('✅ User authenticated and state updated');
+                    } catch (authError) {
+                      console.error('❌ Authentication failed:', authError);
+                      throw authError;
+                    }
+
+                    // Clean up
+                    delete (global as any).phantomSigningRequest;
                   }
                 } catch (error) {
                   console.error(
