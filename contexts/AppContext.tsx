@@ -13,13 +13,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { detectLanguage, initializeI18n } from '../i18n';
 import { getUserByProfileId } from '../utils/backendApi';
-import { getSecureAuth } from '../utils/secureAuth';
+import { supabase } from '../utils/supabase';
 import { HomeProvider } from './HomeContext';
 import { MiniGameProvider } from './MiniGameContext';
 import { ProfileProvider } from './ProfileContext';
 import { SolanaProvider } from './SolanaContext';
 import { WalletProvider } from './WalletContext';
 import * as LocalAuthentication from 'expo-local-authentication';
+
 type SignUpFormData = {
   username: string;
   email: string;
@@ -87,44 +88,52 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const [hasBreeze, setHasBreeze] = useState(false);
   const appState = useRef(AppState.currentState);
 
-  // Check for existing authentication on app startup
+  // Check for existing Supabase session and handle biometric authentication
   useEffect(() => {
     const checkExistingAuth = async () => {
       try {
-        const authResult = await getSecureAuth();
+        // Check if we have a valid Supabase session
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
 
-        if (authResult.isValid && authResult.data) {
-          const user = await getUserByProfileId(authResult.data.profileId);
+        if (session?.user) {
+          // We have a valid Supabase session, fetch user profile
+          try {
+            const user = await getUserByProfileId(session.user.id);
+            if (user) {
+              setUserProfile(user);
 
-          if (user) {
-            setUserProfile(user);
+              // Check if biometrics are enabled for this user
+              const biometricEnabled = await AsyncStorage.getItem(
+                'biometric_enabled'
+              );
 
-            // Check if biometrics are enabled for this user
-            const biometricEnabled = await AsyncStorage.getItem(
-              'biometric_enabled'
-            );
+              if (biometricEnabled === 'true') {
+                // Check if biometrics are available on device
+                const isSupported =
+                  await LocalAuthentication.hasHardwareAsync();
+                const isEnrolled = await LocalAuthentication.isEnrolledAsync();
 
-            if (biometricEnabled === 'true') {
-              // Check if biometrics are available on device
-              const isSupported = await LocalAuthentication.hasHardwareAsync();
-              const isEnrolled = await LocalAuthentication.isEnrolledAsync();
-
-              if (isSupported && isEnrolled) {
-                // Skip biometrics on Android due to dialog dismissal issues
-                if (Platform.OS === 'android') {
-                  setRequiresBiometric(false);
-                  setIsLoggedIn(true);
+                if (isSupported && isEnrolled) {
+                  // Skip biometrics on Android due to dialog dismissal issues
+                  if (Platform.OS === 'android') {
+                    setRequiresBiometric(false);
+                    setIsLoggedIn(true);
+                  } else {
+                    setRequiresBiometric(true);
+                  }
                 } else {
-                  setRequiresBiometric(true);
+                  // Biometrics not available, log in directly
+                  setIsLoggedIn(true);
                 }
               } else {
-                // Biometrics not available, log in directly
+                // Biometrics not enabled, log in directly
                 setIsLoggedIn(true);
               }
-            } else {
-              // Biometrics not enabled, log in directly
-              setIsLoggedIn(true);
             }
+          } catch (error) {
+            console.error('Error fetching user profile:', error);
           }
         }
       } catch (error) {

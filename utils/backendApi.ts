@@ -1,9 +1,81 @@
+import { apiClient } from './apiClient';
+import { supabase } from './supabase';
 import Constants from 'expo-constants';
 
 // Use the API URL from app.config.js
 const BACKEND_BASE_URL =
   Constants.expoConfig?.extra?.apiUrl ||
   'https://rekt-user-management.onrender.com';
+
+// API Response Interfaces
+export interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  message?: string;
+  error?: string;
+}
+
+export interface UserApiResponse {
+  user: {
+    id: string;
+    username: string;
+    email: string;
+    avatar_url: string;
+    swig_wallet_address: string;
+    joined_at: string;
+    updated_at: string;
+  };
+}
+
+export interface UsernameCheckApiResponse {
+  available: boolean;
+  suggestions: string[];
+}
+
+export interface AvatarUploadApiResponse {
+  success: boolean;
+  avatar_url: string;
+  filename: string;
+  message: string;
+}
+
+export interface TradingBalanceApiResponse {
+  usdc: number;
+  availableMargin: number;
+  usedMargin: number;
+  totalValue: number;
+  walletAddress: string;
+}
+
+export interface PositionApiResponse {
+  id: string;
+  asset: string;
+  direction: 'long' | 'short';
+  status: string;
+  size: number;
+  entryPrice: number;
+  exitPrice: number | null;
+  currentPrice: number;
+  pnl: number;
+  pnlPercentage: number;
+  leverage: number;
+  liquidationPrice: number;
+  marginUsed: number;
+  openedAt: string;
+  closedAt: string | null;
+  duration: number;
+  fees: number;
+  points: number;
+}
+
+export interface SwigWalletBalanceApiResponse {
+  balance: number;
+  formatted: string;
+  source: string;
+  status: string;
+  tokenAccount?: string;
+  error?: string;
+}
 
 export interface TokenPrice {
   id: string;
@@ -42,38 +114,16 @@ export type SupportedToken = keyof typeof SUPPORTED_TOKENS;
 
 export const fetchTokenPrices = async (
   tokens: SupportedToken[] = ['sol', 'eth', 'btc']
-): Promise<Record<SupportedToken, TokenPrice>> => {
+): Promise<Partial<Record<SupportedToken, TokenPrice>>> => {
   try {
-    const response = await fetch(`${BACKEND_BASE_URL}/api/markets`);
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.log('❌ Backend API Error:', {
-        status: response.status,
-        statusText: response.statusText,
-        url: `${BACKEND_BASE_URL}/api/auth/create-account`,
-        errorData,
-      });
-
-      if (response.status === 404) {
-        throw new Error(
-          `API endpoint not found. The backend server may not be properly deployed or the API structure has changed. Status: ${response.status}`
-        );
-      }
-
-      throw new Error(
-        errorData.message ||
-          `HTTP error! status: ${response.status} - ${response.statusText}`
-      );
-    }
-
-    const data: BackendMarketResponse = await response.json();
+    // Use the authenticated API client instead of raw fetch
+    const data: BackendMarketResponse = await apiClient.get('/api/markets');
 
     if (!data.success || !data.data) {
       throw new Error('Invalid response format from backend');
     }
 
-    const result: Record<SupportedToken, TokenPrice> = {} as any;
+    const result: Partial<Record<SupportedToken, TokenPrice>> = {};
 
     tokens.forEach((token) => {
       const marketKey = `${token.toUpperCase()}-PERP`;
@@ -98,14 +148,12 @@ export const fetchTokenPrices = async (
           total_volume: marketData.volume24h || 0,
           last_updated: data.timestamp,
         };
-      } else {
-        console.warn(`No market data found for ${marketKey}`);
       }
     });
 
     return result;
   } catch (error) {
-    console.error('Error fetching token prices:', error);
+    console.error('❌ Error fetching token prices:', error);
     throw error;
   }
 };
@@ -114,7 +162,13 @@ export const fetchSingleTokenPrice = async (
   token: SupportedToken
 ): Promise<TokenPrice> => {
   const prices = await fetchTokenPrices([token]);
-  return prices[token];
+  const price = prices[token];
+
+  if (!price) {
+    throw new Error(`No price data available for ${token}`);
+  }
+
+  return price;
 };
 
 export interface ChartDataPoint {
@@ -254,25 +308,12 @@ export const checkUsernameAvailability = async (
   username: string
 ): Promise<UsernameCheckResponse> => {
   try {
-    const response = await fetch(
-      `${BACKEND_BASE_URL}/api/auth/check-username`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username }),
-      }
+    // Use the authenticated API client instead of raw fetch
+    const data = await apiClient.post<UsernameCheckApiResponse>(
+      `/api/auth/check-username`,
+      { username }
     );
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        errorData.message || `HTTP error! status: ${response.status}`
-      );
-    }
-
-    const data = await response.json();
     return {
       available: data.available,
       suggestions: data.suggestions,
@@ -287,19 +328,10 @@ export const getUserByProfileId = async (
   profileId: string
 ): Promise<User | null> => {
   try {
-    const response = await fetch(
-      `${BACKEND_BASE_URL}/api/users/profile/${profileId}`
+    // Use the authenticated API client instead of raw fetch
+    const result = await apiClient.get<UserApiResponse>(
+      `/api/users/profile/${profileId}`
     );
-
-    if (response.status === 404) {
-      return null; // User doesn't exist
-    }
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const result = await response.json();
 
     // Map backend response to frontend User interface
     return {
@@ -330,42 +362,22 @@ export const createUser = async (
       swig_wallet_address: userData.swigWalletAddress || '',
     };
 
-    // Add timeout to prevent hanging requests
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-    const response = await fetch(
-      `${BACKEND_BASE_URL}/api/auth/create-account`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(backendUserData),
-        signal: controller.signal,
-      }
+    // Use the authenticated API client instead of raw fetch
+    const result = await apiClient.post<ApiResponse<UserApiResponse>>(
+      `/api/auth/create-account`,
+      backendUserData
     );
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        errorData.message || `HTTP error! status: ${response.status}`
-      );
-    }
-
-    const result = await response.json();
 
     // Map backend response to frontend User interface
     // Backend returns: { success: true, user: { id, username, email, ... }, message }
     return {
-      id: result.user.id,
-      username: result.user.username,
-      email: result.user.email,
-      profileImage: result.user.avatar_url,
-      swigWalletAddress: result.user.swig_wallet_address,
-      createdAt: result.user.joined_at || new Date().toISOString(),
-      updatedAt: result.user.updated_at || new Date().toISOString(),
+      id: result.data!.user.id,
+      username: result.data!.user.username,
+      email: result.data!.user.email,
+      profileImage: result.data!.user.avatar_url,
+      swigWalletAddress: result.data!.user.swig_wallet_address,
+      createdAt: result.data!.user.joined_at || new Date().toISOString(),
+      updatedAt: result.data!.user.updated_at || new Date().toISOString(),
     };
   } catch (error) {
     console.error('Error creating user:', error);
@@ -392,33 +404,21 @@ export const updateUser = async (
   userData: UpdateUserRequest
 ): Promise<User> => {
   try {
-    const response = await fetch(`${BACKEND_BASE_URL}/api/users/${userId}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(userData),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        errorData.message || `HTTP error! status: ${response.status}`
-      );
-    }
-
-    const result = await response.json();
+    // Use the authenticated API client instead of raw fetch
+    const result = await apiClient.put<ApiResponse<UserApiResponse>>(
+      `/api/users/${userId}`,
+      userData
+    );
 
     // Map backend response to frontend User interface
     return {
-      id: result.user.id,
-      username: result.user.username,
-      email: result.user.email,
-      profileImage: result.user.avatar_url,
-
-      swigWalletAddress: result.user.swig_wallet_address,
-      createdAt: result.user.joined_at || new Date().toISOString(),
-      updatedAt: result.user.updated_at || new Date().toISOString(),
+      id: result.data!.user.id,
+      username: result.data!.user.username,
+      email: result.data!.user.email,
+      profileImage: result.data!.user.avatar_url,
+      swigWalletAddress: result.data!.user.swig_wallet_address,
+      createdAt: result.data!.user.joined_at || new Date().toISOString(),
+      updatedAt: result.data!.user.updated_at || new Date().toISOString(),
     };
   } catch (error) {
     console.error('Error updating user:', error);
@@ -431,42 +431,34 @@ export const updateUserSwigWalletAddress = async (
   swigWalletAddress: string
 ): Promise<User> => {
   try {
-    const response = await fetch(
-      `${BACKEND_BASE_URL}/api/users/${userId}/swig-wallet`,
-      {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ swig_wallet_address: swigWalletAddress }),
-      }
+    // Use the authenticated API client instead of raw fetch
+    const result = await apiClient.put<ApiResponse<UserApiResponse>>(
+      `/api/users/${userId}/swig-wallet`,
+      { swig_wallet_address: swigWalletAddress }
     );
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        errorData.message || `HTTP error! status: ${response.status}`
-      );
-    }
-
-    const result = await response.json();
 
     // Map backend response to frontend User interface
     return {
-      id: result.user.id,
-      username: result.user.username,
-      email: result.user.email,
-      profileImage: result.user.avatar_url,
-
-      swigWalletAddress: result.user.swig_wallet_address,
-      createdAt: result.user.joined_at || new Date().toISOString(),
-      updatedAt: result.user.updated_at || new Date().toISOString(),
+      id: result.data!.user.id,
+      username: result.data!.user.username,
+      email: result.data!.user.email,
+      profileImage: result.data!.user.avatar_url,
+      swigWalletAddress: result.data!.user.swig_wallet_address,
+      createdAt: result.data!.user.joined_at || new Date().toISOString(),
+      updatedAt: result.data!.user.updated_at || new Date().toISOString(),
     };
   } catch (error) {
     console.error('Error updating user Swig wallet address:', error);
     throw error;
   }
 };
+
+// File upload types
+interface FileObject {
+  uri: string;
+  type: string;
+  name: string;
+}
 
 // Avatar Upload Function
 export interface AvatarUploadResponse {
@@ -485,16 +477,32 @@ export const uploadAvatar = async (
     const formData = new FormData();
 
     // Add the image file to FormData
-    formData.append('avatar', {
+    const fileObject: FileObject = {
       uri: imageUri,
       type: 'image/jpeg', // Backend accepts JPEG, PNG, WebP, GIF
       name: fileName,
-    } as any);
+    };
+
+    formData.append('avatar', fileObject as any); // FormData requires 'as any' for React Native
+
+    // For FormData uploads, we need to use fetch directly but with auth headers
+    // Get the auth token from Supabase
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    const token = session?.access_token;
+
+    if (!token) {
+      throw new Error('No authentication token available');
+    }
 
     const response = await fetch(`${BACKEND_BASE_URL}/api/upload/avatar`, {
       method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        // Don't set Content-Type header - let FormData set it with boundary
+      },
       body: formData,
-      // Don't set Content-Type header - let FormData set it with boundary
     });
 
     if (!response.ok) {
@@ -625,7 +633,7 @@ export interface SubmitTransactionResponse {
       slot: number;
       confirmations: number | null;
       confirmationStatus: string;
-      err: any;
+      err: string | null; // Changed from 'any' to 'string | null'
     };
   };
   message: string;
@@ -636,21 +644,16 @@ export const getTradingBalance = async (
   userId: string
 ): Promise<TradingBalance> => {
   try {
-    const response = await fetch(
-      `${BACKEND_BASE_URL}/api/trading/balance/${userId}`
+    // Use the authenticated API client instead of raw fetch
+    const result = await apiClient.get<ApiResponse<TradingBalance>>(
+      `/api/trading/balance/${userId}`
     );
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const result = await response.json();
 
     if (!result.success) {
       throw new Error(result.error || 'Failed to get trading balance');
     }
 
-    return result.data;
+    return result.data!;
   } catch (error) {
     console.error('Error getting trading balance:', error);
     throw error;
@@ -669,29 +672,14 @@ export const openTradingPosition = async (
   request: OpenPositionRequest
 ): Promise<OpenPositionResponse> => {
   try {
-    const response = await fetch(`${BACKEND_BASE_URL}/api/trading/open`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(request),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        errorData.message ||
-          errorData.error ||
-          `HTTP error! status: ${response.status}`
-      );
-    }
-
-    const result = await response.json();
+    // Use the authenticated API client instead of raw fetch
+    const result = await apiClient.post<OpenPositionResponse>(
+      `/api/trading/open`,
+      request
+    );
 
     if (!result.success) {
-      throw new Error(
-        result.message || result.error || 'Failed to open position'
-      );
+      throw new Error(result.message || 'Failed to open position');
     }
 
     return result;
@@ -704,21 +692,16 @@ export const openTradingPosition = async (
 // Get open positions for a user
 export const getOpenPositions = async (userId: string): Promise<Position[]> => {
   try {
-    const response = await fetch(
-      `${BACKEND_BASE_URL}/api/trading/positions/${userId}`
+    // Use the authenticated API client instead of raw fetch
+    const result = await apiClient.get<ApiResponse<Position[]>>(
+      `/api/trading/positions/${userId}`
     );
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const result = await response.json();
 
     if (!result.success) {
       throw new Error(result.error || 'Failed to get positions');
     }
 
-    return result.data;
+    return result.data!;
   } catch (error) {
     // console.error('Error getting open positions:', error);
     throw error;
@@ -730,29 +713,14 @@ export const closeTradingPosition = async (
   request: ClosePositionRequest
 ): Promise<ClosePositionResponse> => {
   try {
-    const response = await fetch(`${BACKEND_BASE_URL}/api/trading/close`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(request),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        errorData.message ||
-          errorData.error ||
-          `HTTP error! status: ${response.status}`
-      );
-    }
-
-    const result = await response.json();
+    // Use the authenticated API client instead of raw fetch
+    const result = await apiClient.post<ClosePositionResponse>(
+      `/api/trading/close`,
+      request
+    );
 
     if (!result.success) {
-      throw new Error(
-        result.message || result.error || 'Failed to close position'
-      );
+      throw new Error(result.message || 'Failed to close position');
     }
 
     return result;
@@ -767,29 +735,14 @@ export const submitSignedTransaction = async (
   request: SubmitTransactionRequest
 ): Promise<SubmitTransactionResponse> => {
   try {
-    const response = await fetch(`${BACKEND_BASE_URL}/api/trading/submit`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(request),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        errorData.message ||
-          errorData.error ||
-          `HTTP error! status: ${response.status}`
-      );
-    }
-
-    const result = await response.json();
+    // Use the authenticated API client instead of raw fetch
+    const result = await apiClient.post<SubmitTransactionResponse>(
+      `/api/trading/submit`,
+      request
+    );
 
     if (!result.success) {
-      throw new Error(
-        result.message || result.error || 'Failed to submit transaction'
-      );
+      throw new Error(result.message || 'Failed to submit transaction');
     }
 
     return result;
@@ -806,24 +759,19 @@ export const getTradingHistory = async (
   limit: number = 50
 ): Promise<Position[]> => {
   try {
-    let url = `${BACKEND_BASE_URL}/api/trading/history/${userId}?limit=${limit}`;
+    let endpoint = `/api/trading/history/${userId}?limit=${limit}`;
     if (status) {
-      url += `&status=${status}`;
+      endpoint += `&status=${status}`;
     }
 
-    const response = await fetch(url);
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const result = await response.json();
+    // Use the authenticated API client instead of raw fetch
+    const result = await apiClient.get<ApiResponse<Position[]>>(endpoint);
 
     if (!result.success) {
       throw new Error(result.error || 'Failed to get trading history');
     }
 
-    return result.data;
+    return result.data!;
   } catch (error) {
     // console.error('Error getting trading history:', error);
     throw error;
@@ -835,22 +783,10 @@ export const getUserByWalletAddress = async (
   walletAddress: string
 ): Promise<User | null> => {
   try {
-    const response = await fetch(
-      `${BACKEND_BASE_URL}/api/users/by-wallet/${walletAddress}`
+    // Use the authenticated API client instead of raw fetch
+    const result = await apiClient.get<ApiResponse<UserApiResponse>>(
+      `/api/users/by-wallet/${walletAddress}`
     );
-
-    if (response.status === 404) {
-      return null; // User not found
-    }
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        errorData.message || `HTTP error! status: ${response.status}`
-      );
-    }
-
-    const result = await response.json();
 
     if (!result.success) {
       throw new Error(result.error || 'Failed to get user by wallet address');
@@ -858,17 +794,17 @@ export const getUserByWalletAddress = async (
 
     // Map backend response to frontend User interface
     return {
-      id: result.user.id,
-      username: result.user.username,
-      email: result.user.email,
-      profileImage: result.user.avatar_url,
-      swigWalletAddress: result.user.swig_wallet_address,
-      createdAt: result.user.joined_at || new Date().toISOString(),
-      updatedAt: result.user.updated_at || new Date().toISOString(),
+      id: result.data!.user.id,
+      username: result.data!.user.username,
+      email: result.data!.user.email,
+      profileImage: result.data!.user.avatar_url,
+      swigWalletAddress: result.data!.user.swig_wallet_address,
+      createdAt: result.data!.user.joined_at || new Date().toISOString(),
+      updatedAt: result.data!.user.updated_at || new Date().toISOString(),
     };
   } catch (error) {
     console.error('Error getting user by wallet address:', error);
-    throw error;
+    return null;
   }
 };
 
@@ -878,25 +814,11 @@ export const updateUserProfile = async (
   userData: { username?: string; email?: string; avatar_url?: string }
 ): Promise<User> => {
   try {
-    const response = await fetch(
-      `${BACKEND_BASE_URL}/api/users/profile/${userId}`,
-      {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(userData),
-      }
+    // Use the authenticated API client instead of raw fetch
+    const result = await apiClient.put<ApiResponse<UserApiResponse>>(
+      `/api/users/profile/${userId}`,
+      userData
     );
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        errorData.message || `HTTP error! status: ${response.status}`
-      );
-    }
-
-    const result = await response.json();
 
     if (!result.success) {
       throw new Error(result.error || 'Failed to update user profile');
@@ -904,13 +826,13 @@ export const updateUserProfile = async (
 
     // Map backend response to frontend User interface
     return {
-      id: result.user.id,
-      username: result.user.username,
-      email: result.user.email,
-      profileImage: result.user.avatar_url,
-      swigWalletAddress: result.user.swig_wallet_address,
-      createdAt: result.user.joined_at || new Date().toISOString(),
-      updatedAt: result.user.updated_at || new Date().toISOString(),
+      id: result.data!.user.id,
+      username: result.data!.user.username,
+      email: result.data!.user.email,
+      profileImage: result.data!.user.avatar_url,
+      swigWalletAddress: result.data!.user.swig_wallet_address,
+      createdAt: result.data!.user.joined_at || new Date().toISOString(),
+      updatedAt: result.data!.user.updated_at || new Date().toISOString(),
     };
   } catch (error) {
     console.error('Error updating user profile:', error);
@@ -934,23 +856,15 @@ export const getSwigWalletBalance = async (
   swigWalletAddress: string
 ): Promise<SwigWalletBalanceResponse> => {
   try {
-    const response = await fetch(
-      `${BACKEND_BASE_URL}/api/wallet/balance/${swigWalletAddress}`
+    // Use the authenticated API client instead of raw fetch
+    const result = await apiClient.get<ApiResponse<SwigWalletBalanceResponse>>(
+      `/api/wallet/balance/${swigWalletAddress}`
     );
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        errorData.message || `HTTP error! status: ${response.status}`
-      );
-    }
-
-    const result = await response.json();
 
     if (!result.success) {
       throw new Error(result.error || 'Failed to get Swig wallet balance');
     }
-    return result.data;
+    return result.data!;
   } catch (error) {
     console.error('Error getting Swig wallet balance:', error);
     // Return zero balance on error to match backend behavior
@@ -989,23 +903,9 @@ export const deleteAvatar = async (avatarUrl: string): Promise<void> => {
       return;
     }
 
-    const response = await fetch(
-      `${BACKEND_BASE_URL}/api/upload/avatar/${filename}`,
-      {
-        method: 'DELETE',
-      }
-    );
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.warn(
-        'Failed to delete old avatar:',
-        errorData.message || 'Unknown error'
-      );
-      // Don't throw error here - we don't want to fail profile update if old image deletion fails
-    } else {
-      console.log('✅ Successfully deleted old avatar:', filename);
-    }
+    // Use the authenticated API client instead of raw fetch
+    await apiClient.delete(`/api/upload/avatar/${filename}`);
+    console.log('✅ Successfully deleted old avatar:', filename);
   } catch (error) {
     console.warn('Error deleting old avatar:', error);
     // Don't throw error - we don't want to fail profile update if old image deletion fails

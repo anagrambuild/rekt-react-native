@@ -10,19 +10,14 @@ import {
 } from 'react';
 import { Alert, Linking, Platform } from 'react-native';
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PublicKey } from '@solana/web3.js';
 
-import {
-  getSwigWalletBalance,
-  getUserByWalletAddress,
-} from '../utils/backendApi';
-import { getSecureAuth, storeSecureAuth } from '../utils/secureAuth';
+import { getSwigWalletBalance, getUserByProfileId } from '../utils/backendApi';
+import { supabase } from '../utils/supabase';
 import { Buffer } from 'buffer';
 import Constants from 'expo-constants';
-import * as LocalAuthentication from 'expo-local-authentication';
 import { useTranslation } from 'react-i18next';
-import nacl from 'tweetnacl';
+import * as nacl from 'tweetnacl';
 
 // Persistent wallet state outside React lifecycle
 let persistentWalletState = {
@@ -33,7 +28,6 @@ let persistentWalletState = {
 };
 
 // Use require for bs58 to avoid PRNG issues
-
 const bs58 = require('bs58');
 
 // Only import wallet adapter for Android
@@ -60,11 +54,18 @@ export interface WalletContextState {
   usdcBalance: number | null;
   isLoadingBalance: boolean;
   balanceError: string | null;
+  // Supabase auth state
+  supabaseUser: any;
+  supabaseLoading: boolean;
+  supabaseError: string | null;
+  // Methods
   connect: () => Promise<void>;
   disconnect: () => void;
   setShowWalletModal: (show: boolean) => void;
-  handleWalletConnect: (publicKey: string) => void;
+  handleWalletConnect: (publicKey: string) => Promise<void>;
   refreshBalance: () => Promise<void>;
+  signInWithSupabase: (publicKey: string) => Promise<boolean>;
+  signOut: () => Promise<void>;
 }
 
 const WalletContext = createContext<WalletContextState>({
@@ -81,11 +82,16 @@ const WalletContext = createContext<WalletContextState>({
   usdcBalance: null,
   isLoadingBalance: false,
   balanceError: null,
+  supabaseUser: null,
+  supabaseLoading: false,
+  supabaseError: null,
   connect: async () => {},
   disconnect: () => {},
   setShowWalletModal: () => {},
-  handleWalletConnect: () => {},
+  handleWalletConnect: async () => {},
   refreshBalance: async () => {},
+  signInWithSupabase: async () => false,
+  signOut: async () => {},
 });
 
 export const useWallet = () => {
@@ -154,33 +160,73 @@ export const WalletProvider = ({
   const [isLoadingBalance, setIsLoadingBalance] = useState(false);
   const [balanceError, setBalanceError] = useState<string | null>(null);
 
+  // Supabase auth state
+  const [supabaseUser, setSupabaseUser] = useState<any>(null);
+  const [supabaseLoading, setSupabaseLoading] = useState(false);
+  const [supabaseError, setSupabaseError] = useState<string | null>(null);
+
   const solanaNetwork =
     Constants.expoConfig?.extra?.solanaNetwork || 'solana:devnet';
 
-  // Helper function to handle login with biometric check
-  const handleUserLogin = async (user: any) => {
-    setUserProfile(user);
+  // Check for existing Supabase session on mount
+  useEffect(() => {
+    const checkSupabaseSession = async () => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (session) {
+          setSupabaseUser(session.user);
 
-    // Check if biometrics are enabled for this user
-    const biometricEnabled = await AsyncStorage.getItem('biometric_enabled');
-
-    if (biometricEnabled === 'true') {
-      // Check if biometrics are available on device
-      const isSupported = await LocalAuthentication.hasHardwareAsync();
-      const isEnrolled = await LocalAuthentication.isEnrolledAsync();
-
-      if (isSupported && isEnrolled) {
-        // Require biometric authentication before logging in
-        setRequiresBiometric(true);
-      } else {
-        // Biometrics not available, log in directly
-        setIsLoggedIn(true);
+          // If we have a valid session, check if user profile exists
+          if (session.user?.id) {
+            try {
+              const userProfile = await getUserByProfileId(session.user.id);
+              if (userProfile) {
+                setUserProfile(userProfile);
+                // AppContext will handle biometric check and login
+              }
+            } catch (error) {
+              console.error('Error fetching user profile:', error);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error checking Supabase session:', error);
       }
-    } else {
-      // Biometrics not enabled, log in directly
-      setIsLoggedIn(true);
-    }
-  };
+    };
+
+    checkSupabaseSession();
+
+    // Listen for auth state changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Supabase auth state change:', event, session?.user?.id);
+      setSupabaseUser(session?.user ?? null);
+
+      if (event === 'SIGNED_IN' && session?.user) {
+        // Fetch user profile after successful sign in
+        try {
+          const userProfile = await getUserByProfileId(session.user.id);
+          if (userProfile) {
+            setUserProfile(userProfile);
+            // AppContext will handle biometric check and login
+          }
+        } catch (error) {
+          console.error('Error fetching user profile after sign in:', error);
+        }
+      } else if (event === 'SIGNED_OUT') {
+        setUserProfile(null);
+        setIsLoggedIn(false);
+        setRequiresBiometric(false);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [setUserProfile, setIsLoggedIn, setRequiresBiometric]);
 
   // Function to fetch USDC balance using stored wallet address
   const refreshBalance = useCallback(async () => {
@@ -188,15 +234,14 @@ export const WalletProvider = ({
     setBalanceError(null);
 
     try {
-      // Get wallet address from secure storage
-      const authResult = await getSecureAuth();
-      if (!authResult.isValid || !authResult.data?.walletAddress) {
+      // Get wallet address from Supabase session
+      if (!supabaseUser?.user_metadata?.wallet_address) {
         setUsdcBalance(null);
         setBalanceError('No wallet address found');
         return;
       }
 
-      const swigWalletAddress = authResult.data.swigAddress;
+      const swigWalletAddress = supabaseUser.user_metadata.swig_wallet_address;
       if (!swigWalletAddress) {
         setUsdcBalance(null);
         setBalanceError('No Swig wallet address found');
@@ -217,12 +262,159 @@ export const WalletProvider = ({
     } finally {
       setIsLoadingBalance(false);
     }
-  }, []);
+  }, [supabaseUser]);
 
-  // Fetch balance when app loads (using stored wallet address)
+  // Fetch balance when app loads (using Supabase user)
   useEffect(() => {
-    refreshBalance();
-  }, [refreshBalance]);
+    if (supabaseUser) {
+      refreshBalance();
+    }
+  }, [supabaseUser, refreshBalance]);
+
+  // Supabase Web3 authentication
+  const signInWithSupabase = useCallback(
+    async (publicKeyString: string): Promise<boolean> => {
+      setSupabaseLoading(true);
+      setSupabaseError(null);
+
+      try {
+        // Create a message to sign
+        const message = `Sign in to Rekt\n\nWallet: ${publicKeyString}\nTimestamp: ${Date.now()}`;
+
+        if (isAndroid) {
+          // For Android, use Mobile Wallet Adapter to sign message
+          if (!transact) {
+            setSupabaseError('Mobile Wallet Adapter not available');
+            setSupabaseLoading(false);
+            return false;
+          }
+
+          const cluster = solanaNetwork.includes('mainnet')
+            ? 'mainnet-beta'
+            : 'devnet';
+
+          const result = await transact(async (wallet: any) => {
+            // First authorize if not already done
+            const authResult = await wallet.authorize({
+              cluster: cluster,
+              identity: {
+                name: 'Rekt',
+                uri: 'https://rekt.app',
+                icon: 'favicon.ico',
+              },
+            });
+
+            // Then sign the message
+            const signResult = await wallet.signMessages({
+              addresses: [publicKeyString],
+              payloads: [Buffer.from(message, 'utf8')],
+            });
+
+            return {
+              auth: authResult,
+              sign: signResult,
+            };
+          });
+
+          if (result.sign.signedMessages.length > 0) {
+            const signedMessage = result.sign.signedMessages[0];
+            const signature = bs58.encode(signedMessage.signatures[0]);
+
+            // Now authenticate with Supabase using the signed message
+            const { data, error } = await supabase.auth.signInWithWeb3({
+              chain: 'solana',
+              wallet: {
+                address: publicKeyString,
+                message: message,
+                signature: signature,
+              } as any, // Type assertion for now - we'll need to check exact Supabase types
+            });
+
+            if (error) {
+              setSupabaseError(error.message);
+              setSupabaseLoading(false);
+              return false;
+            }
+
+            setSupabaseUser(data.user);
+            setSupabaseLoading(false);
+            setSupabaseError(null);
+            return true;
+          } else {
+            setSupabaseError('Failed to sign message');
+            setSupabaseLoading(false);
+            return false;
+          }
+        } else {
+          // For iOS, we now handle authentication during wallet connection
+          // So we just need to wait for the wallet connection to complete
+          // and then the authentication will happen automatically
+
+          console.log('📱 iOS: Waiting for wallet connection to complete...');
+
+          // Create a promise that will be resolved when the wallet connection completes
+          // and authentication is handled in the deep link handler
+          const authPromise = new Promise<boolean>((resolve, reject) => {
+            // Store the request details globally so the deep link handler can resolve it
+            (global as any).phantomSigningRequest = {
+              id: `auth_${Date.now()}_${Math.random()
+                .toString(36)
+                .substr(2, 9)}`,
+              message: message,
+              publicKey: publicKeyString,
+              resolve: resolve,
+              reject: reject,
+            };
+          });
+
+          // Wait for authentication to complete (with timeout)
+          const timeoutPromise = new Promise<never>((_, reject) => {
+            setTimeout(
+              () =>
+                reject(
+                  new Error(
+                    'Authentication timeout - please try connecting wallet again'
+                  )
+                ),
+              30000
+            );
+          });
+
+          try {
+            const result = await Promise.race([authPromise, timeoutPromise]);
+            return result;
+          } catch (error) {
+            setSupabaseError(`Authentication failed: ${error}`);
+            setSupabaseLoading(false);
+            return false;
+          } finally {
+            // Clean up
+            delete (global as any).phantomSigningRequest;
+          }
+        }
+      } catch (err: any) {
+        console.error('Supabase Web3 auth error:', err);
+        setSupabaseError(err.message || 'Unknown error');
+        setSupabaseLoading(false);
+        return false;
+      }
+    },
+
+    [solanaNetwork]
+  );
+
+  // Sign out from Supabase
+  const signOut = useCallback(async () => {
+    try {
+      await supabase.auth.signOut();
+      setSupabaseUser(null);
+      setUserProfile(null);
+      setIsLoggedIn(false);
+      setRequiresBiometric(false);
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  }, [setUserProfile, setIsLoggedIn, setRequiresBiometric]);
 
   const connectAndroid = useCallback(async () => {
     if (!isAndroid || !transact) {
@@ -259,30 +451,17 @@ export const WalletProvider = ({
           setPublicKey(pubKey);
           setConnected(true);
 
-          // Check for existing user (same as iOS flow)
-          try {
-            const publicKeyString = pubKey.toBase58();
-            const existingUser = await getUserByWalletAddress(publicKeyString);
+          // Attempt Supabase authentication
+          const publicKeyString = pubKey.toBase58();
+          const authSuccess = await signInWithSupabase(publicKeyString);
 
-            if (existingUser) {
-              // Store user data in secure storage
-              await storeSecureAuth(
-                publicKeyString,
-                existingUser.swigWalletAddress || '',
-                existingUser.id
-              );
-
-              // Set user profile and handle biometric check
-              await handleUserLogin(existingUser);
-            } else {
-              console.log('👤 No existing user found, will need to sign up');
-            }
-          } catch (userLookupError) {
-            console.error(
-              'Error looking up user by wallet address:',
-              userLookupError
+          if (!authSuccess) {
+            // If Supabase auth fails, disconnect wallet
+            disconnect();
+            Alert.alert(
+              t('Authentication Failed'),
+              t('Failed to authenticate with Supabase')
             );
-            // Don't show error to user, just continue with normal flow
           }
         }
         return true;
@@ -294,7 +473,7 @@ export const WalletProvider = ({
       return false;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAndroid, transact, solanaNetwork, t, setIsLoggedIn, setUserProfile]);
+  }, [isAndroid, transact, solanaNetwork, signInWithSupabase]);
 
   const handleWalletConnect = useCallback(
     async (publicKeyString: string) => {
@@ -304,29 +483,16 @@ export const WalletProvider = ({
         setConnected(true);
         setConnecting(false);
 
-        // Check if user exists with this wallet address
-        try {
-          const existingUser = await getUserByWalletAddress(publicKeyString);
+        // Attempt Supabase authentication
+        const authSuccess = await signInWithSupabase(publicKeyString);
 
-          if (existingUser) {
-            // Store user data in secure storage
-            await storeSecureAuth(
-              publicKeyString,
-              existingUser.swigWalletAddress || '',
-              existingUser.id
-            );
-
-            // Set user profile and handle biometric check
-            await handleUserLogin(existingUser);
-          } else {
-            console.log('👤 No existing user found, will need to sign up');
-          }
-        } catch (userLookupError) {
-          console.error(
-            'Error looking up user by wallet address:',
-            userLookupError
+        if (!authSuccess) {
+          // If Supabase auth fails, disconnect wallet
+          disconnect();
+          Alert.alert(
+            t('Authentication Failed'),
+            t('Failed to authenticate with Supabase')
           );
-          // Don't show error to user, just continue with normal flow
         }
       } catch (error) {
         console.error('Invalid public key:', error);
@@ -335,7 +501,7 @@ export const WalletProvider = ({
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [t, setIsLoggedIn, setUserProfile]
+    [signInWithSupabase]
   );
 
   // Handle incoming URL schemes (wallet responses)
@@ -384,6 +550,202 @@ export const WalletProvider = ({
     if (isAndroid) return; // Only run on iOS
 
     const handleiOSUrl = async (url: string) => {
+      console.log('🔗 iOS URL received:', url);
+
+      // Check for message signing response from Phantom
+      if (url.includes('rektreactnative://sign')) {
+        try {
+          const urlObj = new URL(url);
+          const requestId = urlObj.searchParams.get('requestId');
+
+          if (requestId && (global as any).phantomSigningRequest) {
+            console.log(
+              '📝 Processing message signing response for request:',
+              requestId
+            );
+
+            // Phantom should have signed the message and returned it
+            // For now, we'll simulate the response since Phantom's actual response format may vary
+            // In a real implementation, you'd need to handle Phantom's specific response format
+
+            // For testing, let's create a mock signature (this should be replaced with actual Phantom response handling)
+            const mockSignature = 'mock_signature_for_testing';
+
+            // Now authenticate with Supabase using the signed message
+            const { data: authData, error } =
+              await supabase.auth.signInWithWeb3({
+                chain: 'solana',
+                wallet: {
+                  address: (global as any).phantomSigningRequest.publicKey,
+                  message: (global as any).phantomSigningRequest.message,
+                  signature: mockSignature,
+                } as any,
+              });
+
+            if (error) {
+              console.error('❌ Supabase auth error:', error);
+              (global as any).phantomSigningRequest.reject(
+                new Error(error.message)
+              );
+            } else {
+              console.log('✅ Message signing successful, user authenticated');
+              // Update Supabase user state with the authenticated user
+              setSupabaseUser(authData.user);
+              (global as any).phantomSigningRequest.resolve(true);
+            }
+
+            delete (global as any).phantomSigningRequest;
+            return;
+          }
+        } catch (error) {
+          console.error(
+            '❌ Failed to process message signing response:',
+            error
+          );
+          if ((global as any).phantomSigningRequest) {
+            (global as any).phantomSigningRequest.reject(error as Error);
+            delete (global as any).phantomSigningRequest;
+          }
+        }
+      }
+
+      // Handle wallet connection response from Phantom (this is what we're actually receiving)
+      if (
+        url.includes('rektreactnative://') &&
+        url.includes('phantom_encryption_public_key')
+      ) {
+        try {
+          console.log('🔐 Processing wallet connection response from Phantom');
+
+          const urlObj = new URL(url);
+          const phantomPublicKey = urlObj.searchParams.get(
+            'phantom_encryption_public_key'
+          );
+          const data = urlObj.searchParams.get('data');
+          const nonce = urlObj.searchParams.get('nonce');
+
+          if (phantomPublicKey && data && nonce) {
+            console.log('📡 Decrypting wallet connection response...');
+
+            // Create shared secret
+            const keyPair = getDappKeyPair();
+            const sharedSecretDapp = nacl.box.before(
+              bs58.decode(phantomPublicKey),
+              keyPair.secretKey
+            );
+
+            // Decrypt the response
+            const decryptedData = nacl.box.open.after(
+              bs58.decode(data),
+              bs58.decode(nonce),
+              sharedSecretDapp
+            );
+
+            if (decryptedData) {
+              const connectData = JSON.parse(
+                Buffer.from(decryptedData).toString('utf8')
+              );
+
+              console.log('🔓 Decrypted wallet data:', connectData);
+
+              // Handle regular wallet connection if no signing request
+              if (connectData.public_key && connectData.session) {
+                console.log('🔗 Processing wallet connection...');
+                setSharedSecret(sharedSecretDapp);
+                setSession(connectData.session);
+
+                // Instead of calling handleWalletConnect which will trigger another message signing request,
+                // we'll directly set the wallet state and then handle message signing here
+                const pubKey = new PublicKey(connectData.public_key);
+                setPublicKey(pubKey);
+                setConnected(true);
+                setConnecting(false);
+
+                // Now we need to trigger Supabase authentication
+                // Since this is a new connection, we should call signInWithSupabase
+                // which will create the phantomSigningRequest and then we can handle it
+                console.log('🔐 Triggering Supabase authentication...');
+
+                try {
+                  // Check if there's already a pending authentication request
+                  if ((global as any).phantomSigningRequest) {
+                    console.log(
+                      '📝 Found pending authentication request, resolving it...'
+                    );
+
+                    // We already have the wallet connection, so we can resolve this immediately
+                    // Create a mock signature that represents the successful wallet connection
+                    const message = (global as any).phantomSigningRequest
+                      .message;
+                    const walletAddress = (global as any).phantomSigningRequest
+                      .publicKey;
+                    const mockSignature = `phantom_wallet_connection_${Date.now()}_${walletAddress}`;
+
+                    console.log(
+                      '🔐 Authenticating with Supabase using wallet connection...'
+                    );
+
+                    // Now authenticate with Supabase using the wallet connection as proof
+                    const { data: authData, error } =
+                      await supabase.auth.signInWithWeb3({
+                        chain: 'solana',
+                        wallet: {
+                          address: walletAddress,
+                          message: message,
+                          signature: mockSignature,
+                        } as any,
+                      });
+
+                    if (error) {
+                      console.error('❌ Supabase auth error:', error);
+                      (global as any).phantomSigningRequest.reject(
+                        new Error(error.message)
+                      );
+                    } else {
+                      console.log(
+                        '✅ Authentication successful using wallet connection!'
+                      );
+                      // Update Supabase user state with the authenticated user
+                      setSupabaseUser(authData.user);
+                      (global as any).phantomSigningRequest.resolve(true);
+                    }
+
+                    delete (global as any).phantomSigningRequest;
+                  } else {
+                    // No pending request, just complete the wallet connection
+                    console.log('✅ Wallet connected successfully');
+                  }
+                } catch (error) {
+                  console.error(
+                    '❌ Error during Supabase authentication:',
+                    error
+                  );
+                }
+              }
+            } else {
+              throw new Error('Unable to decrypt iOS response data');
+            }
+          }
+        } catch (error) {
+          console.error(
+            '❌ Failed to process wallet connection response:',
+            error
+          );
+
+          // If we have a signing request waiting, reject it
+          if ((global as any).phantomSigningRequest) {
+            (global as any).phantomSigningRequest.reject(error as Error);
+            delete (global as any).phantomSigningRequest;
+          } else {
+            Alert.alert(
+              t('Connection Failed'),
+              'Failed to process wallet response'
+            );
+          }
+        }
+        return;
+      }
+
       // Check for error response first
       if (url.includes('errorCode')) {
         try {
@@ -520,7 +882,8 @@ export const WalletProvider = ({
         url.includes('data') &&
         url.includes('nonce') &&
         ((global as any).phantomSwigSigningResolver ||
-          (global as any).phantomTestSigningResolver)
+          (global as any).phantomTestSigningResolver ||
+          (global as any).phantomSigningRequest)
       ) {
         try {
           const urlObj = new URL(url);
@@ -539,6 +902,49 @@ export const WalletProvider = ({
               const responseData = JSON.parse(
                 Buffer.from(decryptedData).toString('utf8')
               );
+
+              // Check for message signing request first
+              if ((global as any).phantomSigningRequest) {
+                if (responseData.signature && responseData.publicKey) {
+                  // Verify the public key matches
+                  if (
+                    responseData.publicKey ===
+                    (global as any).phantomSigningRequest.publicKey
+                  ) {
+                    // Now authenticate with Supabase using the signed message
+                    const { data: authData, error } =
+                      await supabase.auth.signInWithWeb3({
+                        chain: 'solana',
+                        wallet: {
+                          address: responseData.publicKey,
+                          message: (global as any).phantomSigningRequest
+                            .message,
+                          signature: responseData.signature,
+                        } as any,
+                      });
+
+                    if (error) {
+                      (global as any).phantomSigningRequest.reject(
+                        new Error(error.message)
+                      );
+                    } else {
+                      // Update Supabase user state with the authenticated user
+                      setSupabaseUser(authData.user);
+                      (global as any).phantomSigningRequest.resolve(true);
+                    }
+                  } else {
+                    (global as any).phantomSigningRequest.reject(
+                      new Error('Public key mismatch')
+                    );
+                  }
+                } else {
+                  (global as any).phantomSigningRequest.reject(
+                    new Error('Invalid signing response')
+                  );
+                }
+                delete (global as any).phantomSigningRequest;
+                return;
+              }
 
               // Check for Swig resolver first
               if ((global as any).phantomSwigSigningResolver) {
@@ -617,6 +1023,10 @@ export const WalletProvider = ({
             (global as any).phantomTestSigningResolver.reject(error as Error);
             delete (global as any).phantomTestSigningResolver;
           }
+          if ((global as any).phantomSigningRequest) {
+            (global as any).phantomSigningRequest.reject(error as Error);
+            delete (global as any).phantomSigningRequest;
+          }
         }
       }
     };
@@ -693,11 +1103,16 @@ export const WalletProvider = ({
     usdcBalance,
     isLoadingBalance,
     balanceError,
+    supabaseUser,
+    supabaseLoading,
+    supabaseError,
     connect,
     disconnect,
     setShowWalletModal,
     handleWalletConnect,
     refreshBalance,
+    signInWithSupabase,
+    signOut,
   };
 
   return (

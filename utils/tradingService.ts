@@ -5,12 +5,13 @@ import {
   closeTradingPosition,
   getOpenPositions,
   getTradingHistory,
+  getUserByProfileId,
   OpenPositionRequest,
   openTradingPosition,
   Position,
   submitSignedTransaction,
 } from './backendApi';
-import { getSecureAuth } from './secureAuth';
+import { getCurrentUser } from './supabaseApi';
 import {
   signTransactionWithSwig,
   SwigTransactionData,
@@ -19,7 +20,25 @@ import {
 
 export interface TradingFlowResult {
   success: boolean;
-  data?: any;
+  data?: {
+    positionId?: string;
+    transactionSignature?: string;
+    confirmation?: {
+      slot: number;
+      confirmations: number | null;
+      confirmationStatus: string;
+      err: string | null;
+    };
+    entryPrice?: number;
+    exitPrice?: number;
+    pnl?: number;
+    pnlPercentage?: number;
+    closedAt?: string;
+    positionSize?: number;
+    marginUsed?: number;
+    status?: string;
+    openedAt?: string;
+  };
   error?: string;
   requiresInitialization?: boolean;
   initializationData?: SwigTransactionData;
@@ -53,16 +72,24 @@ export class TradingService {
     try {
       console.log('🚀 Starting trade execution:', params);
 
-      // Get user info from secure storage
-      const authResult = await getSecureAuth();
-      if (!authResult.isValid || !authResult.data?.profileId) {
+      // Get user info from Supabase
+      const currentUser = await getCurrentUser();
+      if (!currentUser?.id) {
         return {
           success: false,
           error: 'User not authenticated',
         };
       }
 
-      const { profileId, walletAddress } = authResult.data;
+      const profileId = currentUser.id;
+      const walletAddress = currentUser.user_metadata?.wallet_address;
+      if (!walletAddress) {
+        return {
+          success: false,
+          error: 'Wallet address not found in user metadata',
+        };
+      }
+
       const userPublicKey = new PublicKey(walletAddress);
 
       // Skip Swig validation for now - will be handled when needed
@@ -205,16 +232,18 @@ export class TradingService {
     try {
       console.log('🔧 Starting Drift account initialization...');
 
-      // Get user info
-      const authResult = await getSecureAuth();
-      if (!authResult.isValid || !authResult.data?.walletAddress) {
+      // Get user info from Supabase
+      const currentUser = await getCurrentUser();
+      if (!currentUser?.user_metadata?.wallet_address) {
         return {
           success: false,
-          error: 'User not authenticated',
+          error: 'Wallet address not found in user metadata',
         };
       }
 
-      const userPublicKey = new PublicKey(authResult.data.walletAddress);
+      const userPublicKey = new PublicKey(
+        currentUser.user_metadata.wallet_address
+      );
 
       // Sign the initialization transaction
       console.log('🔐 Signing initialization transaction...');
@@ -235,7 +264,7 @@ export class TradingService {
       console.log('📤 Submitting initialization transaction...');
       const submitResult = await submitSignedTransaction({
         signedTransaction: signingResult.signedTransaction,
-        walletAddress: authResult.data.walletAddress,
+        walletAddress: currentUser.user_metadata.wallet_address,
       });
 
       if (!submitResult.success) {
@@ -274,16 +303,34 @@ export class TradingService {
     try {
       console.log('🔒 Starting position close:', positionId);
 
-      // Get user info
-      const authResult = await getSecureAuth();
-      if (!authResult.isValid || !authResult.data?.profileId) {
+      // Get user info from Supabase
+      const currentUser = await getCurrentUser();
+      if (!currentUser?.id) {
         return {
           success: false,
           error: 'User not authenticated',
         };
       }
 
-      const { profileId, walletAddress } = authResult.data;
+      // Get user profile to get the profile ID
+      const userProfile = await getUserByProfileId(currentUser.id);
+      if (!userProfile) {
+        return {
+          success: false,
+          error: 'User profile not found',
+        };
+      }
+
+      const profileId = userProfile.id;
+      const walletAddress = userProfile.swigWalletAddress;
+
+      if (!walletAddress) {
+        return {
+          success: false,
+          error: 'User wallet address not found',
+        };
+      }
+
       const userPublicKey = new PublicKey(walletAddress);
 
       // Request position closing from backend
@@ -395,14 +442,16 @@ export class TradingService {
    */
   async getPositions(): Promise<Position[]> {
     try {
-      const authResult = await getSecureAuth();
-      if (!authResult.isValid || !authResult.data?.profileId) {
+      const currentUser = await getCurrentUser();
+      if (!currentUser?.id) {
         throw new Error('User not authenticated');
       }
 
-      return await getOpenPositions(authResult.data.profileId);
+      // Use the authenticated API wrapper - no need to pass token
+      const positions = await getOpenPositions(currentUser.id);
+      return positions;
     } catch (error) {
-      console.error('Error getting positions:', error);
+      console.error('Failed to get positions:', error);
       throw error;
     }
   }
@@ -412,14 +461,35 @@ export class TradingService {
    */
   async getHistory(status?: 'open' | 'closed'): Promise<Position[]> {
     try {
-      const authResult = await getSecureAuth();
-      if (!authResult.isValid || !authResult.data?.profileId) {
+      const currentUser = await getCurrentUser();
+      if (!currentUser?.id) {
         throw new Error('User not authenticated');
       }
 
-      return await getTradingHistory(authResult.data.profileId, status);
+      // Use the authenticated API wrapper - no need to pass token
+      const history = await getTradingHistory(currentUser.id, status, 50); // Default limit of 50
+      return history;
     } catch (error) {
-      console.error('Error getting trading history:', error);
+      console.error('Failed to get position history:', error);
+      throw error;
+    }
+  }
+
+  async updatePosition(
+    positionId: string,
+    updates: Partial<Position>
+  ): Promise<Position> {
+    try {
+      const currentUser = await getCurrentUser();
+      if (!currentUser?.id) {
+        throw new Error('User not authenticated');
+      }
+
+      // TODO: Implement position update logic
+      // For now, just return the current position data
+      throw new Error('Position update not implemented yet');
+    } catch (error) {
+      console.error('Failed to update position:', error);
       throw error;
     }
   }

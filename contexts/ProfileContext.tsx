@@ -1,9 +1,8 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Alert } from 'react-native';
 
-import { getSecureAuth } from '@/utils/secureAuth';
+import { useWallet } from '@/contexts';
 
-import { useWallet } from './WalletContext';
 import { useTranslation } from 'react-i18next';
 
 // DetailedTradeData type moved inline since we no longer use mock data
@@ -96,13 +95,15 @@ export const useProfileContext = () => {
   return useContext(ProfileContext);
 };
 
+interface ProfileProviderProps {
+  children: React.ReactNode;
+  userProfile: any | null;
+}
+
 export const ProfileProvider = ({
   children,
   userProfile,
-}: {
-  children: React.ReactNode;
-  userProfile: any | null;
-}) => {
+}: ProfileProviderProps) => {
   const { t } = useTranslation();
   const { usdcBalance } = useWallet();
   const [view, setView] = useState<'trades' | 'minigame'>('trades');
@@ -122,20 +123,14 @@ export const ProfileProvider = ({
   const [acknowledgeValidAddress, setAcknowledgeValidAddress] = useState(false);
   const [acknowledgeNoReversal, setAcknowledgeNoReversal] = useState(false);
 
-  // Fetch profile ID from secure storage
+  // Set profile ID from userProfile when it changes
   useEffect(() => {
-    const getProfileId = async () => {
-      try {
-        const authResult = await getSecureAuth();
-        if (authResult.isValid && authResult.data?.profileId) {
-          setProfileId(authResult.data.profileId);
-        }
-      } catch (error) {
-        console.error('Error getting profile ID:', error);
-      }
-    };
-    getProfileId();
-  }, []);
+    if (userProfile?.id) {
+      setProfileId(userProfile.id);
+    } else {
+      setProfileId(null);
+    }
+  }, [userProfile?.id]);
 
   // User image state - start with userProfile image or empty string
   const [userImage, setUserImage] = useState<string | number>(
@@ -150,7 +145,7 @@ export const ProfileProvider = ({
   }, [userProfile?.profileImage]);
 
   // Reset internal state when userProfile becomes null (on logout)
-  // OR refetch profileId when userProfile is set (on login/signup)
+  // OR update profileId when userProfile changes
   useEffect(() => {
     if (!userProfile) {
       // User logged out - reset everything
@@ -165,20 +160,8 @@ export const ProfileProvider = ({
       setWithdrawalAmount('');
       setAcknowledgeValidAddress(false);
       setAcknowledgeNoReversal(false);
-    } else {
-      // User logged in or new user created - refetch profileId from secure storage
-      const refetchProfileId = async () => {
-        try {
-          const authResult = await getSecureAuth();
-          if (authResult.isValid && authResult.data?.profileId) {
-            setProfileId(authResult.data.profileId);
-          }
-        } catch (error) {
-          console.error('Error refetching profile ID:', error);
-        }
-      };
-      refetchProfileId();
     }
+    // Profile ID is now handled by the separate useEffect above
   }, [userProfile]);
 
   const userData: User = {

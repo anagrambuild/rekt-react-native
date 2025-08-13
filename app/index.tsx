@@ -20,14 +20,22 @@ import { useTranslation } from 'react-i18next';
 import styled, { DefaultTheme } from 'styled-components/native';
 
 const Index = () => {
-  const { isLoggedIn, setIsLoggedIn, showSignUpForm, setShowSignUpForm, requiresBiometric } =
-    useAppContext();
+  const {
+    isLoggedIn,
+    setIsLoggedIn,
+    showSignUpForm,
+    setShowSignUpForm,
+    requiresBiometric,
+  } = useAppContext();
   const {
     connect,
     connecting,
     connected,
     showWalletModal,
     setShowWalletModal,
+    supabaseUser,
+    supabaseLoading,
+    supabaseError,
   } = useWallet();
   const { t } = useTranslation();
   const [isCheckingConnection, setIsCheckingConnection] = useState(true);
@@ -37,11 +45,12 @@ const Index = () => {
     setIsLoggedIn(true);
     setShowSignUpForm(false);
   };
-  // Initial connection check - give some time for persistent state to load
+
+  // Initial connection check - give some time for Supabase session to load
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsCheckingConnection(false);
-    }, 500); // Short delay to allow persistent state to be checked
+    }, 1000); // Allow time for Supabase session check
 
     return () => clearTimeout(timer);
   }, []);
@@ -49,7 +58,7 @@ const Index = () => {
   // Function to check if user is logged in and redirect
   useEffect(() => {
     if (isLoggedIn && !requiresBiometric) {
-      setForceRefresh(prev => prev + 1);
+      setForceRefresh((prev) => prev + 1);
       const delay = Platform.OS === 'android' ? 200 : 50;
       setTimeout(() => {
         router.replace('/(tabs)');
@@ -57,9 +66,10 @@ const Index = () => {
     }
   }, [isLoggedIn, requiresBiometric]);
 
-  // Handle wallet connection success
+  // Handle wallet connection success - now triggers Supabase auth
   useEffect(() => {
-    if (connected) {
+    if (connected && supabaseUser) {
+      // User is connected and authenticated with Supabase
       // Show loading for a brief moment to smooth the transition
       setIsCheckingConnection(true);
       setTimeout(() => {
@@ -67,7 +77,15 @@ const Index = () => {
         setIsCheckingConnection(false);
       }, 800); // Brief delay for smooth transition
     }
-  }, [connected, setShowSignUpForm]);
+  }, [connected, supabaseUser, setShowSignUpForm]);
+
+  // Show Supabase auth errors
+  useEffect(() => {
+    if (supabaseError) {
+      // You might want to show this error in a toast or alert
+      console.error('Supabase auth error:', supabaseError);
+    }
+  }, [supabaseError]);
 
   const player = useVideoPlayer(midFireUrl, (player) => {
     player.loop = true;
@@ -115,18 +133,18 @@ const Index = () => {
     };
   }, [scaleAnim, translateYAnim, welcomeOpacity]);
 
-  // Show loading screen while checking connection or connecting
-  if (isCheckingConnection || connecting) {
+  // Show loading screen while checking connection, connecting, or loading Supabase
+  if (isCheckingConnection || connecting || supabaseLoading) {
     return <LoadingScreen />;
   }
 
   // Show biometric authentication screen if required
   if (requiresBiometric) {
-    return <BiometricAuthScreen key="biometric-auth" />;
+    return <BiometricAuthScreen key='biometric-auth' />;
   }
 
-  // Show sign-up form after wallet connection
-  if (showSignUpForm) {
+  // Show sign-up form after successful wallet connection and Supabase auth
+  if (showSignUpForm && supabaseUser) {
     return (
       <ScreenContainer
         alignItems='stretch'

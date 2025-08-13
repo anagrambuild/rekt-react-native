@@ -19,7 +19,6 @@ import {
   uploadAvatar,
 } from '@/utils/backendApi';
 import { createSwigAccountForMobile } from '@/utils/mobileSwigUtils';
-import { storeSecureAuth } from '@/utils/secureAuth';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -305,10 +304,7 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
         profileImage: avatarUrl, // Use uploaded avatar URL instead of local path
       });
 
-      // Step 3: Store authentication data
-      await storeSecureAuth(publicKey.toBase58(), swigAddressString, user.id);
-
-      // Step 4: Store biometric preference if enabled
+      // Step 3: Store biometric preference if enabled
       if (signUpForm.enableBiometrics) {
         await AsyncStorage.setItem('biometric_enabled', 'true');
       } else {

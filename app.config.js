@@ -104,7 +104,6 @@ module.exports = {
       'expo-router',
       'expo-localization',
       'expo-video',
-      'expo-secure-store',
       [
         'expo-image-picker',
         {
