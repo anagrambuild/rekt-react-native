@@ -17,8 +17,6 @@ import { Stack } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ThemeProvider as StyledThemeProvider } from 'styled-components/native';
 import ToastManager from 'toastify-react-native';
-import { useEffect } from 'react';
-import * as Linking from 'expo-linking';
 
 // Configure RTL support for languages like Arabic and Hebrew
 I18nManager.allowRTL(true);
@@ -35,30 +33,6 @@ export default function RootLayout() {
     Geist: require('../assets/fonts/Geist-VariableFont_wght.ttf'),
     'Geist Mono': require('../assets/fonts/GeistMono-VariableFont_wght.ttf'),
   });
-
-  // Handle deep links for wallet returns
-  useEffect(() => {
-    const handleDeepLink = (url: string) => {
-      console.log('🔗 Deep link received in app layout:', url);
-      // The WalletContext will handle the actual deep link processing
-    };
-
-    // Handle initial URL if app was opened via deep link
-    Linking.getInitialURL().then((url) => {
-      if (url) {
-        handleDeepLink(url);
-      }
-    });
-
-    // Listen for incoming deep links when app is already running
-    const subscription = Linking.addEventListener('url', (event) => {
-      handleDeepLink(event.url);
-    });
-
-    return () => {
-      subscription.remove();
-    };
-  }, []);
 
   if (!fontsLoaded) {
     return null;

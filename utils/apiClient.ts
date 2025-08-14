@@ -12,6 +12,14 @@ class ApiClient {
   }
 
   /**
+   * Get the base URL for direct fetch calls (like FormData uploads)
+   */
+  getBaseURL(): string {
+    console.log('getBaseURL', this.baseURL);
+    return this.baseURL;
+  }
+
+  /**
    * Get the current Supabase access token
    */
   private async getAuthHeaders(): Promise<HeadersInit> {
