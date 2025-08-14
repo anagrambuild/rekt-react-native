@@ -25,8 +25,10 @@ export class WebSocketService {
 
   constructor(url?: string) {
     // Use WebSocket URL from config, convert HTTP to WebSocket protocol
-    const apiUrl = Constants.expoConfig?.extra?.apiUrl || 'https://rekt-user-management.onrender.com';
-    const wsUrl = apiUrl.replace('https://', 'wss://').replace('http://', 'ws://');
+    const apiUrl = Constants.expoConfig?.extra?.apiUrl;
+    const wsUrl = apiUrl
+      .replace('https://', 'wss://')
+      .replace('http://', 'ws://');
     this.url = url || wsUrl;
   }
 

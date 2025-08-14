@@ -9,7 +9,6 @@ import {
   PrimaryButton,
   ScreenContainer,
   SignUpForm,
-  TertiaryButton,
   WalletConnectionModal,
 } from '@/components';
 import { useAppContext, useWallet } from '@/contexts';
@@ -28,8 +27,13 @@ const Index = () => {
     setShowSignUpForm,
     requiresBiometric,
   } = useAppContext();
-  const { connecting, connected, showWalletModal, setShowWalletModal } =
-    useWallet();
+  const {
+    connecting,
+    connected,
+    showWalletModal,
+    setShowWalletModal,
+    connect,
+  } = useWallet();
   const { t } = useTranslation();
   const [isCheckingConnection, setIsCheckingConnection] = useState(true);
   const [forceRefresh, setForceRefresh] = useState(0);
@@ -69,7 +73,8 @@ const Index = () => {
         setIsCheckingConnection(false);
       }, 800); // Brief delay for smooth transition
     }
-  }, [connected, setShowSignUpForm]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connected, showSignUpForm]);
 
   const player = useVideoPlayer(midFireUrl, (player) => {
     player.loop = true;
@@ -127,7 +132,13 @@ const Index = () => {
     return <BiometricAuthScreen key='biometric-auth' />;
   }
 
-  // Show sign-up form when requested or when wallet is connected
+  const connectWallet = () => {
+    if (Platform.OS === 'ios') {
+      setShowWalletModal(true);
+    } else {
+      connect();
+    }
+  };
   if (showSignUpForm) {
     return (
       <ScreenContainer
@@ -187,12 +198,9 @@ const Index = () => {
           </AnimatedTitle1>
         </Column>
         <AnimatedButtonsContainer style={{ opacity: welcomeOpacity }}>
-          <PrimaryButton onPress={() => setShowSignUpForm(true)}>
-            {t('Sign up')}
+          <PrimaryButton onPress={connectWallet} disabled={connecting}>
+            {connecting ? t('Connecting...') : t('Connect Wallet')}
           </PrimaryButton>
-          <TertiaryButton onPress={() => setShowSignUpForm(true)}>
-            {t('Login')}
-          </TertiaryButton>
         </AnimatedButtonsContainer>
         <VideoView
           player={player}
@@ -201,10 +209,12 @@ const Index = () => {
           nativeControls={false}
         />
       </Column>
-      <WalletConnectionModal
-        visible={showWalletModal}
-        onRequestClose={() => setShowWalletModal(false)}
-      />
+      {showWalletModal && (
+        <WalletConnectionModal
+          visible={showWalletModal}
+          onRequestClose={() => setShowWalletModal(false)}
+        />
+      )}
     </ScreenContainer>
   );
 };
