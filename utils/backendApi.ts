@@ -1,11 +1,5 @@
 import { apiClient } from './apiClient';
 import { supabase } from './supabase';
-import Constants from 'expo-constants';
-
-// Use the API URL from app.config.js
-const BACKEND_BASE_URL =
-  Constants.expoConfig?.extra?.apiUrl ||
-  'https://rekt-user-management.onrender.com';
 
 // API Response Interfaces
 export interface ApiResponse<T> {
@@ -289,7 +283,6 @@ export interface CreateUserRequest {
   email?: string;
   profileImage?: string;
   walletAddress: string;
-  swigWalletAddress?: string;
 }
 
 export interface UpdateUserRequest {
@@ -304,22 +297,35 @@ export interface UsernameCheckResponse {
   suggestions?: string[];
 }
 
-export const checkUsernameAvailability = async (
+// Public username check that doesn't require authentication
+export const checkUsernameAvailabilityPublic = async (
   username: string
 ): Promise<UsernameCheckResponse> => {
   try {
-    // Use the authenticated API client instead of raw fetch
-    const data = await apiClient.post<UsernameCheckApiResponse>(
-      `/api/auth/check-username`,
-      { username }
-    );
+    // Use direct fetch for public endpoints that don't require authentication
+    const url = `${apiClient.getBaseURL()}/api/auth/check-username`;
+    console.log('🌐 Using API URL:', url);
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ username }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const data: UsernameCheckApiResponse = await response.json();
 
     return {
       available: data.available,
       suggestions: data.suggestions,
     };
   } catch (error) {
-    console.error('❌ Username check error:', error);
+    console.error('❌ Username check error (public):', error);
     throw error;
   }
 };
@@ -353,31 +359,30 @@ export const createUser = async (
   userData: CreateUserRequest
 ): Promise<User> => {
   try {
-    // Map frontend data structure to backend expected structure
+    // Map frontend data structure to new backend expected structure
     const backendUserData = {
       username: userData.username,
       email: userData.email || '',
       avatar_url: userData.profileImage || '',
       wallet_address: userData.walletAddress,
-      swig_wallet_address: userData.swigWalletAddress || '',
     };
 
-    // Use the authenticated API client instead of raw fetch
-    const result = await apiClient.post<ApiResponse<UserApiResponse>>(
-      `/api/auth/create-account`,
-      backendUserData
-    );
+    const result = await apiClient.post<{
+      success: boolean;
+      user: any;
+      message: string;
+    }>(`/api/auth/create-account`, backendUserData);
 
     // Map backend response to frontend User interface
-    // Backend returns: { success: true, user: { id, username, email, ... }, message }
+    // Backend returns: { success: true, user: { id, username, email, swig_wallet_address, ... }, message, driftAccount }
     return {
-      id: result.data!.user.id,
-      username: result.data!.user.username,
-      email: result.data!.user.email,
-      profileImage: result.data!.user.avatar_url,
-      swigWalletAddress: result.data!.user.swig_wallet_address,
-      createdAt: result.data!.user.joined_at || new Date().toISOString(),
-      updatedAt: result.data!.user.updated_at || new Date().toISOString(),
+      id: result.user.id,
+      username: result.user.username,
+      email: result.user.email,
+      profileImage: result.user.avatar_url,
+      swigWalletAddress: result.user.swig_wallet_address,
+      createdAt: result.user.joined_at || new Date().toISOString(),
+      updatedAt: result.user.updated_at || new Date().toISOString(),
     };
   } catch (error) {
     console.error('Error creating user:', error);
@@ -496,14 +501,19 @@ export const uploadAvatar = async (
       throw new Error('No authentication token available');
     }
 
-    const response = await fetch(`${BACKEND_BASE_URL}/api/upload/avatar`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        // Don't set Content-Type header - let FormData set it with boundary
-      },
-      body: formData,
-    });
+    // For FormData uploads, we need to use fetch directly
+    // Use the same base URL that apiClient uses
+    const response = await fetch(
+      `${apiClient.getBaseURL()}/api/upload/avatar`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          // Don't set Content-Type header - let FormData set it with boundary
+        },
+        body: formData,
+      }
+    );
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
