@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
 import coinDarkIcon from '@/assets/images/app-pngs/coin-dark.png';
@@ -31,6 +32,20 @@ export const EarningsCard = ({
 }: EarningsCardProps) => {
   const { t } = useTranslation();
   const theme = useTheme();
+  const [earnings, setEarnings] = useState(0.0000002);
+
+  // Increment earnings every 2 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setEarnings((prev) => {
+        const newValue = prev + 0.0000001;
+        return parseFloat(newValue.toFixed(7));
+      });
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <EarningsCardContainer
       ref={earningAmountRef}
@@ -52,7 +67,7 @@ export const EarningsCard = ({
           <Column $gap={4} $alignItems='flex-start'>
             <BodyMEmphasized>{t('Earnings so far')}</BodyMEmphasized>
             <Row $alignItems='center' $justifyContent='flex-start'>
-              <BodyMSecondary>$0.0000002</BodyMSecondary>
+              <BodyMSecondary>${earnings.toFixed(7)}</BodyMSecondary>
               <View
                 ref={earningAmountTextRef}
                 onLayout={handleEarningAmountLayout}
@@ -78,8 +93,7 @@ export const EarningsCard = ({
 const EarningsCardContainer = styled(Card)`
   width: 100%;
   padding: 16px;
-  background-color: ${({ theme }: { theme: any }) =>
-    theme.colors.backgroundSecondary};
+  background-color: transparent;
   border-radius: 12px;
   position: relative;
   overflow: visible;
