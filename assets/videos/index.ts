@@ -9,3 +9,6 @@ export const midFireUrl =
 
 export const highFireUrl =
   'https://amgeuvathssbhopfvubw.supabase.co/storage/v1/object/sign/video-files/High%20Intensity%20Fire.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8wMTU0NTY5Mi1kNzExLTQ1YjItOWIzNS0zOGFlMWNkYmM1MTEiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJ2aWRlby1maWxlcy9IaWdoIEludGVuc2l0eSBGaXJlLm1wNCIsImlhdCI6MTc1MzEyMjYzMCwiZXhwIjoxNzg0NjU4NjMwfQ.gTPjwQ9InMu2y9msL2--usLUW3pBmHsaHyDX_Bw3PnA';
+
+export const blueFlameUrl =
+  'https://amgeuvathssbhopfvubw.supabase.co/storage/v1/object/sign/video-files/Blue%20flame.mp4?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8wMTU0NTY5Mi1kNzExLTQ1YjItOWIzNS0zOGFlMWNkYmM1MTEiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJ2aWRlby1maWxlcy9CbHVlIGZsYW1lLm1wNCIsImlhdCI6MTc1NTIwODAzMiwiZXhwIjoxODQ5ODE2MDMyfQ.sN02d0Wx_V60KtjhljQXWFSfVRzLMQLbzCNSv4x73hg';
