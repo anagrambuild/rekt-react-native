@@ -18,6 +18,7 @@ export const Step1 = () => {
         // minHeight: 400,
         justifyContent: 'flex-start',
         position: 'relative',
+        overflow: 'hidden', // Add overflow hidden to clip the frame
       }}
     >
       {/* iPhone Frame as background wrapper */}
