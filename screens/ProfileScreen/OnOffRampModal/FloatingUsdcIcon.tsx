@@ -39,17 +39,17 @@ export const FloatingUsdcIcon = ({
       Animated.parallel([
         Animated.timing(translateY, {
           toValue: deltaY,
-          duration: 3000,
+          duration: 1000,
           useNativeDriver: true,
         }),
         Animated.timing(translateX, {
           toValue: deltaX,
-          duration: 3000,
+          duration: 1000,
           useNativeDriver: true,
         }),
         Animated.timing(opacity, {
           toValue: 0,
-          duration: 3000,
+          duration: 1000,
           useNativeDriver: true,
         }),
       ]).start(() => {
