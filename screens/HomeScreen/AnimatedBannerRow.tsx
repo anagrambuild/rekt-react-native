@@ -9,7 +9,6 @@ export const AnimatedBannerRow = ({ items }: { items: any[] }) => {
   const scrollAnim = useRef(new Animated.Value(0)).current;
   const itemGap = 16;
   const [rowWidth, setRowWidth] = useState(0);
-  const currentPositionRef = useRef(0);
 
   // Calculate total width of all items (approximate)
   const onLayout = (e: any) => {
@@ -19,11 +18,9 @@ export const AnimatedBannerRow = ({ items }: { items: any[] }) => {
   useEffect(() => {
     if (rowWidth === 0) return;
     const animate = () => {
-      const newPosition = currentPositionRef.current - rowWidth;
-      currentPositionRef.current = newPosition;
-
+      scrollAnim.setValue(0);
       Animated.timing(scrollAnim, {
-        toValue: newPosition,
+        toValue: -rowWidth,
         duration: 6000,
         useNativeDriver: true,
         easing: Easing.linear,
@@ -33,7 +30,7 @@ export const AnimatedBannerRow = ({ items }: { items: any[] }) => {
     return () => scrollAnim.stopAnimation();
   }, [rowWidth, scrollAnim]);
 
-  // Duplicate items for seamless looping
+  // Duplicate items multiple times to ensure we have enough content
   const allItems = [...items, ...items, ...items, ...items, ...items, ...items];
 
   return (
