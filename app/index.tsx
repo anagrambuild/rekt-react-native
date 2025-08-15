@@ -13,6 +13,7 @@ import {
 } from '@/components';
 import { useAppContext, useWallet } from '@/contexts';
 import { LoadingScreen } from '@/screens';
+import { Step1 } from '@/screens/LoginScreen';
 
 import { router } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
@@ -47,7 +48,7 @@ const Index = () => {
   useEffect(() => {
     if (isLoggedIn && !requiresBiometric) {
       setForceRefresh((prev) => prev + 1);
-      const delay = Platform.OS === 'android' ? 200 : 50;
+      const delay = 50;
       setTimeout(() => {
         router.replace('/(tabs)');
       }, delay);
@@ -82,7 +83,7 @@ const Index = () => {
   });
 
   const scaleAnim = useRef(new Animated.Value(0)).current;
-  const translateYAnim = useRef(new Animated.Value(60)).current;
+  const translateYAnim = useRef(new Animated.Value(300)).current;
   const welcomeOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -100,7 +101,7 @@ const Index = () => {
         timeout2 = setTimeout(() => {
           Animated.parallel([
             Animated.timing(translateYAnim, {
-              toValue: -140, // moves the logo up
+              toValue: 20, // moves the logo to the top
               duration: 800,
               useNativeDriver: true,
               easing: Easing.inOut(Easing.exp),
@@ -132,13 +133,16 @@ const Index = () => {
     return <BiometricAuthScreen key='biometric-auth' />;
   }
 
-  const connectWallet = () => {
-    if (Platform.OS === 'ios') {
-      setShowWalletModal(true);
-    } else {
-      connect();
-    }
-  };
+  // const connectWallet = () => {
+  //   if (Platform.OS === 'ios') {
+  //     setShowWalletModal(true);
+  //   } else {
+  //     connect();
+  //   }
+  // };
+
+  const connectWallet = () => router.push('/(tabs)');
+
   if (showSignUpForm) {
     return (
       <ScreenContainer
@@ -178,13 +182,8 @@ const Index = () => {
       noPadding
       contentContainerStyle={{ flex: 1, position: 'relative' }}
     >
-      <Column $width='100%' $height='100%' $justifyContent='flex-end'>
-        <Column
-          $width='100%'
-          $padding={24}
-          $justifyContent='flex-end'
-          style={{ height: '50%' }}
-        >
+      <Column $height='100%' $justifyContent='space-between'>
+        <Column $width='100%' $padding={12} $justifyContent='flex-start'>
           <Animated.View
             style={{
               alignItems: 'center',
@@ -193,11 +192,10 @@ const Index = () => {
           >
             <RektLogo width={100} height={100} />
           </Animated.View>
-          <AnimatedTitle1 style={{ opacity: welcomeOpacity }}>
-            {t('Welcome')}
-          </AnimatedTitle1>
         </Column>
+
         <AnimatedButtonsContainer style={{ opacity: welcomeOpacity }}>
+          <Step1 />
           <PrimaryButton onPress={connectWallet} disabled={connecting}>
             {connecting ? t('Connecting...') : t('Connect Wallet')}
           </PrimaryButton>
@@ -221,15 +219,8 @@ const Index = () => {
 
 export default Index;
 
-const AnimatedTitle1 = styled(Animated.Text)`
-  font-size: 32px;
-  font-family: 'Unbounded';
-  font-weight: 400;
-  color: ${({ theme }: { theme: DefaultTheme }) => theme.colors.textPrimary};
-`;
-
 const AnimatedButtonsContainer = styled(Animated.View)`
-  padding: 16px;
+  padding: 8px;
   position: absolute;
   left: 0;
   right: 0;

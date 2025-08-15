@@ -429,9 +429,11 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
         setIsPricesLoading(true);
         setPricesError(null);
         const prices = await fetchTokenPrices(['sol', 'eth', 'btc']);
-        setTokenPrices(prices);
+        if (prices.sol && prices.eth && prices.btc) {
+          setTokenPrices(prices as Record<SupportedToken, TokenPrice>);
+        }
       } catch (error) {
-        console.error('Failed to fetch token prices:', error);
+        // console.error('Failed to fetch token prices:', error);
         setPricesError(error as Error);
         // Fallback to mock data if API fails
         setTokenPrices({
@@ -439,7 +441,7 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
             id: 'solana',
             symbol: 'SOL',
             name: 'Solana',
-            current_price: 170.5,
+            current_price: 171.9,
             price_change_24h: 2.5,
             price_change_percentage_24h: 1.5,
             market_cap: 85000000000,

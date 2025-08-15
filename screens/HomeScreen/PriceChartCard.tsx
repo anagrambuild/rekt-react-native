@@ -4,10 +4,31 @@ import { useHomeContext } from '@/contexts';
 import { PriceChart } from './PriceChart';
 import styled from 'styled-components/native';
 
+// Generate dummy SOL chart data for login screen that matches the design
+const generateDummySolData = () => {
+  const now = Date.now();
+  const oneMonthAgo = now - 30 * 24 * 60 * 60 * 1000; // 30 days ago
+
+  // Create data points that show realistic price movement with ups and downs but overall upward trend
+  const data = [
+    { value: 167.5, timestamp: oneMonthAgo },
+    { value: 167.1, timestamp: oneMonthAgo + 5 * 24 * 60 * 60 * 1000 }, // Down
+    { value: 168.9, timestamp: oneMonthAgo + 10 * 24 * 60 * 60 * 1000 }, // Up
+    { value: 169.2, timestamp: oneMonthAgo + 15 * 24 * 60 * 60 * 1000 }, // Down
+    { value: 170.6, timestamp: oneMonthAgo + 20 * 24 * 60 * 60 * 1000 }, // Up
+    { value: 170.2, timestamp: oneMonthAgo + 25 * 24 * 60 * 60 * 1000 }, // Down
+    { value: 171.9, timestamp: now }, // Final up
+  ];
+
+  return data;
+};
+
 export const PriceChartCard = ({
   showLiquidation = false,
+  loginScreen = false,
 }: {
   showLiquidation?: boolean;
+  loginScreen?: boolean;
 }) => {
   const {
     selectedToken,
@@ -20,6 +41,9 @@ export const PriceChartCard = ({
     btcTrade,
     tokenPrices,
   } = useHomeContext();
+
+  // Generate dummy data for login screen
+  const dummySolData = generateDummySolData();
 
   // Get the current trade based on selected token
   const getCurrentTrade = () => {
@@ -46,26 +70,39 @@ export const PriceChartCard = ({
     return price.toFixed(0);
   };
 
+  // For login screen, always show SOL data and disable token selection
+  const displayToken = loginScreen ? 'sol' : selectedToken;
+  const displayPrice = loginScreen
+    ? '171.90'
+    : formatPrice(tokenPrices?.sol?.current_price);
+
   return (
     <Card style={{ gap: 4 }}>
       <ScrollRow contentContainerStyle={{ gap: 4 }}>
         <TokenTab
           name='sol'
-          price={formatPrice(tokenPrices?.sol?.current_price)}
-          selected={selectedToken === 'sol'}
-          onPress={() => setSelectedToken('sol')}
+          price={
+            loginScreen
+              ? displayPrice
+              : formatPrice(tokenPrices?.sol?.current_price)
+          }
+          selected={displayToken === 'sol'}
+          onPress={loginScreen ? undefined : () => setSelectedToken('sol')}
+          disabled={loginScreen}
         />
         <TokenTab
           name='eth'
           price={formatPrice(tokenPrices?.eth?.current_price)}
-          selected={selectedToken === 'eth'}
-          onPress={() => setSelectedToken('eth')}
+          selected={displayToken === 'eth'}
+          onPress={loginScreen ? undefined : () => setSelectedToken('eth')}
+          disabled={loginScreen}
         />
         <TokenTab
           name='btc'
           price={formatPrice(tokenPrices?.btc?.current_price)}
-          selected={selectedToken === 'btc'}
-          onPress={() => setSelectedToken('btc')}
+          selected={displayToken === 'btc'}
+          onPress={loginScreen ? undefined : () => setSelectedToken('btc')}
+          disabled={loginScreen}
         />
       </ScrollRow>
       <ChartContainer>
@@ -76,7 +113,11 @@ export const PriceChartCard = ({
             onValueChange={setSelectedTimeframe}
           />
         </PickerContainer>
-        <PriceChart showLiquidation={showLiquidation} trade={currentTrade} />
+        <PriceChart
+          showLiquidation={showLiquidation}
+          trade={currentTrade}
+          dummyData={loginScreen ? dummySolData : undefined}
+        />
       </ChartContainer>
     </Card>
   );
