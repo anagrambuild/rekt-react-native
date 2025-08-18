@@ -52,7 +52,7 @@ export const Step1 = () => {
             marginBottom: 8,
           }}
         />
-        <Row style={{ paddingStart: 12, paddingEnd: 12 }}>
+        <Row style={{ paddingStart: 24, paddingEnd: 24 }}>
           <LogoBanner />
         </Row>
         <View

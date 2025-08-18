@@ -13,12 +13,12 @@ import {
 } from '@/components';
 import { useAppContext, useWallet } from '@/contexts';
 import { LoadingScreen } from '@/screens';
-import { Step1 } from '@/screens/LoginScreen';
+import { Step2 } from '@/screens/LoginScreen';
 
 import { router } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useTranslation } from 'react-i18next';
-import styled, { DefaultTheme } from 'styled-components/native';
+import styled from 'styled-components/native';
 
 const Index = () => {
   const {
@@ -133,15 +133,15 @@ const Index = () => {
     return <BiometricAuthScreen key='biometric-auth' />;
   }
 
-  // const connectWallet = () => {
-  //   if (Platform.OS === 'ios') {
-  //     setShowWalletModal(true);
-  //   } else {
-  //     connect();
-  //   }
-  // };
+  const connectWallet = () => {
+    if (Platform.OS === 'ios') {
+      setShowWalletModal(true);
+    } else {
+      connect();
+    }
+  };
 
-  const connectWallet = () => router.push('/(tabs)');
+  // const connectWallet = () => router.push('/(tabs)');
 
   if (showSignUpForm) {
     return (
@@ -195,7 +195,7 @@ const Index = () => {
         </Column>
 
         <AnimatedButtonsContainer style={{ opacity: welcomeOpacity }}>
-          <Step1 />
+          <Step2 />
           <PrimaryButton onPress={connectWallet} disabled={connecting}>
             {connecting ? t('Connecting...') : t('Connect Wallet')}
           </PrimaryButton>

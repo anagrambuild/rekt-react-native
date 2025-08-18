@@ -11,7 +11,15 @@ import styled, { useTheme } from 'styled-components/native';
 // could not get the image to work on dev build
 // const sliderHandle = require('../assets/images/app-pngs/slider-handle.png');
 
-export const HorizontalSlider = () => {
+export const HorizontalSlider = ({
+  loginScreen,
+  setLeverage: setLoginLeverageProp,
+  leverage: propLeverage,
+}: {
+  loginScreen?: boolean;
+  setLeverage?: (leverage: number) => void;
+  leverage?: number;
+}) => {
   const {
     selectedToken,
     solTrade,
@@ -25,10 +33,14 @@ export const HorizontalSlider = () => {
   // Get current trade state based on selected token
   const getCurrentTrade = () => {
     switch (selectedToken) {
-      case 'sol': return solTrade;
-      case 'eth': return ethTrade;
-      case 'btc': return btcTrade;
-      default: return solTrade;
+      case 'sol':
+        return solTrade;
+      case 'eth':
+        return ethTrade;
+      case 'btc':
+        return btcTrade;
+      default:
+        return solTrade;
     }
   };
 
@@ -41,12 +53,20 @@ export const HorizontalSlider = () => {
   const getSliderFromLeverage = (leverage: number) =>
     leverage === 1 ? 0 : leverage;
 
-  const leverage =
-    selectedToken === 'sol'
-      ? solTrade?.leverage ?? 1
-      : selectedToken === 'eth'
-      ? ethTrade?.leverage ?? 1
-      : btcTrade?.leverage ?? 1;
+  const leverage = loginScreen
+    ? propLeverage ?? 1
+    : selectedToken === 'sol'
+    ? solTrade?.leverage ?? 1
+    : selectedToken === 'eth'
+    ? ethTrade?.leverage ?? 1
+    : btcTrade?.leverage ?? 1;
+
+  const setLoginLeverage = (sliderValue: number) => {
+    const newLeverage = getLeverageFromSlider(sliderValue);
+    if (setLoginLeverageProp) {
+      setLoginLeverageProp(newLeverage);
+    }
+  };
 
   const setLeverage = (sliderValue: number) => {
     const newLeverage = getLeverageFromSlider(sliderValue);
@@ -170,7 +190,7 @@ export const HorizontalSlider = () => {
           maximumValue={max}
           step={10}
           value={sliderValue}
-          onValueChange={setLeverage}
+          onValueChange={loginScreen ? setLoginLeverage : setLeverage}
           minimumTrackTintColor='transparent'
           maximumTrackTintColor='transparent'
           // thumbImage={sliderHandle}
