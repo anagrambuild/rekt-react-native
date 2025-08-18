@@ -64,8 +64,6 @@ export const Balance = ({
     player.play();
   });
 
-  console.log('usdcIconPosition', usdcIconPosition);
-  console.log('earningAmountPosition', earningAmountPosition);
   const goToTransfer = () => {
     setView('transfer');
   };
@@ -106,7 +104,7 @@ export const Balance = ({
       y: earningAmountPosition.y - usdcIconPosition.y,
     };
   }, [usdcIconPosition, earningAmountPosition]);
-  console.log('targetPosition', targetPosition);
+
   return (
     <Column>
       {hasBreeze && (
