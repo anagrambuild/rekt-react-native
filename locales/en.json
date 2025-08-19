@@ -231,5 +231,9 @@
   "Transaction timeout. Please try again.": "Transaction timeout. Please try again.",
   "Transaction was cancelled.": "Transaction was cancelled.",
   "Failed to create Swig account. Please check your wallet and try again.": "Failed to create Swig account. Please check your wallet and try again.",
-  "Network error. Please check your connection and try again.": "Network error. Please check your connection and try again."
+  "Network error. Please check your connection and try again.": "Network error. Please check your connection and try again.",
+  "Deposit": "Deposit",
+  "Deposit with": "Deposit with",
+  "Instant and secure, backed by Google Pay": "Instant and secure, backed by Google Pay",
+  "Instant and secure, backed by Apple Pay": "Instant and secure, backed by Apple Pay"
 }
