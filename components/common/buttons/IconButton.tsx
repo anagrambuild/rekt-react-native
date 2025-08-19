@@ -27,6 +27,7 @@ interface IconButtonProps extends PressableProps {
   onPress: () => void;
   size?: number;
   color?: string;
+  disabled?: boolean;
 }
 
 export const IconButton = ({
@@ -34,12 +35,13 @@ export const IconButton = ({
   onPress,
   size = 16,
   color,
+  disabled,
   ...props
 }: IconButtonProps) => {
   const theme = useTheme();
   return (
     <Container>
-      <StyledPressable onPress={onPress} {...props}>
+      <StyledPressable onPress={disabled ? undefined : onPress} {...props}>
         <MaterialIcon
           name={name}
           size={size}

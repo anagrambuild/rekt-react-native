@@ -42,10 +42,10 @@ export const Step2 = () => {
       {/* iPhone Frame as background wrapper */}
       <Image
         source={iphoneFrame}
+        contentFit='contain'
         style={{
           width: '100%',
           height: 640,
-          resizeMode: 'contain',
           alignSelf: 'stretch',
         }}
       />
@@ -63,10 +63,10 @@ export const Step2 = () => {
       >
         <Image
           source={topNav}
+          contentFit='contain'
           style={{
             width: '100%',
             height: 60,
-            resizeMode: 'contain',
             marginBottom: 8,
           }}
         />
