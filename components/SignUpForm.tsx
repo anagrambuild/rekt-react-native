@@ -31,6 +31,7 @@ import {
   Title1,
 } from './common';
 import { Image } from 'expo-image';
+import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import styled, { DefaultTheme, useTheme } from 'styled-components/native';
 import { Toast } from 'toastify-react-native';
@@ -41,7 +42,11 @@ interface SignUpFormProps {
 
 export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
   const { t } = useTranslation();
-  const { signUp, signOut, loading: authLoading } = useAuth();
+  const {
+    signUp,
+    //  signOut,
+    loading: authLoading,
+  } = useAuth();
   const { publicKey, connected } = useWallet();
   const { takePhoto, pickFromLibrary, isLoading } = useImagePicker();
   const { isSupported, isEnrolled, biometricType, enableBiometrics } =
@@ -205,6 +210,7 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
     }
   };
 
+  // TODO: Add this back when backend is ready
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
@@ -386,6 +392,9 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
       setIsSubmitting(false);
     }
   };
+
+  const goToApp = () => router.push('/(tabs)');
+
   // Show loading screen when submitting (after user returns from Phantom)
   if (isSubmitting) {
     return (
@@ -511,7 +520,7 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
           </Column>
         </Column>
 
-        <PrimaryButton
+        {/* <PrimaryButton
           onPress={async () => {
             try {
               await signOut();
@@ -520,18 +529,13 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
               console.error('❌ Error signing out:', error);
             }
           }}
-          style={{
-            marginTop: 24,
-            backgroundColor: theme.colors.loss,
-            marginBottom: 12,
-          }}
         >
           {t('Sign Out')}
-        </PrimaryButton>
+        </PrimaryButton> */}
 
         {/* Submit Button */}
         <PrimaryButton
-          onPress={handleSubmit}
+          onPress={goToApp}
           disabled={isSubmitting || authLoading}
           style={{ marginTop: 24 }}
         >

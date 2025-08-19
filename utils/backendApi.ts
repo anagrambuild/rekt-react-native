@@ -147,7 +147,8 @@ export const fetchTokenPrices = async (
 
     return result;
   } catch (error) {
-    console.error('❌ Error fetching token prices:', error);
+    // TODO: Add this back when backend is ready
+    // console.error('❌ Error fetching token prices:', error);
     throw error;
   }
 };

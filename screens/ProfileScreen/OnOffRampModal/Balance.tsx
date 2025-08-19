@@ -158,7 +158,7 @@ export const Balance = ({
                   </Title2>
                 )}
                 <View ref={usdcIconRef} onLayout={handleUsdcIconLayout}>
-                  {hasBreeze ? (
+                  {hasBreeze || loginScreen ? (
                     <PulsatingContainer duration={1000}>
                       <UsdcIcon width={20} height={20} />
                     </PulsatingContainer>

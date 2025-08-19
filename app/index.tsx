@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Platform } from 'react-native';
+import { Animated, Easing } from 'react-native';
 
 import RektLogo from '@/assets/images/rekt-logo.svg';
 import { midFireUrl } from '@/assets/videos';
@@ -33,7 +33,7 @@ const Index = () => {
     connected,
     showWalletModal,
     setShowWalletModal,
-    connect,
+    // connect,
   } = useWallet();
   const { t } = useTranslation();
   const [isCheckingConnection, setIsCheckingConnection] = useState(true);

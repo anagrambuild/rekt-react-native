@@ -2,7 +2,7 @@ import { View } from 'react-native';
 
 import iphoneFrame from '@/assets/images/app-pngs/iphone-frame.png';
 import topNav from '@/assets/images/app-pngs/top-nav.png';
-import { Column, Gap, Title4 } from '@/components';
+import { Column, Title4 } from '@/components';
 import { renderTopThree } from '@/screens/LeaderboardScreen';
 
 import { Image } from 'expo-image';

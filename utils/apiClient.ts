@@ -38,7 +38,8 @@ class ApiClient {
         Authorization: `Bearer ${token}`,
       };
     } catch (error) {
-      console.error('Failed to get auth token:', error);
+      // TODO: Add this back when backend is ready
+      // console.error('Failed to get auth token:', error);
       throw new Error('Authentication required');
     }
   }
