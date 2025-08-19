@@ -30,8 +30,8 @@ export const AnimatedBannerRow = ({ items }: { items: any[] }) => {
     return () => scrollAnim.stopAnimation();
   }, [rowWidth, scrollAnim]);
 
-  // Duplicate items for seamless looping
-  const allItems = [...items, ...items];
+  // Duplicate items multiple times to ensure we have enough content
+  const allItems = [...items, ...items, ...items, ...items, ...items, ...items];
 
   return (
     <BannerRowContainer>

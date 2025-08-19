@@ -22,7 +22,6 @@ export const FloatingUsdcIcon = ({
     if (targetPosition.x === 0 && targetPosition.y === 0) {
       return; // Wait for valid coordinates
     }
-
     const startAnimation = () => {
       // Reset to starting position
       translateY.setValue(0);
@@ -30,25 +29,27 @@ export const FloatingUsdcIcon = ({
       opacity.setValue(1);
 
       // Calculate the required translation to reach the target position
-      // We need to estimate the starting position relative to the target
       // The icon starts near the $ amount text and should end at the UsdcIcon
-      const deltaX = -90; // Estimate starting X position
-      const deltaY = -146; // Estimate starting Y position
+      // Since this component is positioned relative to the earnings amount text,
+      // we need to calculate the translation to reach the target USDC icon position
+      const xOffset = targetPosition.x * 0.2;
+      const deltaX = targetPosition.x + xOffset;
+      const deltaY = -targetPosition.y;
 
       Animated.parallel([
         Animated.timing(translateY, {
           toValue: deltaY,
-          duration: 3000,
+          duration: 1000,
           useNativeDriver: true,
         }),
         Animated.timing(translateX, {
           toValue: deltaX,
-          duration: 3000,
+          duration: 1000,
           useNativeDriver: true,
         }),
         Animated.timing(opacity, {
           toValue: 0,
-          duration: 3000,
+          duration: 1000,
           useNativeDriver: true,
         }),
       ]).start(() => {

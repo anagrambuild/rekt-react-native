@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Platform } from 'react-native';
+import { Animated, Easing } from 'react-native';
 
 import RektLogo from '@/assets/images/rekt-logo.svg';
 import { midFireUrl } from '@/assets/videos';
@@ -13,21 +13,27 @@ import {
 } from '@/components';
 import { useAppContext, useWallet } from '@/contexts';
 import { LoadingScreen } from '@/screens';
+import { Steps } from '@/screens/LoginScreen/Steps';
 
 import { router } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useTranslation } from 'react-i18next';
-import styled, { DefaultTheme } from 'styled-components/native';
+import styled from 'styled-components/native';
 
 const Index = () => {
-  const { isLoggedIn, setIsLoggedIn, showSignUpForm, setShowSignUpForm, requiresBiometric } =
-    useAppContext();
   const {
-    connect,
+    isLoggedIn,
+    setIsLoggedIn,
+    showSignUpForm,
+    setShowSignUpForm,
+    requiresBiometric,
+  } = useAppContext();
+  const {
     connecting,
     connected,
     showWalletModal,
     setShowWalletModal,
+    // connect,
   } = useWallet();
   const { t } = useTranslation();
   const [isCheckingConnection, setIsCheckingConnection] = useState(true);
@@ -37,37 +43,39 @@ const Index = () => {
     setIsLoggedIn(true);
     setShowSignUpForm(false);
   };
-  // Initial connection check - give some time for persistent state to load
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsCheckingConnection(false);
-    }, 500); // Short delay to allow persistent state to be checked
 
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Function to check if user is logged in and redirect
+  // Check if user is already authenticated and redirect to tabs
   useEffect(() => {
     if (isLoggedIn && !requiresBiometric) {
-      setForceRefresh(prev => prev + 1);
-      const delay = Platform.OS === 'android' ? 200 : 50;
+      setForceRefresh((prev) => prev + 1);
+      const delay = 50;
       setTimeout(() => {
         router.replace('/(tabs)');
       }, delay);
     }
   }, [isLoggedIn, requiresBiometric]);
 
+  // Initial connection check - give some time for session to load
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsCheckingConnection(false);
+    }, 1000); // Allow time for session check
+
+    return () => clearTimeout(timer);
+  }, []);
+
   // Handle wallet connection success
   useEffect(() => {
     if (connected) {
-      // Show loading for a brief moment to smooth the transition
+      // User is connected to wallet, show signup form
       setIsCheckingConnection(true);
       setTimeout(() => {
         setShowSignUpForm(true);
         setIsCheckingConnection(false);
       }, 800); // Brief delay for smooth transition
     }
-  }, [connected, setShowSignUpForm]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connected, showSignUpForm]);
 
   const player = useVideoPlayer(midFireUrl, (player) => {
     player.loop = true;
@@ -75,7 +83,7 @@ const Index = () => {
   });
 
   const scaleAnim = useRef(new Animated.Value(0)).current;
-  const translateYAnim = useRef(new Animated.Value(60)).current;
+  const translateYAnim = useRef(new Animated.Value(300)).current;
   const welcomeOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -93,7 +101,7 @@ const Index = () => {
         timeout2 = setTimeout(() => {
           Animated.parallel([
             Animated.timing(translateYAnim, {
-              toValue: -140, // moves the logo up
+              toValue: 20, // moves the logo to the top
               duration: 800,
               useNativeDriver: true,
               easing: Easing.inOut(Easing.exp),
@@ -122,10 +130,19 @@ const Index = () => {
 
   // Show biometric authentication screen if required
   if (requiresBiometric) {
-    return <BiometricAuthScreen key="biometric-auth" />;
+    return <BiometricAuthScreen key='biometric-auth' />;
   }
 
-  // Show sign-up form after wallet connection
+  // const connectWallet = () => {
+  //   if (Platform.OS === 'ios') {
+  //     setShowWalletModal(true);
+  //   } else {
+  //     connect();
+  //   }
+  // };
+
+  const connectWallet = () => router.push('/(tabs)');
+
   if (showSignUpForm) {
     return (
       <ScreenContainer
@@ -152,6 +169,11 @@ const Index = () => {
     );
   }
 
+  // Check if user is already authenticated and should be redirected
+  if (isLoggedIn && !requiresBiometric) {
+    return <LoadingScreen />; // Show loading while redirecting
+  }
+
   return (
     <ScreenContainer
       key={`index-${forceRefresh}`}
@@ -160,13 +182,8 @@ const Index = () => {
       noPadding
       contentContainerStyle={{ flex: 1, position: 'relative' }}
     >
-      <Column $width='100%' $height='100%' $justifyContent='flex-end'>
-        <Column
-          $width='100%'
-          $padding={24}
-          $justifyContent='flex-end'
-          style={{ height: '50%' }}
-        >
+      <Column $height='100%' $justifyContent='flex-start'>
+        <Column $width='100%' $padding={12} $justifyContent='flex-start'>
           <Animated.View
             style={{
               alignItems: 'center',
@@ -175,47 +192,55 @@ const Index = () => {
           >
             <RektLogo width={100} height={100} />
           </Animated.View>
-          <AnimatedTitle1 style={{ opacity: welcomeOpacity }}>
-            {t('Welcome')}
-          </AnimatedTitle1>
         </Column>
-        <AnimatedButtonsContainer style={{ opacity: welcomeOpacity }}>
-          <PrimaryButton onPress={connect} disabled={connecting}>
-            {connecting ? t('Connecting...') : t('Connect wallet')}
-          </PrimaryButton>
-        </AnimatedButtonsContainer>
+
+        <AnimatedStepsContainer style={{ opacity: welcomeOpacity }}>
+          <Steps />
+        </AnimatedStepsContainer>
+
         <VideoView
           player={player}
-          style={{ width: '100%', height: '50%' }}
+          style={{
+            width: '100%',
+            height: '50%',
+            position: 'absolute',
+            bottom: 0,
+          }}
           pointerEvents='none'
           nativeControls={false}
         />
       </Column>
-      <WalletConnectionModal
-        visible={showWalletModal}
-        onRequestClose={() => setShowWalletModal(false)}
-      />
+      <AnimatedButtonsContainer style={{ opacity: welcomeOpacity }}>
+        <PrimaryButton onPress={connectWallet} disabled={connecting}>
+          {connecting ? t('Connecting...') : t('Connect Wallet')}
+        </PrimaryButton>
+      </AnimatedButtonsContainer>
+      {showWalletModal && (
+        <WalletConnectionModal
+          visible={showWalletModal}
+          onRequestClose={() => setShowWalletModal(false)}
+        />
+      )}
     </ScreenContainer>
   );
 };
 
 export default Index;
 
-const AnimatedTitle1 = styled(Animated.Text)`
-  font-size: 32px;
-  font-family: 'Unbounded';
-  font-weight: 400;
-  color: ${({ theme }: { theme: DefaultTheme }) => theme.colors.textPrimary};
-`;
-
-const AnimatedButtonsContainer = styled(Animated.View)`
-  padding: 16px;
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 32px;
+const AnimatedStepsContainer = styled(Animated.View)`
+  height: 100%;
   z-index: 10;
   width: 100%;
   align-items: center;
   gap: 12px;
+  flex: 1;
+  justify-content: flex-start;
+  margin-bottom: 84px;
+`;
+
+const AnimatedButtonsContainer = styled(Animated.View)`
+  position: absolute;
+  width: 100%;
+  bottom: 32px;
+  z-index: 100;
 `;

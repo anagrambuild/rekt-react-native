@@ -5,6 +5,7 @@ import WalletIcon from '@/assets/images/app-svgs/wallet.svg';
 import {
   BodyMEmphasized,
   BodyS,
+  PresetButton,
   PrimaryButton,
   Row,
   ScrollRow,
@@ -12,7 +13,6 @@ import {
 import { Modal } from '@/components/common/Modal';
 import { useHomeContext } from '@/contexts/HomeContext';
 
-import { PresetButton } from './PresetButton';
 import { useTranslation } from 'react-i18next';
 import styled, { useTheme } from 'styled-components/native';
 

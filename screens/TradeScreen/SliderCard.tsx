@@ -19,37 +19,53 @@ import { useTranslation } from 'react-i18next';
 export const SliderCard = ({
   leverage,
   amount,
+  loginScreen,
+  setLeverage,
 }: {
   leverage: number;
   amount: number;
+  loginScreen?: boolean;
+  setLeverage?: (leverage: number) => void;
 }) => {
   const { t } = useTranslation();
-  const { 
+  const {
     selectedToken,
     solTrade,
     setSolTrade,
     ethTrade,
     setEthTrade,
     btcTrade,
-    setBtcTrade
+    setBtcTrade,
   } = useHomeContext();
 
   // Get current trade state based on selected token
   const getCurrentTrade = () => {
     switch (selectedToken) {
-      case 'sol': return solTrade;
-      case 'eth': return ethTrade;
-      case 'btc': return btcTrade;
-      default: return solTrade;
+      case 'sol':
+        return solTrade;
+      case 'eth':
+        return ethTrade;
+      case 'btc':
+        return btcTrade;
+      default:
+        return solTrade;
     }
   };
 
   const setCurrentTrade = (trade: any) => {
     switch (selectedToken) {
-      case 'sol': setSolTrade(trade); break;
-      case 'eth': setEthTrade(trade); break;
-      case 'btc': setBtcTrade(trade); break;
-      default: setSolTrade(trade); break;
+      case 'sol':
+        setSolTrade(trade);
+        break;
+      case 'eth':
+        setEthTrade(trade);
+        break;
+      case 'btc':
+        setBtcTrade(trade);
+        break;
+      default:
+        setSolTrade(trade);
+        break;
     }
   };
 
@@ -97,7 +113,11 @@ export const SliderCard = ({
           </Row>
         </Column>
       </Column>
-      <HorizontalSlider />
+      <HorizontalSlider
+        loginScreen={loginScreen}
+        setLeverage={setLeverage}
+        leverage={leverage}
+      />
     </Card>
   );
 };

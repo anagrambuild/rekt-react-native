@@ -10,19 +10,14 @@ import {
 } from 'react';
 import { Alert, Linking, Platform } from 'react-native';
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSwigWalletBalance } from '@/utils/backendApi';
+
 import { PublicKey } from '@solana/web3.js';
 
-import {
-  getSwigWalletBalance,
-  getUserByWalletAddress,
-} from '../utils/backendApi';
-import { getSecureAuth, storeSecureAuth } from '../utils/secureAuth';
 import { Buffer } from 'buffer';
 import Constants from 'expo-constants';
-import * as LocalAuthentication from 'expo-local-authentication';
 import { useTranslation } from 'react-i18next';
-import nacl from 'tweetnacl';
+import * as nacl from 'tweetnacl';
 
 // Persistent wallet state outside React lifecycle
 let persistentWalletState = {
@@ -33,7 +28,6 @@ let persistentWalletState = {
 };
 
 // Use require for bs58 to avoid PRNG issues
-
 const bs58 = require('bs58');
 
 // Only import wallet adapter for Android
@@ -57,14 +51,16 @@ export interface WalletContextState {
   getDappKeyPair: () => nacl.BoxKeyPair;
   sharedSecret: Uint8Array | null;
   session: string | null;
+
+  // USDC Balance
   usdcBalance: number | null;
   isLoadingBalance: boolean;
-  balanceError: string | null;
+
+  // Methods
   connect: () => Promise<void>;
   disconnect: () => void;
   setShowWalletModal: (show: boolean) => void;
-  handleWalletConnect: (publicKey: string) => void;
-  refreshBalance: () => Promise<void>;
+  refreshUSDCBalance: () => Promise<void>;
 }
 
 const WalletContext = createContext<WalletContextState>({
@@ -80,12 +76,11 @@ const WalletContext = createContext<WalletContextState>({
   session: null,
   usdcBalance: null,
   isLoadingBalance: false,
-  balanceError: null,
+
   connect: async () => {},
   disconnect: () => {},
   setShowWalletModal: () => {},
-  handleWalletConnect: () => {},
-  refreshBalance: async () => {},
+  refreshUSDCBalance: async () => {},
 });
 
 export const useWallet = () => {
@@ -127,6 +122,10 @@ export const WalletProvider = ({
   }, []);
   const [showWalletModal, setShowWalletModal] = useState(false);
 
+  // USDC Balance state
+  const [usdcBalance, setUsdcBalance] = useState<number | null>(null);
+  const [isLoadingBalance, setIsLoadingBalance] = useState(false);
+
   // Generate encryption keypair for Phantom communication - initialize once
   const [dappKeyPair] = useState<nacl.BoxKeyPair>(() => {
     try {
@@ -149,80 +148,8 @@ export const WalletProvider = ({
     persistentWalletState.session
   );
 
-  // USDC balance state
-  const [usdcBalance, setUsdcBalance] = useState<number | null>(null);
-  const [isLoadingBalance, setIsLoadingBalance] = useState(false);
-  const [balanceError, setBalanceError] = useState<string | null>(null);
-
   const solanaNetwork =
     Constants.expoConfig?.extra?.solanaNetwork || 'solana:devnet';
-
-  // Helper function to handle login with biometric check
-  const handleUserLogin = async (user: any) => {
-    setUserProfile(user);
-
-    // Check if biometrics are enabled for this user
-    const biometricEnabled = await AsyncStorage.getItem('biometric_enabled');
-
-    if (biometricEnabled === 'true') {
-      // Check if biometrics are available on device
-      const isSupported = await LocalAuthentication.hasHardwareAsync();
-      const isEnrolled = await LocalAuthentication.isEnrolledAsync();
-
-      if (isSupported && isEnrolled) {
-        // Require biometric authentication before logging in
-        setRequiresBiometric(true);
-      } else {
-        // Biometrics not available, log in directly
-        setIsLoggedIn(true);
-      }
-    } else {
-      // Biometrics not enabled, log in directly
-      setIsLoggedIn(true);
-    }
-  };
-
-  // Function to fetch USDC balance using stored wallet address
-  const refreshBalance = useCallback(async () => {
-    setIsLoadingBalance(true);
-    setBalanceError(null);
-
-    try {
-      // Get wallet address from secure storage
-      const authResult = await getSecureAuth();
-      if (!authResult.isValid || !authResult.data?.walletAddress) {
-        setUsdcBalance(null);
-        setBalanceError('No wallet address found');
-        return;
-      }
-
-      const swigWalletAddress = authResult.data.swigAddress;
-      if (!swigWalletAddress) {
-        setUsdcBalance(null);
-        setBalanceError('No Swig wallet address found');
-        return;
-      }
-      const balanceData = await getSwigWalletBalance(swigWalletAddress);
-
-      if (balanceData.status === 'error') {
-        setBalanceError(balanceData.error || 'Failed to fetch USDC balance');
-        setUsdcBalance(null);
-      } else {
-        setUsdcBalance(balanceData.balance);
-      }
-    } catch (error) {
-      console.error('Error fetching USDC balance:', error);
-      setBalanceError('Failed to fetch USDC balance');
-      setUsdcBalance(null);
-    } finally {
-      setIsLoadingBalance(false);
-    }
-  }, []);
-
-  // Fetch balance when app loads (using stored wallet address)
-  useEffect(() => {
-    refreshBalance();
-  }, [refreshBalance]);
 
   const connectAndroid = useCallback(async () => {
     if (!isAndroid || !transact) {
@@ -259,31 +186,9 @@ export const WalletProvider = ({
           setPublicKey(pubKey);
           setConnected(true);
 
-          // Check for existing user (same as iOS flow)
-          try {
-            const publicKeyString = pubKey.toBase58();
-            const existingUser = await getUserByWalletAddress(publicKeyString);
-
-            if (existingUser) {
-              // Store user data in secure storage
-              await storeSecureAuth(
-                publicKeyString,
-                existingUser.swigWalletAddress || '',
-                existingUser.id
-              );
-
-              // Set user profile and handle biometric check
-              await handleUserLogin(existingUser);
-            } else {
-              console.log('👤 No existing user found, will need to sign up');
-            }
-          } catch (userLookupError) {
-            console.error(
-              'Error looking up user by wallet address:',
-              userLookupError
-            );
-            // Don't show error to user, just continue with normal flow
-          }
+          // Wallet connected successfully - no auth needed
+          const publicKeyString = pubKey.toBase58();
+          console.log('✅ Android wallet connected:', publicKeyString);
         }
         return true;
       }
@@ -294,49 +199,7 @@ export const WalletProvider = ({
       return false;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAndroid, transact, solanaNetwork, t, setIsLoggedIn, setUserProfile]);
-
-  const handleWalletConnect = useCallback(
-    async (publicKeyString: string) => {
-      try {
-        const pubKey = new PublicKey(publicKeyString);
-        setPublicKey(pubKey);
-        setConnected(true);
-        setConnecting(false);
-
-        // Check if user exists with this wallet address
-        try {
-          const existingUser = await getUserByWalletAddress(publicKeyString);
-
-          if (existingUser) {
-            // Store user data in secure storage
-            await storeSecureAuth(
-              publicKeyString,
-              existingUser.swigWalletAddress || '',
-              existingUser.id
-            );
-
-            // Set user profile and handle biometric check
-            await handleUserLogin(existingUser);
-          } else {
-            console.log('👤 No existing user found, will need to sign up');
-          }
-        } catch (userLookupError) {
-          console.error(
-            'Error looking up user by wallet address:',
-            userLookupError
-          );
-          // Don't show error to user, just continue with normal flow
-        }
-      } catch (error) {
-        console.error('Invalid public key:', error);
-        Alert.alert(t('Connection Failed'), t('Invalid wallet address'));
-        setConnecting(false);
-      }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [t, setIsLoggedIn, setUserProfile]
-  );
+  }, [isAndroid, transact, solanaNetwork]);
 
   // Handle incoming URL schemes (wallet responses)
   // Android URL Handler (for MWA - keep it simple)
@@ -344,6 +207,7 @@ export const WalletProvider = ({
     if (!isAndroid) return;
 
     const handleAndroidUrl = (url: string) => {
+      console.log('🔗 Android URL received:', url);
       // Android MWA doesn't use URL schemes for transaction responses
       // MWA handles everything internally, so we just handle errors here
       if (url.includes('errorCode')) {
@@ -379,44 +243,21 @@ export const WalletProvider = ({
     };
   }, [t]);
 
-  // iOS URL Handler (for Phantom deep links)
+  // iOS URL Handler (for Phantom deep links) - Also handle Phantom on Android
   useEffect(() => {
     if (isAndroid) return; // Only run on iOS
 
     const handleiOSUrl = async (url: string) => {
-      // Check for error response first
-      if (url.includes('errorCode')) {
-        try {
-          const urlObj = new URL(url);
-          const errorCode = urlObj.searchParams.get('errorCode');
-          const errorMessage = urlObj.searchParams.get('errorMessage');
-          console.error('iOS Phantom error:', errorCode, errorMessage);
+      console.log('🔗 iOS URL received:', url);
 
-          // If we have a test transaction resolver waiting, reject it
-          if ((global as any).phantomTestSigningResolver) {
-            (global as any).phantomTestSigningResolver.reject(
-              new Error(errorMessage || 'Unknown wallet error')
-            );
-            delete (global as any).phantomTestSigningResolver;
-          } else {
-            // Otherwise show connection error
-            Alert.alert(
-              t('Connection Failed'),
-              errorMessage || t('Unknown wallet error')
-            );
-          }
-        } catch (error) {
-          console.error('Failed to parse iOS error response:', error);
-        }
-        return;
-      }
-
-      // Handle full encrypted response (with phantom_encryption_public_key)
+      // Handle wallet connection response from Phantom
       if (
-        url.includes('phantom_encryption_public_key') &&
-        url.includes('data')
+        url.includes('rektreactnative://') &&
+        url.includes('phantom_encryption_public_key')
       ) {
         try {
+          console.log('🔐 Processing wallet connection response from Phantom');
+
           const urlObj = new URL(url);
           const phantomPublicKey = urlObj.searchParams.get(
             'phantom_encryption_public_key'
@@ -425,14 +266,15 @@ export const WalletProvider = ({
           const nonce = urlObj.searchParams.get('nonce');
 
           if (phantomPublicKey && data && nonce) {
-            // Create shared secret
+            console.log('📡 Decrypting wallet connection response...');
+
+            // Create shared secret and decrypt response
             const keyPair = getDappKeyPair();
             const sharedSecretDapp = nacl.box.before(
               bs58.decode(phantomPublicKey),
               keyPair.secretKey
             );
 
-            // Decrypt the response
             const decryptedData = nacl.box.open.after(
               bs58.decode(data),
               bs58.decode(nonce),
@@ -443,200 +285,68 @@ export const WalletProvider = ({
               const connectData = JSON.parse(
                 Buffer.from(decryptedData).toString('utf8')
               );
+              console.log('🔓 Decrypted wallet data:', connectData);
 
-              // PRIORITY 1: Check for test transaction resolver FIRST
-              if ((global as any).phantomTestSigningResolver) {
-                if (connectData.signature) {
-                  (global as any).phantomTestSigningResolver.resolve(
-                    connectData.signature
-                  );
-                  delete (global as any).phantomTestSigningResolver;
-                } else if (connectData.transaction) {
-                  (async () => {
-                    try {
-                      const {
-                        Connection,
-                        clusterApiUrl,
-                      } = require('@solana/web3.js');
-                      const cluster = solanaNetwork.includes('mainnet')
-                        ? 'mainnet-beta'
-                        : 'devnet';
-                      const connection = new Connection(clusterApiUrl(cluster));
+              if (connectData.public_key && connectData.session) {
+                console.log('🔗 Processing wallet connection...');
 
-                      const signedTransactionBytes = bs58.decode(
-                        connectData.transaction
-                      );
-                      const signature = await connection.sendRawTransaction(
-                        signedTransactionBytes,
-                        {
-                          skipPreflight: false,
-                          preflightCommitment: 'processed',
-                        }
-                      );
-
-                      (global as any).phantomTestSigningResolver.resolve(
-                        signature
-                      );
-                      delete (global as any).phantomTestSigningResolver;
-                    } catch (sendError) {
-                      console.error(
-                        'Failed to send iOS signed transaction:',
-                        sendError
-                      );
-                      (global as any).phantomTestSigningResolver.reject(
-                        sendError as Error
-                      );
-                      delete (global as any).phantomTestSigningResolver;
-                    }
-                  })();
-                }
-              }
-              // PRIORITY 2: Only check for wallet connection if NO test transaction resolver exists
-              else if (connectData.public_key && connectData.session) {
+                // Set wallet state
                 setSharedSecret(sharedSecretDapp);
                 setSession(connectData.session);
-                await handleWalletConnect(connectData.public_key);
+                const pubKey = new PublicKey(connectData.public_key);
+                setPublicKey(pubKey);
+                setConnected(true);
+                setConnecting(false);
+
+                // Wallet connected successfully - no auth needed
+                const publicKeyString = connectData.public_key;
+                console.log('✅ iOS wallet connected:', publicKeyString);
               }
-            } else {
-              throw new Error('Unable to decrypt iOS response data');
             }
           }
         } catch (error) {
-          console.error('Failed to parse iOS wallet response:', error);
-
-          if ((global as any).phantomTestSigningResolver) {
-            (global as any).phantomTestSigningResolver.reject(error as Error);
-            delete (global as any).phantomTestSigningResolver;
-          } else {
-            Alert.alert(
-              t('Connection Failed'),
-              t('Failed to parse wallet response')
-            );
-          }
+          console.error(
+            '❌ Failed to process wallet connection response:',
+            error
+          );
+          Alert.alert(
+            t('Connection Failed'),
+            'Failed to process wallet response'
+          );
         }
+        return;
       }
-      // Handle transaction-only response (data + nonce, no phantom_encryption_public_key)
-      else if (
-        url.includes('data') &&
-        url.includes('nonce') &&
-        ((global as any).phantomSwigSigningResolver ||
-          (global as any).phantomTestSigningResolver)
-      ) {
+
+      // Handle error responses
+      if (url.includes('errorCode')) {
         try {
           const urlObj = new URL(url);
-          const data = urlObj.searchParams.get('data');
-          const nonce = urlObj.searchParams.get('nonce');
+          const errorCode = urlObj.searchParams.get('errorCode');
+          const errorMessage = urlObj.searchParams.get('errorMessage');
+          console.error('iOS Phantom error:', errorCode, errorMessage);
 
-          if (data && nonce && sharedSecret) {
-            // Decrypt using the existing shared secret from wallet connection
-            const decryptedData = nacl.box.open.after(
-              bs58.decode(data),
-              bs58.decode(nonce),
-              sharedSecret
-            );
-
-            if (decryptedData) {
-              const responseData = JSON.parse(
-                Buffer.from(decryptedData).toString('utf8')
-              );
-
-              // Check for Swig resolver first
-              if ((global as any).phantomSwigSigningResolver) {
-                if (responseData.signature) {
-                  (global as any).phantomSwigSigningResolver.resolve(
-                    responseData.signature
-                  );
-                } else if (responseData.transaction) {
-                  (global as any).phantomSwigSigningResolver.resolve(
-                    responseData
-                  );
-                }
-                delete (global as any).phantomSwigSigningResolver;
-              }
-              // Then check for test transaction resolver
-              else if (responseData.signature) {
-                (global as any).phantomTestSigningResolver.resolve(
-                  responseData.signature
-                );
-                delete (global as any).phantomTestSigningResolver;
-              } else if (responseData.transaction) {
-                (async () => {
-                  try {
-                    const {
-                      Connection,
-                      clusterApiUrl,
-                    } = require('@solana/web3.js');
-                    const cluster = solanaNetwork.includes('mainnet')
-                      ? 'mainnet-beta'
-                      : 'devnet';
-                    const connection = new Connection(clusterApiUrl(cluster));
-
-                    const signedTransactionBytes = bs58.decode(
-                      responseData.transaction
-                    );
-                    const signature = await connection.sendRawTransaction(
-                      signedTransactionBytes,
-                      {
-                        skipPreflight: false,
-                        preflightCommitment: 'processed',
-                      }
-                    );
-
-                    (global as any).phantomTestSigningResolver.resolve(
-                      signature
-                    );
-                    delete (global as any).phantomTestSigningResolver;
-                  } catch (sendError) {
-                    console.error(
-                      'Failed to send iOS signed transaction:',
-                      sendError
-                    );
-                    (global as any).phantomTestSigningResolver.reject(
-                      sendError as Error
-                    );
-                    delete (global as any).phantomTestSigningResolver;
-                  }
-                })();
-              } else {
-                (global as any).phantomTestSigningResolver.reject(
-                  new Error('No signature or transaction in iOS response')
-                );
-                delete (global as any).phantomTestSigningResolver;
-              }
-            } else {
-              throw new Error('Unable to decrypt iOS transaction response');
-            }
-          } else {
-            throw new Error(
-              'Missing data, nonce, or sharedSecret for iOS transaction response'
-            );
-          }
+          Alert.alert(
+            t('Connection Failed'),
+            errorMessage || t('Unknown wallet error')
+          );
         } catch (error) {
-          console.error('Failed to parse iOS transaction response:', error);
-          if ((global as any).phantomTestSigningResolver) {
-            (global as any).phantomTestSigningResolver.reject(error as Error);
-            delete (global as any).phantomTestSigningResolver;
-          }
+          console.error('Failed to parse iOS error response:', error);
         }
+        return;
       }
     };
 
-    // Handle initial URL if app was opened via deep link
+    // Handle initial URL and listen for changes
     Linking.getInitialURL().then((url) => {
-      if (url) {
-        handleiOSUrl(url).catch(console.error);
-      }
+      if (url) handleiOSUrl(url);
     });
 
-    // Listen for URL changes while app is running
     const subscription = Linking.addEventListener('url', (event) => {
-      handleiOSUrl(event.url).catch(console.error);
+      handleiOSUrl(event.url);
     });
 
-    return () => {
-      subscription?.remove();
-    };
-  }, [handleWalletConnect, getDappKeyPair, sharedSecret, t, solanaNetwork]);
+    return () => subscription?.remove();
+  }, [getDappKeyPair, t]);
 
   const connect = useCallback(async () => {
     if (connecting || connected) {
@@ -675,12 +385,44 @@ export const WalletProvider = ({
     setPublicKey(null);
     setSharedSecret(null);
     setSession(null);
-
-    // Clear balance state
-    setUsdcBalance(null);
-    setBalanceError(null);
-    setIsLoadingBalance(false);
   }, []);
+
+  // Refresh USDC balance from Swig wallet
+  const refreshUSDCBalance = useCallback(async () => {
+    if (!publicKey) return;
+
+    try {
+      setIsLoadingBalance(true);
+      // Get the user profile to get the swig wallet address
+      // This would typically come from your user context or API
+      // For now, we'll use a placeholder - you may need to adjust this
+      const swigWalletAddress = publicKey.toBase58(); // Placeholder
+
+      const balanceResult = await getSwigWalletBalance(swigWalletAddress);
+
+      if (balanceResult.status === 'success') {
+        setUsdcBalance(balanceResult.balance);
+      } else {
+        console.warn('Failed to get USDC balance:', balanceResult.error);
+        setUsdcBalance(0);
+      }
+    } catch (error) {
+      console.error('Error refreshing USDC balance:', error);
+      setUsdcBalance(0);
+    } finally {
+      setIsLoadingBalance(false);
+    }
+  }, [publicKey]);
+
+  // Refresh USDC balance when wallet connects
+  useEffect(() => {
+    if (connected && publicKey) {
+      refreshUSDCBalance();
+    } else if (!connected) {
+      setUsdcBalance(null);
+      setIsLoadingBalance(false);
+    }
+  }, [connected, publicKey, refreshUSDCBalance]);
 
   const value: WalletContextState = {
     connected,
@@ -692,12 +434,10 @@ export const WalletProvider = ({
     session,
     usdcBalance,
     isLoadingBalance,
-    balanceError,
     connect,
     disconnect,
     setShowWalletModal,
-    handleWalletConnect,
-    refreshBalance,
+    refreshUSDCBalance,
   };
 
   return (

@@ -11,6 +11,7 @@ import styled, { DefaultTheme } from 'styled-components/native';
 interface TabContainerProps {
   selected: boolean;
   theme: DefaultTheme;
+  disabled?: boolean;
 }
 
 const TabContainer = styled(PressableOpacity)<TabContainerProps>`
@@ -28,13 +29,15 @@ const TabContainer = styled(PressableOpacity)<TabContainerProps>`
   flex: 1;
   padding: 4px 12px 4px 8px;
   gap: 8px;
+  opacity: ${({ disabled }: { disabled?: boolean }) => (disabled ? 0.5 : 1)};
 `;
 
 type TokenTabProps = {
   name: 'sol' | 'eth' | 'btc';
   price: string;
   selected: boolean;
-  onPress: () => void;
+  onPress?: () => void;
+  disabled?: boolean;
 };
 
 const tokenNameMap = {
@@ -47,6 +50,7 @@ export const TokenTab: React.FC<TokenTabProps> = ({
   name,
   selected,
   onPress,
+  disabled = false,
 }) => {
   let IconComponent;
   if (name === 'sol') {
@@ -58,9 +62,15 @@ export const TokenTab: React.FC<TokenTabProps> = ({
   }
 
   return (
-    <TabContainer selected={selected} onPress={onPress}>
+    <TabContainer
+      selected={selected}
+      onPress={disabled ? () => {} : onPress || (() => {})}
+      disabled={disabled}
+    >
       <IconComponent width={32} height={32} />
-      <BodyS selected={selected}>{tokenNameMap[name]}</BodyS>
+      <BodyS selected={selected} disabled={disabled}>
+        {tokenNameMap[name]}
+      </BodyS>
     </TabContainer>
   );
 };

@@ -7,7 +7,7 @@ import {
   Title5,
 } from '@/components';
 import { useAppContext, useWallet } from '@/contexts';
-import { clearSecureAuth } from '@/utils/secureAuth';
+import { supabase } from '@/utils/supabase';
 
 import MaterialIcon from '@expo/vector-icons/MaterialIcons';
 
@@ -24,7 +24,7 @@ export const SettingsScreen = () => {
   const handleLogout = async () => {
     try {
       // Clear secure storage
-      await clearSecureAuth();
+      await supabase.auth.signOut();
 
       // Disconnect wallet
       disconnect();

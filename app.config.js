@@ -1,4 +1,5 @@
 // Default (development) settings
+const BASE_URL = 'https://32a154e4982f.ngrok-free.app';
 let name = 'rekt-react-native';
 let slug = 'rekt-react-native';
 let owner = 'anagram-xyz';
@@ -10,7 +11,7 @@ let packageName = 'com.anagramxyz.rektreactnative';
 let bundleIdentifier = 'com.anagramxyz.rektreactnative';
 let scheme = 'rektreactnative';
 let env = 'development';
-let apiUrl = 'https://rekt-user-management.onrender.com';
+let apiUrl = BASE_URL;
 let solanaNetwork = 'solana:mainnet-beta';
 let usdcMint = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'; // Mainnet USDC
 // let solanaNetwork = 'solana:devnet';
@@ -28,7 +29,7 @@ if (process.env.DEPLOY_ENVIRONMENT === 'preview') {
   bundleIdentifier = 'com.anagramxyz.rektreactnativepreview';
   scheme = 'rektreactnativepreview';
   env = 'preview';
-  apiUrl = 'https://rekt-user-management.onrender.com';
+  apiUrl = BASE_URL;
   // solanaNetwork = 'solana:devnet';
   // usdcMint = 'Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr'; // Devnet USDC
   solanaNetwork = 'solana:mainnet-beta';
@@ -104,7 +105,6 @@ module.exports = {
       'expo-router',
       'expo-localization',
       'expo-video',
-      'expo-secure-store',
       [
         'expo-image-picker',
         {

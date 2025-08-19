@@ -15,13 +15,13 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from 'styled-components/native';
 
 export const AmountCard = ({
-  setAmountModalVisible,
-  amount,
-  setAmount,
+  setAmountModalVisible = () => {},
+  amount = 10,
+  setAmount = () => {},
 }: {
-  setAmountModalVisible: (visible: boolean) => void;
-  amount: number;
-  setAmount: (amount: number) => void;
+  setAmountModalVisible?: (visible: boolean) => void;
+  amount?: number;
+  setAmount?: (amount: number) => void;
 }) => {
   const { t } = useTranslation();
   const theme = useTheme();

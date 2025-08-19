@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -8,18 +8,15 @@ import {
 } from 'react-native';
 
 import RektLogo from '@/assets/images/rekt-logo.svg';
-import { useAppContext } from '@/contexts';
-import { useSolana } from '@/contexts/SolanaContext';
-import { useWallet } from '@/contexts/WalletContext';
+import { useAppContext, useAuth, useWallet } from '@/contexts';
 import { useBiometrics, useImagePicker } from '@/hooks';
 import { LoadingScreen } from '@/screens/LoadingScreen';
 import {
-  checkUsernameAvailability,
+  checkUsernameAvailabilityPublic,
   createUser,
   uploadAvatar,
 } from '@/utils/backendApi';
-import { createSwigAccountForMobile } from '@/utils/mobileSwigUtils';
-import { storeSecureAuth } from '@/utils/secureAuth';
+import { supabase } from '@/utils/supabase';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -33,8 +30,8 @@ import {
   Switch,
   Title1,
 } from './common';
-import Constants from 'expo-constants';
 import { Image } from 'expo-image';
+import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import styled, { DefaultTheme, useTheme } from 'styled-components/native';
 import { Toast } from 'toastify-react-native';
@@ -45,9 +42,12 @@ interface SignUpFormProps {
 
 export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
   const { t } = useTranslation();
-  const { connected, publicKey, getDappKeyPair, sharedSecret, session } =
-    useWallet();
-  const { connection } = useSolana();
+  const {
+    signUp,
+    //  signOut,
+    loading: authLoading,
+  } = useAuth();
+  const { publicKey, connected } = useWallet();
   const { takePhoto, pickFromLibrary, isLoading } = useImagePicker();
   const { isSupported, isEnrolled, biometricType, enableBiometrics } =
     useBiometrics();
@@ -57,14 +57,16 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [usernameError, setUsernameError] = useState('');
   const [emailError, setEmailError] = useState('');
-  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(
     null
   );
 
-  // Debounced username checking
-  const checkUsername = useCallback(
-    async (username: string) => {
+  // Debounce username checking
+  useEffect(() => {
+    const timeoutId = setTimeout(async () => {
+      const username = signUpForm.username;
+
       if (!username || username.length < 3) {
         setUsernameAvailable(null);
         return;
@@ -85,9 +87,8 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
         return;
       }
 
-      setIsCheckingUsername(true);
       try {
-        const result = await checkUsernameAvailability(username);
+        const result = await checkUsernameAvailabilityPublic(username);
         setUsernameAvailable(result.available);
 
         if (!result.available) {
@@ -98,23 +99,12 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
       } catch (error) {
         console.error('Username check failed:', error);
         setUsernameAvailable(null);
-      } finally {
-        setIsCheckingUsername(false);
-      }
-    },
-    [t]
-  );
-
-  // Debounce username checking
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      if (signUpForm.username) {
-        checkUsername(signUpForm.username);
       }
     }, 500); // 500ms debounce
 
     return () => clearTimeout(timeoutId);
-  }, [signUpForm.username, checkUsername]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [signUpForm.username]);
 
   const handleUsernameChange = (text: string) => {
     setSignUpForm((prev) => ({ ...prev, username: text }));
@@ -124,9 +114,14 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
   };
 
   const emailInputRef = useRef<TextInput>(null);
+  const passwordInputRef = useRef<TextInput>(null);
 
   const onNext = () => {
     emailInputRef.current?.focus();
+  };
+
+  const onEmailNext = () => {
+    passwordInputRef.current?.focus();
   };
 
   const handleEmailChange = (text: string) => {
@@ -140,6 +135,20 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(text)) {
         setEmailError(t('Please enter a valid email address'));
+      }
+    }
+  };
+
+  const handlePasswordChange = (text: string) => {
+    setSignUpForm((prev) => ({ ...prev, password: text }));
+
+    // Clear previous error
+    if (passwordError) setPasswordError('');
+
+    // Validate password if not empty
+    if (text.trim() && text.length > 0) {
+      if (text.length < 5) {
+        setPasswordError(t('Password must be at least 5 characters'));
       }
     }
   };
@@ -173,6 +182,18 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
       setUsernameError(t('Username is required'));
       return false;
     }
+    if (!signUpForm.email.trim()) {
+      setEmailError(t('Email is required'));
+      return false;
+    }
+    if (!signUpForm.password.trim()) {
+      setPasswordError(t('Password is required'));
+      return false;
+    }
+    if (signUpForm.password.length < 5) {
+      setPasswordError(t('Password must be at least 5 characters'));
+      return false;
+    }
     return true;
   };
 
@@ -189,13 +210,15 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
     }
   };
 
+  // TODO: Add this back when backend is ready
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
+    // Check if wallet is connected
     if (!connected || !publicKey) {
       Toast.show({
-        text1: t('Error'),
-        text2: t('Wallet not connected'),
+        text1: t('Wallet Not Connected'),
+        text2: t('Please connect your wallet first'),
         type: 'error',
       });
       return;
@@ -235,7 +258,7 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
 
     // Check username availability before proceeding
     try {
-      const usernameCheck = await checkUsernameAvailability(
+      const usernameCheck = await checkUsernameAvailabilityPublic(
         signUpForm.username
       );
       if (!usernameCheck.available) {
@@ -254,32 +277,40 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
 
     setIsSubmitting(true);
     try {
-      // Step 1: Create Swig account
-      const solanaNetwork =
-        Constants.expoConfig?.extra?.solanaNetwork || 'solana:devnet';
-      const dappKeyPair = getDappKeyPair();
-
-      const swigResult = await createSwigAccountForMobile(
-        connection,
-        publicKey,
-        solanaNetwork,
-        sharedSecret || undefined,
-        session || undefined,
-        dappKeyPair.publicKey
+      // Step 1: Create Supabase user account
+      const supabaseResult = await signUp(
+        signUpForm.email,
+        signUpForm.password
       );
+      console.log('supabaseResult', supabaseResult);
 
-      if (!swigResult.success) {
-        console.error('❌ Swig creation failed:', swigResult.error);
-        throw new Error(`Swig creation failed: ${swigResult.error}`);
+      // Log the auth token details
+      if (supabaseResult.success) {
+        console.log('✅ Supabase auth successful');
+        console.log('User ID:', supabaseResult.user?.id);
+        console.log('User email:', supabaseResult.user?.email);
+
+        // Get the current session to access tokens
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (session) {
+          console.log('Access token:', session.access_token);
+          console.log('Refresh token:', session.refresh_token);
+          console.log('Session user ID:', session.user.id);
+        } else {
+          console.log('No session available yet');
+        }
+      } else {
+        console.log('❌ Supabase auth failed:', supabaseResult.error);
+      }
+      if (!supabaseResult.success) {
+        throw new Error(supabaseResult.error || 'Supabase signup failed');
       }
 
-      // Convert swigAddress to string if it's a PublicKey
-      const swigAddressString =
-        typeof swigResult.swigAddress === 'string'
-          ? swigResult.swigAddress
-          : swigResult.swigAddress.toBase58();
+      // Step 2: Swig account creation is now handled by the backend automatically
 
-      // Step 2: Upload avatar if provided
+      // Step 3: Upload avatar if provided
       let avatarUrl: string | undefined;
       if (signUpForm.profileImage) {
         try {
@@ -296,32 +327,54 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
         }
       }
 
-      // Step 2b: Create user in database
-      const user = await createUser({
-        username: signUpForm.username,
-        email: signUpForm.email,
-        walletAddress: publicKey.toBase58(),
-        swigWalletAddress: swigAddressString,
-        profileImage: avatarUrl, // Use uploaded avatar URL instead of local path
-      });
+      // Step 4: Create user in database
+      // The new backend will create the Swig account automatically
+      if (!publicKey) {
+        throw new Error(
+          'Wallet not connected. Please connect your wallet first.'
+        );
+      }
 
-      // Step 3: Store authentication data
-      await storeSecureAuth(publicKey.toBase58(), swigAddressString, user.id);
-
-      // Step 4: Store biometric preference if enabled
+      // Step 5: Store biometric preference if enabled
       if (signUpForm.enableBiometrics) {
         await AsyncStorage.setItem('biometric_enabled', 'true');
       } else {
         await AsyncStorage.setItem('biometric_enabled', 'false');
       }
 
-      // Step 5: Update app state with the newly created user
+      // Step 6: Create user in database
+      const user = await createUser({
+        username: signUpForm.username,
+        email: signUpForm.email,
+        walletAddress: publicKey.toBase58(), // Pass the connected wallet address
+        profileImage: avatarUrl, // Use uploaded avatar URL instead of local path
+      });
+
+      // Log the successful user creation response
+      console.log('✅ User created successfully via backend API');
+      console.log('👤 User ID:', user.id);
+      console.log('👤 Username:', user.username);
+      console.log('👤 Email:', user.email);
+      console.log('👤 Swig Wallet Address:', user.swigWalletAddress);
+      console.log('👤 Profile Image:', user.profileImage);
+      console.log('👤 Created At:', user.createdAt);
+      console.log('👤 Updated At:', user.updatedAt);
+
+      // Show success toast
+      Toast.show({
+        text1: t('Account Created Successfully'),
+        text2: t('Welcome to Rekt!'),
+        type: 'success',
+      });
+
+      // Update app state with the newly created user
       setUserProfile(user);
 
       // Clear the form after successful creation
       setSignUpForm({
         username: '',
         email: '',
+        password: '',
         profileImage: null,
         enableBiometrics: false,
       });
@@ -329,65 +382,18 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
       // Clear any error states
       setUsernameError('');
       setEmailError('');
+      setPasswordError('');
       setUsernameAvailable(null);
 
       setIsSubmitting(false);
       onComplete?.();
     } catch (error) {
       console.error('❌ Account creation process failed:', error);
-
-      // Log detailed error information for debugging
-      if (error instanceof Error) {
-        console.error('Error details:');
-        console.error('  - Name:', error.name);
-        console.error('  - Message:', error.message);
-        console.error('  - Stack:', error.stack);
-      }
-
-      // Show user-friendly error message
-      let errorMessage = t('Failed to create account. Please try again.');
-
-      if (error instanceof Error) {
-        const errorMsg = error.message.toLowerCase();
-
-        if (
-          errorMsg.includes('insufficient funds') ||
-          errorMsg.includes('insufficient balance')
-        ) {
-          errorMessage = t(
-            'Insufficient SOL balance. Please add funds to your wallet.'
-          );
-        } else if (errorMsg.includes('timeout')) {
-          errorMessage = t('Transaction timeout. Please try again.');
-        } else if (
-          errorMsg.includes('user rejected') ||
-          errorMsg.includes('cancelled')
-        ) {
-          errorMessage = t('Transaction was cancelled.');
-        } else if (errorMsg.includes('swig creation failed')) {
-          errorMessage = t(
-            'Failed to create Swig account. Please check your wallet and try again.'
-          );
-        } else if (
-          errorMsg.includes('network') ||
-          errorMsg.includes('connection')
-        ) {
-          errorMessage = t(
-            'Network error. Please check your connection and try again.'
-          );
-        }
-      }
-
-      Toast.show({
-        text1: t('Account Creation Failed'),
-        text2: errorMessage,
-        type: 'error',
-      });
-
-      // Reset submitting state so user can try again
       setIsSubmitting(false);
     }
   };
+
+  const goToApp = () => router.push('/(tabs)');
 
   // Show loading screen when submitting (after user returns from Phantom)
   if (isSubmitting) {
@@ -417,6 +423,7 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
           <Title1 style={{ textAlign: 'center' }}>
             {t('Complete Your Profile')}
           </Title1>
+
           {/* Profile Image Upload */}
           <TouchableOpacity onPress={handleImagePicker} disabled={isLoading}>
             <AvatarContainer>
@@ -446,19 +453,12 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
                   onSubmitEditing={onNext}
                 />
               </Column>
-              {isCheckingUsername && (
-                <ActivityIndicator
-                  size='small'
-                  color={theme.colors.tint}
-                  style={{ marginBottom: 12 }}
-                />
-              )}
-              {!isCheckingUsername && usernameAvailable === true && (
+              {usernameAvailable === true && (
                 <SuccessIndicator style={{ marginBottom: 12 }}>
                   ✓
                 </SuccessIndicator>
               )}
-              {!isCheckingUsername && usernameAvailable === false && (
+              {usernameAvailable === false && (
                 <ErrorIndicator style={{ marginBottom: 12 }}>✗</ErrorIndicator>
               )}
             </Row>
@@ -472,11 +472,24 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
               onChangeText={handleEmailChange}
               keyboardType='email-address'
               textContentType='emailAddress'
-              returnKeyType='done'
-              onSubmitEditing={Keyboard.dismiss}
+              returnKeyType='next'
+              onSubmitEditing={onEmailNext}
               ref={emailInputRef}
             />
             {emailError ? <ErrorText>{emailError}</ErrorText> : null}
+
+            {/* Password Input */}
+            <Input
+              label={t('Password')}
+              placeholder={t('Enter your password')}
+              value={signUpForm.password}
+              onChangeText={handlePasswordChange}
+              secureTextEntry
+              returnKeyType='done'
+              onSubmitEditing={Keyboard.dismiss}
+              ref={passwordInputRef}
+            />
+            {passwordError ? <ErrorText>{passwordError}</ErrorText> : null}
 
             {/* Biometric Switch */}
             {isSupported && isEnrolled && (
@@ -507,13 +520,26 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
           </Column>
         </Column>
 
+        {/* <PrimaryButton
+          onPress={async () => {
+            try {
+              await signOut();
+              console.log('✅ User signed out successfully');
+            } catch (error) {
+              console.error('❌ Error signing out:', error);
+            }
+          }}
+        >
+          {t('Sign Out')}
+        </PrimaryButton> */}
+
         {/* Submit Button */}
         <PrimaryButton
-          onPress={handleSubmit}
-          disabled={!!usernameError || isSubmitting}
-          loading={isSubmitting}
+          onPress={goToApp}
+          disabled={isSubmitting || authLoading}
+          style={{ marginTop: 24 }}
         >
-          {t('Complete Sign Up')}
+          {isSubmitting ? t('Creating Account...') : t('Complete Sign Up')}
         </PrimaryButton>
       </Column>
     </FormContainer>

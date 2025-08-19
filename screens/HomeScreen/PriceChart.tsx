@@ -29,9 +29,11 @@ import styled, { DefaultTheme, useTheme } from 'styled-components/native';
 export const PriceChart = ({
   showLiquidation = false,
   trade = null,
+  dummyData,
 }: {
   showLiquidation?: boolean;
   trade?: Trade | null;
+  dummyData?: { value: number; timestamp: number }[];
 }) => {
   const { t } = useTranslation();
   const theme = useTheme();
@@ -39,7 +41,7 @@ export const PriceChart = ({
   const { selectedToken, selectedTimeframe, tokenPrices, openPositions } =
     useHomeContext();
 
-  // Fetch historical chart data
+  // Fetch historical chart data only if no dummy data is provided
   const {
     data: historicalData,
     isLoading: isChartLoading,
@@ -62,8 +64,8 @@ export const PriceChart = ({
     setIsAnimating(true);
   };
 
-  // Use real data or fallback to loading state
-  const data = historicalData || [];
+  // Use dummy data if provided, otherwise use real data or fallback to loading state
+  const data = dummyData || historicalData || [];
   const chartWidth = Dimensions.get('window').width * 0.9 - 8;
 
   const dataValues = data.map((item: { value: number }) => item.value);
@@ -149,8 +151,8 @@ export const PriceChart = ({
   // Toggle state for price/percentage view
   const [showPercent, setShowPercent] = useState(false);
 
-  // Show loading state if data is not available
-  if (isChartLoading || data.length === 0) {
+  // Show loading state if data is not available and no dummy data is provided
+  if ((!dummyData && isChartLoading) || data.length === 0) {
     return (
       <Wrapper>
         <ChartContainer
@@ -168,8 +170,8 @@ export const PriceChart = ({
     );
   }
 
-  // Show error state
-  if (chartError) {
+  // Show error state only if no dummy data is provided
+  if (!dummyData && chartError) {
     return (
       <Wrapper>
         <ChartContainer

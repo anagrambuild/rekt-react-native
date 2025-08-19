@@ -176,12 +176,20 @@ export const EditProfileModal = ({
             newImageUri,
             `avatar_${Date.now()}.jpg`
           );
-          
+
           // Only delete old avatar after successful upload of new one
-          if (avatarUrl && userData.imgSrc && typeof userData.imgSrc === 'string' && userData.imgSrc.startsWith('http')) {
+          if (
+            avatarUrl &&
+            userData.imgSrc &&
+            typeof userData.imgSrc === 'string' &&
+            userData.imgSrc.startsWith('http')
+          ) {
             // Don't await this - we don't want to fail the profile update if deletion fails
-            deleteAvatar(userData.imgSrc).catch(error => {
-              console.warn('Failed to delete old avatar, but continuing:', error);
+            deleteAvatar(userData.imgSrc).catch((error) => {
+              console.warn(
+                'Failed to delete old avatar, but continuing:',
+                error
+              );
             });
           }
         } catch (avatarError) {
@@ -199,10 +207,17 @@ export const EditProfileModal = ({
       // Handle image removal (set avatar to empty)
       if (newImageUri === '') {
         // Delete old avatar if it exists
-        if (userData.imgSrc && typeof userData.imgSrc === 'string' && userData.imgSrc.startsWith('http')) {
+        if (
+          userData.imgSrc &&
+          typeof userData.imgSrc === 'string' &&
+          userData.imgSrc.startsWith('http')
+        ) {
           // Don't await this - we don't want to fail the profile update if deletion fails
-          deleteAvatar(userData.imgSrc).catch(error => {
-            console.warn('Failed to delete old avatar during removal, but continuing:', error);
+          deleteAvatar(userData.imgSrc).catch((error) => {
+            console.warn(
+              'Failed to delete old avatar during removal, but continuing:',
+              error
+            );
           });
         }
         avatarUrl = ''; // Set to empty string to remove avatar

@@ -24,7 +24,7 @@ I18nManager.swapLeftAndRightInRTL(true);
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-  // const navTheme = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
+  // const navTheme = colorScheme === 'dark' ? DefaultTheme : DefaultTheme;
   const navTheme = DarkTheme;
   const styledTheme = colorScheme === 'dark' ? darkTheme : lightTheme;
 

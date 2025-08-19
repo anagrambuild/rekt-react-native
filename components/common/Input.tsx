@@ -25,6 +25,7 @@ interface IntputProps {
   textContentType?: 'emailAddress' | 'username' | 'password' | 'none';
   returnKeyType: 'done' | 'next' | 'search' | 'send';
   onSubmitEditing: () => void;
+  secureTextEntry?: boolean;
   ref?: React.RefObject<TextInput | null>;
 }
 
@@ -37,6 +38,7 @@ export const Input = ({
   textContentType,
   returnKeyType,
   onSubmitEditing,
+  secureTextEntry = false,
   ref,
 }: IntputProps) => {
   return (
@@ -56,6 +58,7 @@ export const Input = ({
           textContentType={textContentType}
           returnKeyType={returnKeyType}
           onSubmitEditing={onSubmitEditing}
+          secureTextEntry={secureTextEntry}
           ref={ref}
         />
       </Row>
