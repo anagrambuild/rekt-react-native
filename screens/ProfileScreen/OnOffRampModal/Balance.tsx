@@ -36,6 +36,7 @@ const videoOffset = Platform.OS === 'ios' ? 38 : 30;
 
 export const Balance = ({
   setView,
+  loginScreen,
 }: {
   setView: (
     view:
@@ -45,6 +46,7 @@ export const Balance = ({
       | 'withdrawal success'
       | 'confirm breeze'
   ) => void;
+  loginScreen?: boolean;
 }) => {
   const theme = useTheme();
   const { t } = useTranslation();
@@ -65,15 +67,19 @@ export const Balance = ({
   });
 
   const goToTransfer = () => {
+    if (loginScreen) return;
     setView('transfer');
   };
   const goToWithdraw = () => {
+    if (loginScreen) return;
     setView('withdraw');
   };
   const goToConfirmBreeze = () => {
+    if (loginScreen) return;
     setView('confirm breeze');
   };
   const goToCard = () => {
+    if (loginScreen) return;
     // setView('card');
     console.log('go to card');
   };
@@ -107,21 +113,22 @@ export const Balance = ({
 
   return (
     <Column>
-      {hasBreeze && (
-        <VideoView
-          player={player}
-          style={{
-            width: '100%',
-            height: '100%',
-            position: 'absolute',
-            bottom: videoOffset,
-            left: 0,
-            backgroundColor: 'transparent',
-          }}
-          pointerEvents='none'
-          nativeControls={false}
-        />
-      )}
+      {hasBreeze ||
+        (loginScreen && (
+          <VideoView
+            player={player}
+            style={{
+              width: '100%',
+              height: '100%',
+              position: 'absolute',
+              bottom: videoOffset,
+              left: 0,
+              backgroundColor: 'transparent',
+            }}
+            pointerEvents='none'
+            nativeControls={false}
+          />
+        ))}
       <Column $gap={24} $alignItems='flex-start' $padding={8}>
         {/* Header Section */}
         <Column
@@ -140,13 +147,16 @@ export const Balance = ({
             <Column $alignItems='flex-start' $width='auto'>
               <BodyMSecondary>{t('Your balance')}</BodyMSecondary>
               <Row $width='auto' $gap={4} $justifyContent='flex-start'>
-                <Title2>
-                  {/* {userData.balance.toLocaleString('en-US', {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })} */}
-                  1800.00
-                </Title2>
+                {loginScreen ? (
+                  <Title2>1800.00</Title2>
+                ) : (
+                  <Title2>
+                    {userData.balance.toLocaleString('en-US', {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </Title2>
+                )}
                 <View ref={usdcIconRef} onLayout={handleUsdcIconLayout}>
                   {hasBreeze ? (
                     <PulsatingContainer duration={1000}>
@@ -159,33 +169,35 @@ export const Balance = ({
               </Row>
             </Column>
 
-            {userData.balance > 0 && (
-              <Row $width='auto' $gap={8}>
-                <ModalIconButton
-                  onPress={goToWithdraw}
-                  icon={
-                    <AntDesign
-                      name='minuscircle'
-                      size={12}
-                      color={theme.colors.textPrimary}
-                    />
-                  }
-                >
-                  {t('Withdraw')}
-                </ModalIconButton>
-                <IconButton
-                  name='history'
-                  size={12}
-                  color={theme.colors.textPrimary}
-                  onPress={handleHistory}
-                />
-              </Row>
-            )}
+            {userData.balance > 0 ||
+              (loginScreen && (
+                <Row $width='auto' $gap={8}>
+                  <ModalIconButton
+                    onPress={goToWithdraw}
+                    icon={
+                      <AntDesign
+                        name='minuscircle'
+                        size={12}
+                        color={theme.colors.textPrimary}
+                      />
+                    }
+                  >
+                    {t('Withdraw')}
+                  </ModalIconButton>
+                  <IconButton
+                    name='history'
+                    size={12}
+                    color={theme.colors.textPrimary}
+                    onPress={handleHistory}
+                    disabled={loginScreen}
+                  />
+                </Row>
+              ))}
           </Row>
         </Column>
 
         {/* APY Section */}
-        {hasBreeze ? (
+        {hasBreeze || loginScreen ? (
           <EarningsCard
             targetPosition={targetPosition}
             handleEarningAmountLayout={handleEarningAmountLayout}
