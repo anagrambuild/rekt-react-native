@@ -1,12 +1,7 @@
-import { ScreenContainer } from '@/components/common/containers';
-import { Title1 } from '@/components/common/texts';
+import { LeaderboardScreen } from '@/screens';
 
 const Leaderboard = () => {
-  return (
-    <ScreenContainer>
-      <Title1>Leaderboard</Title1>
-    </ScreenContainer>
-  );
+  return <LeaderboardScreen />;
 };
 
 export default Leaderboard;
