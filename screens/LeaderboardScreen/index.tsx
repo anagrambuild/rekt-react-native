@@ -15,7 +15,7 @@ import styled from 'styled-components/native';
 const screenPadding = 16;
 const paddingTop = Platform.OS === 'ios' ? 60 : 40;
 
-const renderTopThree = () => {
+export const renderTopThree = () => {
   const firstPlace = leaderboardMockData[0];
   const secondPlace = leaderboardMockData[1];
   const thirdPlace = leaderboardMockData[2];
