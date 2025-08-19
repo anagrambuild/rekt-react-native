@@ -64,9 +64,8 @@ export const Step4 = () => {
           source={topNav}
           contentFit='contain'
           style={{
-            width: '100%',
+            width: '95%',
             height: 60,
-            marginBottom: 8,
           }}
         />
         <View
@@ -75,7 +74,7 @@ export const Step4 = () => {
             paddingEnd: 32,
             overflow: 'hidden',
             width: '100%',
-            marginTop: 24,
+            marginTop: 16,
             gap: 16,
           }}
         >
@@ -87,7 +86,7 @@ export const Step4 = () => {
             />
             <Title4>{t('Deposit')}</Title4>
           </Row>
-          <Gap height={16} />
+          <Gap height={8} />
           <Column $gap={16}>
             <BodyMEmphasized>{t('Enter amount')}</BodyMEmphasized>
             <AmountInput
@@ -96,7 +95,7 @@ export const Step4 = () => {
               disabled
               editable={false}
             />
-            <Gap height={16} />
+            <Gap height={8} />
             <ScrollRow $gap={8} keyboardShouldPersistTaps='always'>
               <PresetButton value={'$10'} onPress={() => {}} />
               <PresetButton value={'$50'} onPress={() => {}} />
@@ -105,7 +104,7 @@ export const Step4 = () => {
               <PresetButton value={'$500'} onPress={() => {}} />
               <PresetButton value={'$1000'} onPress={() => {}} />
             </ScrollRow>
-            <Gap height={16} />
+            <Gap height={8} />
             <AppleGooglePayButton />
             <Row $gap={4} $justifyContent='center'>
               <MaterialIcons

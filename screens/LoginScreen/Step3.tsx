@@ -47,7 +47,7 @@ export const Step3 = () => {
           source={topNav}
           contentFit='contain'
           style={{
-            width: '100%',
+            width: '95%',
             height: 60,
             marginBottom: 8,
           }}
@@ -58,12 +58,11 @@ export const Step3 = () => {
             paddingEnd: 32,
             overflow: 'hidden',
             width: '100%',
-            marginTop: 24,
+            marginTop: 8,
             gap: 16,
           }}
         >
           <Title4>{t('Leaderboard')}</Title4>
-          <Gap height={16} />
           {renderTopThree()}
         </View>
       </View>

@@ -15,7 +15,6 @@ export const Step1 = () => {
       $padding={0}
       $alignItems='center'
       style={{
-        // minHeight: 400,
         justifyContent: 'flex-start',
         position: 'relative',
         overflow: 'hidden', // Add overflow hidden to clip the frame
@@ -47,18 +46,18 @@ export const Step1 = () => {
           source={topNav}
           contentFit='contain'
           style={{
-            width: '100%',
+            width: '95%',
             height: 60,
             marginBottom: 8,
           }}
         />
-        <Row style={{ paddingStart: 24, paddingEnd: 24 }}>
+        <Row style={{ paddingStart: 36, paddingEnd: 36 }}>
           <LogoBanner />
         </Row>
         <View
           style={{
-            paddingStart: 16,
-            paddingEnd: 16,
+            paddingStart: 32,
+            paddingEnd: 32,
             overflow: 'hidden',
             width: '100%',
           }}

@@ -44,7 +44,7 @@ export const Step5 = () => {
           source={topNav}
           contentFit='contain'
           style={{
-            width: '100%',
+            width: '95%',
             height: 60,
             marginBottom: 8,
           }}
