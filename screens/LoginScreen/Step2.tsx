@@ -11,7 +11,7 @@ import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 
 export const Step2 = () => {
-  const [leverage, setLeverage] = useState(1);
+  const [leverage, setLeverage] = useState(100);
   const [amount, setAmount] = useState(10);
 
   // Haptic feedback on leverage increase

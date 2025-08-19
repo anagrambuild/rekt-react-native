@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import { Body1Emphasized, Column, PressableOpacity, Row } from '@/components';
+import { Body1Emphasized, Column, Row } from '@/components';
 
 import { Step1 } from './Step1';
 import { Step2 } from './Step2';
@@ -14,7 +14,13 @@ import {
   Gesture,
   GestureDetector,
 } from 'react-native-gesture-handler';
-import { runOnJS } from 'react-native-reanimated';
+import Animated, {
+  Easing,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import styled, { DefaultTheme } from 'styled-components/native';
 
 const stepTexts = [
@@ -30,10 +36,48 @@ const stepComponents = [Step1, Step2, Step3, Step4, Step5];
 export const Steps = () => {
   const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  // Animation values
+  const slideOffset = useSharedValue(0);
+  const opacity = useSharedValue(1);
 
   const goToStep = (step: number) => {
-    if (step >= 0 && step < stepTexts.length) {
-      setCurrentStep(step);
+    if (step >= 0 && step < stepTexts.length && !isAnimating) {
+      setIsAnimating(true);
+
+      // Animate current step out - start sliding first, fade out later
+      slideOffset.value = withTiming(
+        step > currentStep ? -300 : 300, // Slide left or right based on direction
+        { duration: 300, easing: Easing.out(Easing.cubic) }
+      );
+
+      // Delay the fade out so the outgoing component stays visible longer
+      setTimeout(() => {
+        opacity.value = withTiming(0, {
+          duration: 150, // Faster fade out since it's delayed
+          easing: Easing.out(Easing.cubic),
+        });
+      }, 150); // Start fading after 150ms instead of immediately
+
+      // After slide animation completes, change step and animate new one in
+      setTimeout(() => {
+        setCurrentStep(step);
+        slideOffset.value = step > currentStep ? 300 : -300; // Start from opposite side
+        opacity.value = 0;
+
+        // Animate new step in
+        slideOffset.value = withTiming(0, {
+          duration: 300,
+          easing: Easing.out(Easing.cubic),
+        });
+        opacity.value = withTiming(1, {
+          duration: 200,
+          easing: Easing.out(Easing.cubic),
+        });
+
+        setTimeout(() => setIsAnimating(false), 300);
+      }, 300);
     }
   };
 
@@ -62,6 +106,14 @@ export const Steps = () => {
 
   const CurrentStepComponent = stepComponents[currentStep];
 
+  // Animated styles for the step content
+  const stepAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ translateX: slideOffset.value }],
+      opacity: opacity.value,
+    };
+  });
+
   return (
     <Column $gap={16} $justifyContent='space-between' style={{ flex: 1 }}>
       <Column $width='100%' $justifyContent='flex-start' $gap={16}>
@@ -71,7 +123,6 @@ export const Steps = () => {
         </Body1Emphasized>
 
         {/* Step Indicators */}
-
         <Row $justifyContent='center' $gap={8}>
           {stepTexts.map((_, index) => (
             <StepIndicator key={index} $active={index === currentStep} />
@@ -79,10 +130,12 @@ export const Steps = () => {
         </Row>
       </Column>
 
-      {/* Current Step Component */}
+      {/* Current Step Component with Animation */}
       <GestureDetector gesture={composedGesture}>
-        <View style={{ width: '100%', paddingBottom: 16 }}>
-          <CurrentStepComponent />
+        <View style={{ width: '100%', paddingBottom: 16, overflow: 'hidden' }}>
+          <Animated.View style={stepAnimatedStyle}>
+            <CurrentStepComponent />
+          </Animated.View>
         </View>
       </GestureDetector>
     </Column>

@@ -13,7 +13,7 @@ import {
 } from '@/components';
 import { useAppContext, useWallet } from '@/contexts';
 import { LoadingScreen } from '@/screens';
-import { Step2 } from '@/screens/LoginScreen';
+import { Steps } from '@/screens/LoginScreen/Steps';
 
 import { router } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
@@ -133,15 +133,15 @@ const Index = () => {
     return <BiometricAuthScreen key='biometric-auth' />;
   }
 
-  const connectWallet = () => {
-    if (Platform.OS === 'ios') {
-      setShowWalletModal(true);
-    } else {
-      connect();
-    }
-  };
+  // const connectWallet = () => {
+  //   if (Platform.OS === 'ios') {
+  //     setShowWalletModal(true);
+  //   } else {
+  //     connect();
+  //   }
+  // };
 
-  // const connectWallet = () => router.push('/(tabs)');
+  const connectWallet = () => router.push('/(tabs)');
 
   if (showSignUpForm) {
     return (
@@ -182,7 +182,7 @@ const Index = () => {
       noPadding
       contentContainerStyle={{ flex: 1, position: 'relative' }}
     >
-      <Column $height='100%' $justifyContent='space-between'>
+      <Column $height='100%' $justifyContent='flex-start'>
         <Column $width='100%' $padding={12} $justifyContent='flex-start'>
           <Animated.View
             style={{
@@ -194,19 +194,27 @@ const Index = () => {
           </Animated.View>
         </Column>
 
-        <AnimatedButtonsContainer style={{ opacity: welcomeOpacity }}>
-          <Step2 />
-          <PrimaryButton onPress={connectWallet} disabled={connecting}>
-            {connecting ? t('Connecting...') : t('Connect Wallet')}
-          </PrimaryButton>
-        </AnimatedButtonsContainer>
+        <AnimatedStepsContainer style={{ opacity: welcomeOpacity }}>
+          <Steps />
+        </AnimatedStepsContainer>
+
         <VideoView
           player={player}
-          style={{ width: '100%', height: '50%' }}
+          style={{
+            width: '100%',
+            height: '50%',
+            position: 'absolute',
+            bottom: 0,
+          }}
           pointerEvents='none'
           nativeControls={false}
         />
       </Column>
+      <AnimatedButtonsContainer style={{ opacity: welcomeOpacity }}>
+        <PrimaryButton onPress={connectWallet} disabled={connecting}>
+          {connecting ? t('Connecting...') : t('Connect Wallet')}
+        </PrimaryButton>
+      </AnimatedButtonsContainer>
       {showWalletModal && (
         <WalletConnectionModal
           visible={showWalletModal}
@@ -219,14 +227,20 @@ const Index = () => {
 
 export default Index;
 
-const AnimatedButtonsContainer = styled(Animated.View)`
-  padding: 8px;
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 32px;
+const AnimatedStepsContainer = styled(Animated.View)`
+  height: 100%;
   z-index: 10;
   width: 100%;
   align-items: center;
   gap: 12px;
+  flex: 1;
+  justify-content: flex-start;
+  margin-bottom: 84px;
+`;
+
+const AnimatedButtonsContainer = styled(Animated.View)`
+  position: absolute;
+  width: 100%;
+  bottom: 32px;
+  z-index: 100;
 `;
