@@ -6,7 +6,7 @@ export const PresetButton = ({
   value,
   onPress,
 }: {
-  value: number;
+  value: number | string;
   onPress: () => void;
 }) => {
   return (
