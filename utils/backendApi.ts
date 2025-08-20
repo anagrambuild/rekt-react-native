@@ -23,7 +23,6 @@ export interface UserApiResponse {
 
 export interface UsernameCheckApiResponse {
   available: boolean;
-  suggestions: string[];
 }
 
 export interface AvatarUploadApiResponse {
@@ -295,7 +294,6 @@ export interface UpdateUserRequest {
 
 export interface UsernameCheckResponse {
   available: boolean;
-  suggestions?: string[];
 }
 
 // Public username check that doesn't require authentication
@@ -323,7 +321,6 @@ export const checkUsernameAvailabilityPublic = async (
 
     return {
       available: data.available,
-      suggestions: data.suggestions,
     };
   } catch (error) {
     console.error('❌ Username check error (public):', error);
@@ -786,36 +783,6 @@ export const getTradingHistory = async (
   } catch (error) {
     // console.error('Error getting trading history:', error);
     throw error;
-  }
-};
-
-// Get user by wallet address
-export const getUserByWalletAddress = async (
-  walletAddress: string
-): Promise<User | null> => {
-  try {
-    // Use the authenticated API client instead of raw fetch
-    const result = await apiClient.get<ApiResponse<UserApiResponse>>(
-      `/api/users/by-wallet/${walletAddress}`
-    );
-
-    if (!result.success) {
-      throw new Error(result.error || 'Failed to get user by wallet address');
-    }
-
-    // Map backend response to frontend User interface
-    return {
-      id: result.data!.user.id,
-      username: result.data!.user.username,
-      email: result.data!.user.email,
-      profileImage: result.data!.user.avatar_url,
-      swigWalletAddress: result.data!.user.swig_wallet_address,
-      createdAt: result.data!.user.joined_at || new Date().toISOString(),
-      updatedAt: result.data!.user.updated_at || new Date().toISOString(),
-    };
-  } catch (error) {
-    console.error('Error getting user by wallet address:', error);
-    return null;
   }
 };
 
