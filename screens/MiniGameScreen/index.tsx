@@ -17,11 +17,8 @@ import { useTranslation } from 'react-i18next';
 export const MiniGameScreen = () => {
   const { t } = useTranslation();
   const { openPositions } = useHomeContext();
-  const { 
-    selectedToken, 
-    makePrediction, 
-    canMakePrediction
-  } = useMiniGameContext();
+  const { selectedToken, makePrediction, canMakePrediction } =
+    useMiniGameContext();
 
   usePreventRemove(true, () => {});
 
@@ -32,7 +29,7 @@ export const MiniGameScreen = () => {
   });
 
   const isActiveTrade = !!currentPosition;
-  
+
   // Handle prediction selection
   const handlePrediction = (prediction: 'green' | 'red') => {
     if (canMakePrediction(prediction)) {
@@ -52,17 +49,17 @@ export const MiniGameScreen = () => {
         {!isActiveTrade && <PredictionSection />}
 
         <Row $padding={0}>
-          <LongButton
-            onPress={() => handlePrediction('green')}
-            title={t('Green')}
-            subtitle={t('$1 on green candle')}
-            disabled={!canMakePrediction('green')}
-          />
           <ShortButton
             onPress={() => handlePrediction('red')}
             title={t('Red')}
             subtitle={t('$1 on red candle')}
             disabled={!canMakePrediction('red')}
+          />
+          <LongButton
+            onPress={() => handlePrediction('green')}
+            title={t('Green')}
+            subtitle={t('$1 on green candle')}
+            disabled={!canMakePrediction('green')}
           />
         </Row>
       </Column>
