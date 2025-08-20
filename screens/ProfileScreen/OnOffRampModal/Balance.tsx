@@ -111,24 +111,25 @@ export const Balance = ({
     };
   }, [usdcIconPosition, earningAmountPosition]);
 
+  const showBreeze = hasBreeze || loginScreen;
+
   return (
     <Column>
-      {hasBreeze ||
-        (loginScreen && (
-          <VideoView
-            player={player}
-            style={{
-              width: '100%',
-              height: '100%',
-              position: 'absolute',
-              bottom: videoOffset,
-              left: 0,
-              backgroundColor: 'transparent',
-            }}
-            pointerEvents='none'
-            nativeControls={false}
-          />
-        ))}
+      {showBreeze && (
+        <VideoView
+          player={player}
+          style={{
+            width: '100%',
+            height: '100%',
+            position: 'absolute',
+            bottom: videoOffset,
+            left: 0,
+            backgroundColor: 'transparent',
+          }}
+          pointerEvents='none'
+          nativeControls={false}
+        />
+      )}
       <Column $gap={24} $alignItems='flex-start' $padding={8}>
         {/* Header Section */}
         <Column
@@ -158,7 +159,7 @@ export const Balance = ({
                   </Title2>
                 )}
                 <View ref={usdcIconRef} onLayout={handleUsdcIconLayout}>
-                  {hasBreeze || loginScreen ? (
+                  {showBreeze ? (
                     <PulsatingContainer duration={1000}>
                       <UsdcIcon width={20} height={20} />
                     </PulsatingContainer>
@@ -197,7 +198,7 @@ export const Balance = ({
         </Column>
 
         {/* APY Section */}
-        {hasBreeze || loginScreen ? (
+        {showBreeze ? (
           <EarningsCard
             targetPosition={targetPosition}
             handleEarningAmountLayout={handleEarningAmountLayout}
