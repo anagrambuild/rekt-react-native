@@ -19,7 +19,7 @@ import {
   // Add trading-related imports
   getTradingBalance,
   getTradingHistory,
-  getUserByProfileId,
+  getUserByUserId,
   OpenPositionRequest,
   openTradingPosition,
   Position,
@@ -211,13 +211,13 @@ export const useHistoricalDataQuery = (
 
 // Hook to get user by profile ID
 export const useUserByProfileQuery = (
-  profileId: string,
+  userId: string,
   options?: Omit<UseQueryOptions<User | null, Error>, 'queryKey' | 'queryFn'>
 ) => {
   return useQuery({
-    queryKey: queryKeys.userProfile(profileId),
-    queryFn: () => getUserByProfileId(profileId),
-    enabled: !!profileId, // Only run query if profile ID is provided
+    queryKey: queryKeys.userProfile(userId),
+    queryFn: () => getUserByUserId(userId),
+    enabled: !!userId, // Only run query if profile ID is provided
     staleTime: 1000 * 60 * 5, // 5 minutes stale time
     ...options,
   });

@@ -12,7 +12,7 @@ import { AppState, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { detectLanguage, initializeI18n } from '../i18n';
-import { getUserByProfileId } from '../utils/backendApi';
+import { getUserByUserId } from '../utils/backendApi';
 import { supabase } from '../utils/supabase';
 import { AuthProvider } from './AuthContext';
 import { HomeProvider } from './HomeContext';
@@ -104,7 +104,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         if (session?.user) {
           // We have a valid Supabase session, fetch user profile
           try {
-            const user = await getUserByProfileId(session.user.id);
+            const user = await getUserByUserId(session.user.id);
             if (user) {
               setUserProfile(user);
 

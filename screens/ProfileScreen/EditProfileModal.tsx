@@ -41,7 +41,7 @@ export const EditProfileModal = ({
 }) => {
   const theme = useTheme();
   const { t } = useTranslation();
-  const { userData, profileId } = useProfileContext();
+  const { userData, userId } = useProfileContext();
   const { setUserProfile } = useAppContext();
   const [username, setUsername] = useState(userData.username);
   const [newImageUri, setNewImageUri] = useState<string | null>(null);
@@ -119,7 +119,7 @@ export const EditProfileModal = ({
   };
 
   const handleSave = async () => {
-    if (!profileId) {
+    if (!userId) {
       Toast.show({
         text1: t('Error'),
         text2: t('Profile ID not found'),
@@ -236,7 +236,7 @@ export const EditProfileModal = ({
 
       // Only make API call if there are changes
       if (Object.keys(updateData).length > 0) {
-        const updatedUser = await updateUserProfile(profileId, updateData);
+        const updatedUser = await updateUserProfile(userId, updateData);
 
         // Update the app context with new user data
         setUserProfile(updatedUser);
