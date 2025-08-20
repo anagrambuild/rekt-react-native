@@ -1,10 +1,17 @@
+import defaultAvatar from '@/assets/images/app-pngs/avatar.png';
 import { badgeUrl } from '@/assets/videos';
 
 import { Image } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import styled, { DefaultTheme } from 'styled-components/native';
 
-export const Avatar = ({ imgSrc }: { imgSrc: any }) => {
+export const Avatar = ({
+  imgSrc,
+  size = 80,
+}: {
+  imgSrc: any;
+  size?: number;
+}) => {
   const hasImage = imgSrc && imgSrc !== '' && imgSrc !== null;
   // Create the video player, set to loop and play automatically
   const player = useVideoPlayer(badgeUrl, (player) => {
@@ -13,12 +20,8 @@ export const Avatar = ({ imgSrc }: { imgSrc: any }) => {
   });
 
   return (
-    <AvatarContainer>
-      <AvatarImage
-        source={
-          hasImage ? imgSrc : require('@/assets/images/app-pngs/avatar.png')
-        }
-      />
+    <AvatarContainer $size={size}>
+      <AvatarImage source={hasImage ? imgSrc : defaultAvatar} $size={size} />
       <BadgeContainer>
         <VideoView
           player={player}
@@ -31,19 +34,18 @@ export const Avatar = ({ imgSrc }: { imgSrc: any }) => {
   );
 };
 
-const imgSize = 80;
 const AvatarContainer = styled.View`
   padding: 6px;
-  border-radius: ${imgSize / 2 + 6}px;
+  border-radius: ${({ $size }: { $size: number }) => $size / 2 + 6}px;
   border-width: 3px;
   border-color: ${({ theme }: { theme: DefaultTheme }) =>
     theme.colors.textSecondary};
 `;
 
 const AvatarImage = styled(Image)`
-  width: ${imgSize}px;
-  height: ${imgSize}px;
-  border-radius: ${imgSize / 2}px;
+  width: ${({ $size }: { $size: number }) => $size}px;
+  height: ${({ $size }: { $size: number }) => $size}px;
+  border-radius: ${({ $size }: { $size: number }) => $size / 2}px;
 `;
 
 const BadgeContainer = styled.View`

@@ -6,6 +6,7 @@ import RedCandle from '@/assets/images/app-svgs/red-candle.svg';
 import { PressableOpacity } from '@/components';
 import { Theme } from '@/types/styled';
 
+import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import styled, { useTheme } from 'styled-components/native';
 
@@ -105,6 +106,7 @@ const ContentContainer = styled.View`
   justify-content: center;
   align-items: center;
   gap: 20px;
+  opacity: ${({ $disabled }: { $disabled?: boolean }) => ($disabled ? 0.2 : 1)};
 `;
 
 const Title = styled.Text`
@@ -133,9 +135,16 @@ export const ShortButton = ({
 }: ShortButtonProps) => {
   const theme = useTheme();
 
+  const handlePress = () => {
+    if (!disabled && onPress) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      onPress();
+    }
+  };
+
   return (
     <LargeButtonContainer
-      onPress={disabled ? undefined : onPress}
+      onPress={handlePress}
       disabled={disabled}
       style={{ borderColor: theme.colors.borderLoss }}
     >
@@ -158,7 +167,10 @@ export const ShortButton = ({
           ]}
         />
         {/* Content above all backgrounds */}
-        <ContentContainer style={{ position: 'relative', flex: 1 }}>
+        <ContentContainer
+          $disabled={disabled}
+          style={{ position: 'relative', flex: 1 }}
+        >
           <ShortArrow />
           <Title>{title}</Title>
           <Subtitle color={theme.colors.lossLight}>{subtitle}</Subtitle>
@@ -183,9 +195,16 @@ export const LongButton = ({
 }: LongButtonProps) => {
   const theme = useTheme();
 
+  const handlePress = () => {
+    if (!disabled && onPress) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      onPress();
+    }
+  };
+
   return (
     <LargeButtonContainer
-      onPress={disabled ? undefined : onPress}
+      onPress={handlePress}
       disabled={disabled}
       style={{ borderColor: theme.colors.borderProfit }}
     >
@@ -208,7 +227,10 @@ export const LongButton = ({
           ]}
         />
         {/* Content above all backgrounds */}
-        <ContentContainer style={{ position: 'relative', flex: 1 }}>
+        <ContentContainer
+          $disabled={disabled}
+          style={{ position: 'relative', flex: 1 }}
+        >
           <LongArrow />
           <Title>{title}</Title>
           <Subtitle color={theme.colors.profitLight}>{subtitle}</Subtitle>
