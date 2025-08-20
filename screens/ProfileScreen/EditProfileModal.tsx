@@ -185,7 +185,7 @@ export const EditProfileModal = ({
             userData.imgSrc.startsWith("http")
           ) {
             // Don't await this - we don't want to fail the profile update if deletion fails
-            deleteAvatar(userData.imgSrc).catch((error) => {
+            deleteAvatar(userData.imgSrc).catch(error => {
               console.warn(
                 "Failed to delete old avatar, but continuing:",
                 error
@@ -213,7 +213,7 @@ export const EditProfileModal = ({
           userData.imgSrc.startsWith("http")
         ) {
           // Don't await this - we don't want to fail the profile update if deletion fails
-          deleteAvatar(userData.imgSrc).catch((error) => {
+          deleteAvatar(userData.imgSrc).catch(error => {
             console.warn(
               "Failed to delete old avatar during removal, but continuing:",
               error

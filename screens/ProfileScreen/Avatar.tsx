@@ -1,9 +1,9 @@
-import defaultAvatar from '@/assets/images/app-pngs/avatar.png';
-import { badgeUrl } from '@/assets/videos';
+import defaultAvatar from "@/assets/images/app-pngs/avatar.png";
+import { badgeUrl } from "@/assets/videos";
 
-import { Image } from 'expo-image';
-import { useVideoPlayer, VideoView } from 'expo-video';
-import styled, { DefaultTheme } from 'styled-components/native';
+import { Image } from "expo-image";
+import { useVideoPlayer, VideoView } from "expo-video";
+import styled, { DefaultTheme } from "styled-components/native";
 
 export const Avatar = ({
   imgSrc,
@@ -12,9 +12,9 @@ export const Avatar = ({
   imgSrc: any;
   size?: number;
 }) => {
-  const hasImage = imgSrc && imgSrc !== '' && imgSrc !== null;
+  const hasImage = imgSrc && imgSrc !== "" && imgSrc !== null;
   // Create the video player, set to loop and play automatically
-  const player = useVideoPlayer(badgeUrl, (player) => {
+  const player = useVideoPlayer(badgeUrl, player => {
     player.loop = true;
     player.play();
   });
@@ -26,7 +26,7 @@ export const Avatar = ({
         <VideoView
           player={player}
           style={{ width: 32, height: 32, borderRadius: 16 }}
-          pointerEvents='none'
+          pointerEvents="none"
           nativeControls={false}
         />
       </BadgeContainer>

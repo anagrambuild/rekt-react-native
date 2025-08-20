@@ -1,8 +1,8 @@
-import styled, { DefaultTheme } from 'styled-components/native';
+import styled, { DefaultTheme } from "styled-components/native";
 
 const SwitchContainer = styled.Pressable`
   flex-direction: ${({ $isOn }: { $isOn: boolean }) =>
-    $isOn ? 'row-reverse' : 'row'};
+    $isOn ? "row-reverse" : "row"};
   align-items: center;
   justify-content: center;
   gap: 4px;

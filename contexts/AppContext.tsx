@@ -6,21 +6,21 @@ import {
   useEffect,
   useRef,
   useState,
-} from 'react';
-import { AppState, Platform } from 'react-native';
+} from "react";
+import { AppState, Platform } from "react-native";
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import { detectLanguage, initializeI18n } from '../i18n';
-import { getUserByUserId } from '../utils/backendApi';
-import { supabase } from '../utils/supabase';
-import { AuthProvider } from './AuthContext';
-import { HomeProvider } from './HomeContext';
-import { MiniGameProvider } from './MiniGameContext';
-import { ProfileProvider } from './ProfileContext';
-import { SolanaProvider } from './SolanaContext';
-import { WalletProvider } from './WalletContext';
-import * as LocalAuthentication from 'expo-local-authentication';
+import { detectLanguage, initializeI18n } from "../i18n";
+import { getUserByUserId } from "../utils/backendApi";
+import { supabase } from "../utils/supabase";
+import { AuthProvider } from "./AuthContext";
+import { HomeProvider } from "./HomeContext";
+import { MiniGameProvider } from "./MiniGameContext";
+import { ProfileProvider } from "./ProfileContext";
+import { SolanaProvider } from "./SolanaContext";
+import { WalletProvider } from "./WalletContext";
+import * as LocalAuthentication from "expo-local-authentication";
 
 type SignUpFormData = {
   username: string;
@@ -53,13 +53,13 @@ export const AppContext = createContext<AppContextType>({
   isLoggedIn: false,
   setIsLoggedIn: () => {},
   i18nReady: false,
-  currentLanguage: 'en',
+  currentLanguage: "en",
   showSignUpForm: false,
   setShowSignUpForm: () => {},
   signUpForm: {
-    username: '',
-    email: '',
-    password: '',
+    username: "",
+    email: "",
+    password: "",
     profileImage: null,
     enableBiometrics: false,
   },
@@ -77,12 +77,12 @@ export const AppContext = createContext<AppContextType>({
 export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [i18nReady, setI18nReady] = useState(false);
-  const [currentLanguage, setCurrentLanguage] = useState('en');
+  const [currentLanguage, setCurrentLanguage] = useState("en");
   const [showSignUpForm, setShowSignUpForm] = useState(false);
   const [signUpForm, setSignUpForm] = useState<SignUpFormData>({
-    username: '',
-    email: '',
-    password: '',
+    username: "",
+    email: "",
+    password: "",
     profileImage: null,
     enableBiometrics: false,
   });
@@ -109,11 +109,10 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
               setUserProfile(user);
 
               // Check if biometrics are enabled for this user
-              const biometricEnabled = await AsyncStorage.getItem(
-                'biometric_enabled'
-              );
+              const biometricEnabled =
+                await AsyncStorage.getItem("biometric_enabled");
 
-              if (biometricEnabled === 'true') {
+              if (biometricEnabled === "true") {
                 // Check if biometrics are available on device
                 const isSupported =
                   await LocalAuthentication.hasHardwareAsync();
@@ -121,7 +120,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 
                 if (isSupported && isEnrolled) {
                   // Skip biometrics on Android due to dialog dismissal issues
-                  if (Platform.OS === 'android') {
+                  if (Platform.OS === "android") {
                     setRequiresBiometric(false);
                     setIsLoggedIn(true);
                   } else {
@@ -138,19 +137,19 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
             } else {
               // User profile not found - this means the user needs to complete signup
               console.log(
-                '📝 User authenticated but profile not found - showing signup form'
+                "📝 User authenticated but profile not found - showing signup form"
               );
               setShowSignUpForm(true);
               setCheckingAuth(false);
               return; // Exit early since we're showing signup form
             }
           } catch (error) {
-            console.error('Error fetching user profile:', error);
+            console.error("Error fetching user profile:", error);
 
             // If we get a 404 or other error fetching profile, show signup form
-            if (error instanceof Error && error.message.includes('404')) {
+            if (error instanceof Error && error.message.includes("404")) {
               console.log(
-                '📝 User profile not found (404) - showing signup form'
+                "📝 User profile not found (404) - showing signup form"
               );
               setShowSignUpForm(true);
               setCheckingAuth(false);
@@ -159,7 +158,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
           }
         }
       } catch (error) {
-        console.error('Error checking existing auth:', error);
+        console.error("Error checking existing auth:", error);
       } finally {
         setCheckingAuth(false);
       }
@@ -171,7 +170,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   // Watch for userProfile changes and automatically log in when profile is set
   useEffect(() => {
     if (userProfile && !isLoggedIn) {
-      console.log('✅ User profile set, automatically logging in');
+      console.log("✅ User profile set, automatically logging in");
       setIsLoggedIn(true);
     }
   }, [userProfile, isLoggedIn]);
@@ -180,9 +179,9 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const authenticateWithBiometrics = async (): Promise<boolean> => {
     try {
       const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: 'Authenticate to access your account',
-        cancelLabel: 'Cancel',
-        fallbackLabel: 'Use Passcode',
+        promptMessage: "Authenticate to access your account",
+        cancelLabel: "Cancel",
+        fallbackLabel: "Use Passcode",
         disableDeviceFallback: false,
         requireConfirmation: false,
       });
@@ -196,7 +195,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
       }
       return false;
     } catch (error) {
-      console.error('Biometric authentication error:', error);
+      console.error("Biometric authentication error:", error);
       return false;
     }
   };
@@ -208,11 +207,11 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 
     // Listen for app state changes
     const subscription = AppState.addEventListener(
-      'change',
-      async (nextAppState) => {
+      "change",
+      async nextAppState => {
         if (
           appState.current.match(/inactive|background/) &&
-          nextAppState === 'active'
+          nextAppState === "active"
         ) {
           // App has come to the foreground, re-detect language
           const language = detectLanguage();

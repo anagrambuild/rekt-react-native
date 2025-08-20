@@ -1,4 +1,4 @@
-import { MiniGameScreen } from '@/screens';
+import { MiniGameScreen } from "@/screens";
 
 const Minigame = () => {
   return <MiniGameScreen />;

@@ -1,34 +1,34 @@
-import { useEffect, useRef, useState } from 'react';
-import { View } from 'react-native';
+import { useEffect, useRef, useState } from "react";
+import { View } from "react-native";
 
-import { Body1Emphasized, Column, Row } from '@/components';
+import { Body1Emphasized, Column, Row } from "@/components";
 
-import { Step1 } from './Step1';
-import { Step2 } from './Step2';
-import { Step3 } from './Step3';
-import { Step4 } from './Step4';
-import { Step5 } from './Step5';
-import { useTranslation } from 'react-i18next';
+import { Step1 } from "./Step1";
+import { Step2 } from "./Step2";
+import { Step3 } from "./Step3";
+import { Step4 } from "./Step4";
+import { Step5 } from "./Step5";
+import { useTranslation } from "react-i18next";
 import {
   Directions,
   Gesture,
   GestureDetector,
-} from 'react-native-gesture-handler';
+} from "react-native-gesture-handler";
 import Animated, {
   Easing,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
-} from 'react-native-reanimated';
-import styled, { DefaultTheme } from 'styled-components/native';
+} from "react-native-reanimated";
+import styled, { DefaultTheme } from "styled-components/native";
 
 const stepTexts = [
-  'The simplest perps trading experience ever',
-  'Earn big winnings with up to 200x leverage',
-  'Earn points and compete with your friends on leaderboards',
-  'Deposit or withdraw your wins instantly',
-  'Earn 5% APY on your balance, streamed every second',
+  "The simplest perps trading experience ever",
+  "Earn big winnings with up to 200x leverage",
+  "Earn points and compete with your friends on leaderboards",
+  "Deposit or withdraw your wins instantly",
+  "Earn 5% APY on your balance, streamed every second",
 ];
 
 const stepComponents = [Step1, Step2, Step3, Step4, Step5];
@@ -51,7 +51,7 @@ export const Steps = () => {
       // Add initial delay for first step to account for render delay
       const initialDelay = setTimeout(() => {
         timerRef.current = setInterval(() => {
-          setCurrentStep((prevStep) => {
+          setCurrentStep(prevStep => {
             const nextStep = (prevStep + 1) % stepTexts.length;
             // Call goToStep with the current prevStep and nextStep to ensure correct direction
             setTimeout(() => goToStep(prevStep, nextStep), 0);
@@ -186,19 +186,19 @@ export const Steps = () => {
   };
 
   return (
-    <Column $gap={16} $justifyContent='space-between' style={{ flex: 1 }}>
-      <Column $width='100%' $justifyContent='flex-start' $gap={16}>
+    <Column $gap={16} $justifyContent="space-between" style={{ flex: 1 }}>
+      <Column $width="100%" $justifyContent="flex-start" $gap={16}>
         {/* Step Text */}
         <Animated.View
-          style={{ opacity: textOpacity, width: '75%', alignSelf: 'center' }}
+          style={{ opacity: textOpacity, width: "75%", alignSelf: "center" }}
         >
-          <Body1Emphasized style={{ textAlign: 'center' }}>
+          <Body1Emphasized style={{ textAlign: "center" }}>
             {t(stepTexts[currentStep])}
           </Body1Emphasized>
         </Animated.View>
 
         {/* Step Indicators */}
-        <Row $justifyContent='center' $gap={8}>
+        <Row $justifyContent="center" $gap={8}>
           {stepTexts.map((_, index) => (
             <StepIndicator key={index} $active={index === currentStep} />
           ))}
@@ -207,7 +207,7 @@ export const Steps = () => {
 
       {/* Current Step Component with Animation */}
       <GestureDetector gesture={composedGesture}>
-        <View style={{ width: '100%', paddingBottom: 16, overflow: 'hidden' }}>
+        <View style={{ width: "100%", paddingBottom: 16, overflow: "hidden" }}>
           <Animated.View style={stepAnimatedStyle}>
             <CurrentStepComponent disableAutoTimer={disableAutoTimer} />
           </Animated.View>
@@ -218,7 +218,7 @@ export const Steps = () => {
 };
 
 const StepIndicator = styled.View<{ $active: boolean }>`
-  width: ${({ $active }: { $active: boolean }) => ($active ? '24px' : '8px')};
+  width: ${({ $active }: { $active: boolean }) => ($active ? "24px" : "8px")};
   height: 8px;
   border-radius: 4px;
   background-color: ${({

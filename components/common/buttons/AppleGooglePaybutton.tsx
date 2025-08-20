@@ -1,15 +1,15 @@
-import { ActivityIndicator, Platform } from 'react-native';
+import { ActivityIndicator, Platform } from "react-native";
 
-import applePay from '@/assets/images/app-pngs/apple-pay.png';
-import googlePay from '@/assets/images/app-pngs/google-pay.png';
+import applePay from "@/assets/images/app-pngs/apple-pay.png";
+import googlePay from "@/assets/images/app-pngs/google-pay.png";
 
-import { BodyMEmphasized } from '../texts';
-import { PressableOpacity } from './PressableOpacity';
-import { Image } from 'expo-image';
-import { useTranslation } from 'react-i18next';
-import styled, { DefaultTheme } from 'styled-components/native';
+import { BodyMEmphasized } from "../texts";
+import { PressableOpacity } from "./PressableOpacity";
+import { Image } from "expo-image";
+import { useTranslation } from "react-i18next";
+import styled, { DefaultTheme } from "styled-components/native";
 
-const isAndroid = Platform.OS === 'android';
+const isAndroid = Platform.OS === "android";
 
 interface ThemedButtonProps {
   theme: DefaultTheme;
@@ -75,7 +75,7 @@ export const AppleGooglePayButton = ({
       ) : (
         <>
           <AppleGooglePayButtonText>
-            {t('Deposit with')}
+            {t("Deposit with")}
           </AppleGooglePayButtonText>
           <Image
             source={isAndroid ? googlePay : applePay}

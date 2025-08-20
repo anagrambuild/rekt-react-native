@@ -1,14 +1,14 @@
-import { KeyboardAvoidingView, Modal as RNModal, Platform } from 'react-native';
+import { KeyboardAvoidingView, Modal as RNModal, Platform } from "react-native";
 
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
-import { PressableOpacity } from './buttons';
+import { PressableOpacity } from "./buttons";
 import {
   Directions,
   Gesture,
   GestureDetector,
-} from 'react-native-gesture-handler';
-import styled, { DefaultTheme, useTheme } from 'styled-components/native';
+} from "react-native-gesture-handler";
+import styled, { DefaultTheme, useTheme } from "styled-components/native";
 
 interface ModalProps {
   visible: boolean;
@@ -30,25 +30,25 @@ export const Modal: React.FC<ModalProps> = ({
   return (
     <RNModal
       transparent
-      animationType='slide'
+      animationType="slide"
       visible={visible}
       onRequestClose={onRequestClose}
     >
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
       >
-        <Backdrop onPress={onRequestClose} testID='modal-backdrop' />
+        <Backdrop onPress={onRequestClose} testID="modal-backdrop" />
         <BottomSheetContainer>
           <GestureDetector gesture={flingDownGesture}>
             <ContentContainer>
               <HandleContainer>
-                {Platform.OS === 'ios' ? (
+                {Platform.OS === "ios" ? (
                   <Handle />
                 ) : (
                   <PressableOpacity onPress={onRequestClose}>
                     <MaterialIcons
-                      name='close'
+                      name="close"
                       size={18}
                       color={theme.colors.textSecondary}
                     />
@@ -67,7 +67,7 @@ export const Modal: React.FC<ModalProps> = ({
 const Backdrop = styled.Pressable`
   flex: 1;
   background-color: ${({ theme }: { theme: DefaultTheme }) =>
-    theme.colors.background + 'CC'};
+    theme.colors.background + "CC"};
   position: absolute;
   top: 0;
   left: 0;

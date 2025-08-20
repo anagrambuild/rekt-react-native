@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
-import { Animated } from 'react-native';
+import { useEffect, useRef } from "react";
+import { Animated } from "react-native";
 
 export const FloatingEmoji = ({
   emoji,
@@ -37,14 +37,14 @@ export const FloatingEmoji = ({
   return (
     <Animated.Text
       style={{
-        position: 'absolute',
+        position: "absolute",
         left,
         bottom: 10,
         fontSize,
         opacity,
         transform: [{ translateY }],
         zIndex: 100,
-        textShadowColor: '#000',
+        textShadowColor: "#000",
         textShadowOffset: { width: 0, height: 1 },
         textShadowRadius: 2,
       }}

@@ -1,21 +1,21 @@
-import { ImageSourcePropType, View } from 'react-native';
+import { ImageSourcePropType, View } from "react-native";
 
-import greenArrow from '@/assets/images/app-pngs/green-arrow.png';
-import lostFace from '@/assets/images/app-pngs/lost-face.png';
-import redArrow from '@/assets/images/app-pngs/red-arrow.png';
-import rektBomb from '@/assets/images/app-pngs/rekt-bomb.png';
-import wonCash from '@/assets/images/app-pngs/won-cash.png';
-import FireIcon from '@/assets/images/app-svgs/fire.svg';
+import greenArrow from "@/assets/images/app-pngs/green-arrow.png";
+import lostFace from "@/assets/images/app-pngs/lost-face.png";
+import redArrow from "@/assets/images/app-pngs/red-arrow.png";
+import rektBomb from "@/assets/images/app-pngs/rekt-bomb.png";
+import wonCash from "@/assets/images/app-pngs/won-cash.png";
+import FireIcon from "@/assets/images/app-svgs/fire.svg";
 import {
   BodyMSecondary,
   BodySSecondary,
   Column,
   Row,
-} from '@/components/common';
+} from "@/components/common";
 
-import { Image } from 'expo-image';
-import { useTranslation } from 'react-i18next';
-import styled, { DefaultTheme, useTheme } from 'styled-components/native';
+import { Image } from "expo-image";
+import { useTranslation } from "react-i18next";
+import styled, { DefaultTheme, useTheme } from "styled-components/native";
 
 const pfpSize = 40;
 const pfpBorderRadius = 12;
@@ -30,7 +30,7 @@ const arrowMap = {
   lost: lostFace,
 };
 
-export type PerpPosition = 'long' | 'short' | 'won' | 'lost';
+export type PerpPosition = "long" | "short" | "won" | "lost";
 
 interface PerpSocialChipProps {
   imgSrc: ImageSourcePropType;
@@ -70,8 +70,8 @@ export const PerpSocialChip = ({
   const { t } = useTranslation();
 
   const getMetaColor = () => {
-    if (position === 'won') return theme.colors.profit;
-    if (position === 'lost' || meta === 'Got rekt') return theme.colors.loss;
+    if (position === "won") return theme.colors.profit;
+    if (position === "lost" || meta === "Got rekt") return theme.colors.loss;
     return theme.colors.highEmText;
   };
 
@@ -87,16 +87,16 @@ export const PerpSocialChip = ({
             marginStart: 2,
           }}
         />
-        {meta === 'Got rekt' && (
+        {meta === "Got rekt" && (
           <View
             style={{
-              position: 'absolute',
+              position: "absolute",
               top: 0,
               left: 0,
               width: pfpSize,
               height: pfpSize,
               borderRadius: pfpBorderRadius,
-              backgroundColor: 'rgba(82, 82, 91, 0.85)',
+              backgroundColor: "rgba(82, 82, 91, 0.85)",
               zIndex: 2,
               marginStart: 2,
             }}
@@ -104,7 +104,7 @@ export const PerpSocialChip = ({
         )}
         <PositionWrapper>
           <Image
-            source={meta === 'Got rekt' ? rektBomb : arrowMap[position]}
+            source={meta === "Got rekt" ? rektBomb : arrowMap[position]}
             style={{
               width: posistionImgSize,
               height: posistionImgSize,
@@ -114,22 +114,22 @@ export const PerpSocialChip = ({
         </PositionWrapper>
       </AvatarWrapper>
       <Column
-        $alignItems='flex-start'
-        $width='auto'
+        $alignItems="flex-start"
+        $width="auto"
         style={{ paddingStart: 10, paddingEnd: 1 }}
       >
-        <Row $width='auto' $gap={8}>
+        <Row $width="auto" $gap={8}>
           <BodyMSecondary style={{ color: theme.colors.midEmText }}>
             {`${t(position.charAt(0).toUpperCase() + position.slice(1))}`}
           </BodyMSecondary>
-          {position === 'won' && (
-            <Row $width='auto' $gap={4}>
+          {position === "won" && (
+            <Row $width="auto" $gap={4}>
               <FireIcon width={fireIconSize} height={fireIconSize} />
               <BodySSecondary
                 style={{
                   color: theme.colors.highEmText,
-                  fontFamily: 'Unbounded',
-                  fontWeight: 'bold',
+                  fontFamily: "Unbounded",
+                  fontWeight: "bold",
                 }}
               >
                 {`${earningMultiple}x`}
@@ -137,7 +137,7 @@ export const PerpSocialChip = ({
             </Row>
           )}
         </Row>
-        <BodyMSecondary style={{ color: getMetaColor(), fontWeight: 'bold' }}>
+        <BodyMSecondary style={{ color: getMetaColor(), fontWeight: "bold" }}>
           {meta}
         </BodyMSecondary>
       </Column>

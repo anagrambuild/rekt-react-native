@@ -1,7 +1,7 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from "react";
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createClient } from '@supabase/supabase-js';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { createClient } from "@supabase/supabase-js";
 
 // Initialize Supabase client
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
@@ -45,7 +45,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
@@ -119,10 +119,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         return { success: true, user: authUser };
       }
 
-      return { success: false, error: 'Sign up failed' };
+      return { success: false, error: "Sign up failed" };
     } catch (error) {
-      console.error('Sign up error:', error);
-      return { success: false, error: 'An unexpected error occurred' };
+      console.error("Sign up error:", error);
+      return { success: false, error: "An unexpected error occurred" };
     } finally {
       setLoading(false);
     }
@@ -150,10 +150,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         return { success: true, user: authUser };
       }
 
-      return { success: false, error: 'Sign in failed' };
+      return { success: false, error: "Sign in failed" };
     } catch (error) {
-      console.error('Sign in error:', error);
-      return { success: false, error: 'An unexpected error occurred' };
+      console.error("Sign in error:", error);
+      return { success: false, error: "An unexpected error occurred" };
     } finally {
       setLoading(false);
     }
@@ -166,7 +166,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setUser(null);
       setSession(null);
     } catch (error) {
-      console.error('Sign out error:', error);
+      console.error("Sign out error:", error);
     } finally {
       setLoading(false);
     }
@@ -176,7 +176,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       setLoading(true);
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: 'rektreactnative://reset-password',
+        redirectTo: "rektreactnative://reset-password",
       });
 
       if (error) {
@@ -185,8 +185,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       return { success: true };
     } catch (error) {
-      console.error('Reset password error:', error);
-      return { success: false, error: 'An unexpected error occurred' };
+      console.error("Reset password error:", error);
+      return { success: false, error: "An unexpected error occurred" };
     } finally {
       setLoading(false);
     }

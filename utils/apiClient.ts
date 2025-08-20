@@ -1,5 +1,5 @@
-import { getApiBaseUrl } from '../constants/config';
-import { supabase } from './supabase';
+import { getApiBaseUrl } from "../constants/config";
+import { supabase } from "./supabase";
 
 /**
  * Base API client that automatically includes authentication headers
@@ -15,7 +15,7 @@ class ApiClient {
    * Get the base URL for direct fetch calls (like FormData uploads)
    */
   getBaseURL(): string {
-    console.log('getBaseURL', this.baseURL);
+    console.log("getBaseURL", this.baseURL);
     return this.baseURL;
   }
 
@@ -30,17 +30,17 @@ class ApiClient {
       const token = session?.access_token;
 
       if (!token) {
-        throw new Error('No authentication token available');
+        throw new Error("No authentication token available");
       }
 
       return {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       };
     } catch (error) {
       // TODO: Add this back when backend is ready
       // console.error('Failed to get auth token:', error);
-      throw new Error('Authentication required');
+      throw new Error("Authentication required");
     }
   }
 
@@ -50,7 +50,7 @@ class ApiClient {
   async get<T>(endpoint: string): Promise<T> {
     const headers = await this.getAuthHeaders();
     const response = await fetch(`${this.baseURL}${endpoint}`, {
-      method: 'GET',
+      method: "GET",
       headers,
     });
 
@@ -69,7 +69,7 @@ class ApiClient {
   async post<T>(endpoint: string, data?: any): Promise<T> {
     const headers = await this.getAuthHeaders();
     const response = await fetch(`${this.baseURL}${endpoint}`, {
-      method: 'POST',
+      method: "POST",
       headers,
       body: data ? JSON.stringify(data) : undefined,
     });
@@ -89,7 +89,7 @@ class ApiClient {
   async put<T>(endpoint: string, data?: any): Promise<T> {
     const headers = await this.getAuthHeaders();
     const response = await fetch(`${this.baseURL}${endpoint}`, {
-      method: 'PUT',
+      method: "PUT",
       headers,
       body: data ? JSON.stringify(data) : undefined,
     });
@@ -109,7 +109,7 @@ class ApiClient {
   async delete<T>(endpoint: string): Promise<T> {
     const headers = await this.getAuthHeaders();
     const response = await fetch(`${this.baseURL}${endpoint}`, {
-      method: 'DELETE',
+      method: "DELETE",
       headers,
     });
 

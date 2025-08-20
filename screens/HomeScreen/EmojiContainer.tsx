@@ -1,12 +1,12 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Animated } from 'react-native';
+import React, { useEffect, useRef, useState } from "react";
+import { Animated } from "react-native";
 
-import { PressableOpacity, Row } from '@/components';
-import { IconButton } from '@/components/common/buttons/IconButton';
+import { PressableOpacity, Row } from "@/components";
+import { IconButton } from "@/components/common/buttons/IconButton";
 
-import styled, { DefaultTheme, useTheme } from 'styled-components/native';
+import styled, { DefaultTheme, useTheme } from "styled-components/native";
 
-const EMOJIS = ['🔥', '💀', '😍', '🤔', '😭'];
+const EMOJIS = ["🔥", "💀", "😍", "🤔", "😭"];
 
 interface EmojiContainerProps {
   onEmojiPress?: (emoji: string) => void;
@@ -71,11 +71,11 @@ export const EmojiContainer: React.FC<EmojiContainerProps> = ({
     return (
       <Animated.View
         style={{ opacity: defaultButtonOpacity }}
-        pointerEvents={open ? 'none' : 'auto'}
+        pointerEvents={open ? "none" : "auto"}
       >
         <DefaultEmojiButton
           onPress={() => setOpen(true)}
-          accessibilityLabel='Open emoji picker'
+          accessibilityLabel="Open emoji picker"
           disabled={isAnimating}
         >
           <EmojiText>😀</EmojiText>
@@ -91,16 +91,16 @@ export const EmojiContainer: React.FC<EmojiContainerProps> = ({
         transform: [{ scale: scaleAnim }],
       }}
     >
-      <Row $gap={4} $width='auto'>
+      <Row $gap={4} $width="auto">
         <IconButton
-          name='close'
+          name="close"
           onPress={onCloseContainer}
           size={14}
           color={theme.colors.textPrimary}
-          accessibilityLabel='Close emoji picker'
+          accessibilityLabel="Close emoji picker"
           disabled={isAnimating}
         />
-        {EMOJIS.map((emoji) => (
+        {EMOJIS.map(emoji => (
           <EmojiButton
             key={emoji}
             onPress={() => {

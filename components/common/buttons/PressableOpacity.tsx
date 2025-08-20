@@ -1,4 +1,4 @@
-import { Pressable, PressableProps } from 'react-native';
+import { Pressable, PressableProps } from "react-native";
 
 interface PressableOpacityProps extends PressableProps {
   loading?: boolean;
@@ -15,8 +15,8 @@ export const PressableOpacity = ({
     <Pressable
       {...props}
       disabled={disabled || loading}
-      style={(state) => {
-        const baseStyle = typeof style === 'function' ? style(state) : style;
+      style={state => {
+        const baseStyle = typeof style === "function" ? style(state) : style;
         return [
           baseStyle,
           {

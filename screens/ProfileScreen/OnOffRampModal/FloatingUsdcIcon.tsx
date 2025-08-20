@@ -1,7 +1,7 @@
-import { useEffect, useRef } from 'react';
-import { Animated, View } from 'react-native';
+import { useEffect, useRef } from "react";
+import { Animated, View } from "react-native";
 
-import UsdcIcon from '@/assets/images/app-svgs/usdc.svg';
+import UsdcIcon from "@/assets/images/app-svgs/usdc.svg";
 
 interface FloatingUsdcIconProps {
   size?: number;
@@ -62,10 +62,10 @@ export const FloatingUsdcIcon = ({
   }, [opacity, translateY, translateX, targetPosition]);
 
   return (
-    <View style={{ width: size, height: size, overflow: 'visible' }}>
+    <View style={{ width: size, height: size, overflow: "visible" }}>
       <Animated.View
         style={{
-          position: 'absolute',
+          position: "absolute",
           left: 0,
           top: 0,
           opacity,

@@ -1,18 +1,18 @@
-import { Alert, Linking, View } from 'react-native';
+import { Alert, Linking, View } from "react-native";
 
-import PhantomIcon from '@/assets/images/app-svgs/phantom.svg';
-import { useWallet } from '@/contexts';
+import PhantomIcon from "@/assets/images/app-svgs/phantom.svg";
+import { useWallet } from "@/contexts";
 
-import { Column } from './common/containers';
-import { Modal } from './common/Modal';
-import Constants from 'expo-constants';
-import { useTranslation } from 'react-i18next';
-import { SvgProps } from 'react-native-svg';
-import styled, { DefaultTheme } from 'styled-components/native';
+import { Column } from "./common/containers";
+import { Modal } from "./common/Modal";
+import Constants from "expo-constants";
+import { useTranslation } from "react-i18next";
+import { SvgProps } from "react-native-svg";
+import styled, { DefaultTheme } from "styled-components/native";
 
 // Use require for bs58 to avoid PRNG issues
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const bs58 = require('bs58');
+const bs58 = require("bs58");
 
 interface WalletConnectionModalProps {
   visible: boolean;
@@ -37,27 +37,27 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
 
   const walletOptions: WalletOption[] = [
     {
-      id: 'phantom',
-      name: 'Phantom',
-      deepLink: 'phantom://',
+      id: "phantom",
+      name: "Phantom",
+      deepLink: "phantom://",
       appStoreUrl:
-        'https://apps.apple.com/app/phantom-solana-wallet/id1598432977',
+        "https://apps.apple.com/app/phantom-solana-wallet/id1598432977",
       enabled: true,
       icon: PhantomIcon,
     },
     {
-      id: 'solflare',
-      name: 'Solflare',
-      deepLink: 'solflare://',
-      appStoreUrl: 'https://apps.apple.com/app/solflare/id1580902717',
+      id: "solflare",
+      name: "Solflare",
+      deepLink: "solflare://",
+      appStoreUrl: "https://apps.apple.com/app/solflare/id1580902717",
       enabled: false, // Coming soon
     },
     {
-      id: 'backpack',
-      name: 'Backpack',
-      deepLink: 'backpack://',
+      id: "backpack",
+      name: "Backpack",
+      deepLink: "backpack://",
       appStoreUrl:
-        'https://apps.apple.com/app/backpack-crypto-wallet/id1644542829',
+        "https://apps.apple.com/app/backpack-crypto-wallet/id1644542829",
       enabled: false, // Coming soon
     },
   ];
@@ -65,8 +65,8 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
   const handleWalletPress = async (wallet: WalletOption) => {
     if (!wallet.enabled) {
       Alert.alert(
-        t('Coming Soon'),
-        t('{{walletName}} integration is coming soon!', {
+        t("Coming Soon"),
+        t("{{walletName}} integration is coming soon!", {
           walletName: wallet.name,
         })
       );
@@ -77,14 +77,14 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
       const canOpen = await Linking.canOpenURL(wallet.deepLink);
 
       if (canOpen) {
-        if (wallet.id === 'phantom') {
+        if (wallet.id === "phantom") {
           // Use Phantom's connect URL scheme with proper parameters (iOS only)
           const appUrl = `${Constants.expoConfig?.scheme}://`;
           const solanaNetwork =
-            Constants.expoConfig?.extra?.solanaNetwork || 'solana:devnet';
-          const cluster = solanaNetwork.includes('mainnet')
-            ? 'mainnet-beta'
-            : 'devnet';
+            Constants.expoConfig?.extra?.solanaNetwork || "solana:devnet";
+          const cluster = solanaNetwork.includes("mainnet")
+            ? "mainnet-beta"
+            : "devnet";
 
           try {
             // Use universal link format (recommended)
@@ -99,47 +99,47 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
             await Linking.openURL(connectUrl);
             onRequestClose(); // Close modal immediately, response will be handled by URL scheme
           } catch (encodingError) {
-            console.error('Failed to encode public key:', encodingError);
+            console.error("Failed to encode public key:", encodingError);
             Alert.alert(
-              t('Connection Failed'),
-              t('Failed to prepare wallet connection')
+              t("Connection Failed"),
+              t("Failed to prepare wallet connection")
             );
           }
         }
       } else {
         Alert.alert(
-          t('{{walletName}} Not Found', { walletName: wallet.name }),
-          t('Please install {{walletName}} from the App Store', {
+          t("{{walletName}} Not Found", { walletName: wallet.name }),
+          t("Please install {{walletName}} from the App Store", {
             walletName: wallet.name,
           }),
           [
             {
-              text: t('Install'),
+              text: t("Install"),
               onPress: () => Linking.openURL(wallet.appStoreUrl),
             },
             {
-              text: t('Cancel'),
-              style: 'cancel',
+              text: t("Cancel"),
+              style: "cancel",
             },
           ]
         );
       }
     } catch (error) {
       console.error(`${wallet.name} wallet connection failed:`, error);
-      Alert.alert(t('Connection Failed'), t('Failed to connect to wallet'));
+      Alert.alert(t("Connection Failed"), t("Failed to connect to wallet"));
     }
   };
 
   return (
     <Modal visible={visible} onRequestClose={onRequestClose}>
-      <Column $gap={24} $alignItems='stretch'>
-        <ModalTitle>{t('Connect Wallet')}</ModalTitle>
+      <Column $gap={24} $alignItems="stretch">
+        <ModalTitle>{t("Connect Wallet")}</ModalTitle>
         <ModalSubtitle>
-          {t('Choose a wallet to connect to your account')}
+          {t("Choose a wallet to connect to your account")}
         </ModalSubtitle>
 
-        <Column $gap={12} $alignItems='stretch'>
-          {walletOptions.map((wallet) => (
+        <Column $gap={12} $alignItems="stretch">
+          {walletOptions.map(wallet => (
             <WalletButton
               key={wallet.id}
               onPress={() => handleWalletPress(wallet)}
@@ -149,7 +149,7 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
               <WalletButtonContent>
                 <WalletName $enabled={wallet.enabled}>{wallet.name}</WalletName>
                 {!wallet.enabled ? (
-                  <ComingSoonText>{t('Coming Soon')}</ComingSoonText>
+                  <ComingSoonText>{t("Coming Soon")}</ComingSoonText>
                 ) : (
                   <View>
                     {wallet.icon && <wallet.icon height={32} width={32} />}
@@ -166,7 +166,7 @@ export const WalletConnectionModal: React.FC<WalletConnectionModalProps> = ({
 
 const ModalTitle = styled.Text`
   font-size: 24px;
-  font-family: 'Unbounded';
+  font-family: "Unbounded";
   font-weight: 600;
   color: ${({ theme }: { theme: DefaultTheme }) => theme.colors.textPrimary};
   text-align: center;
@@ -174,7 +174,7 @@ const ModalTitle = styled.Text`
 
 const ModalSubtitle = styled.Text`
   font-size: 16px;
-  font-family: 'Geist';
+  font-family: "Geist";
   color: ${({ theme }: { theme: DefaultTheme }) => theme.colors.textSecondary};
   text-align: center;
   margin-top: -8px;
@@ -187,7 +187,7 @@ const WalletButton = styled.Pressable<{ $enabled: boolean }>`
   }: {
     theme: DefaultTheme;
     $enabled: boolean;
-  }) => ($enabled ? theme.colors.card : theme.colors.card + '60')};
+  }) => ($enabled ? theme.colors.card : theme.colors.card + "60")};
   border: 1px solid
     ${({ theme }: { theme: DefaultTheme }) => theme.colors.border};
   border-radius: 12px;
@@ -203,7 +203,7 @@ const WalletButtonContent = styled.View`
 
 const WalletName = styled.Text<{ $enabled: boolean }>`
   font-size: 18px;
-  font-family: 'Geist';
+  font-family: "Geist";
   font-weight: 500;
   color: ${({ theme, $enabled }: { theme: DefaultTheme; $enabled: boolean }) =>
     $enabled ? theme.colors.textPrimary : theme.colors.textSecondary};
@@ -211,7 +211,7 @@ const WalletName = styled.Text<{ $enabled: boolean }>`
 
 const ComingSoonText = styled.Text`
   font-size: 12px;
-  font-family: 'Geist';
+  font-family: "Geist";
   color: ${({ theme }: { theme: DefaultTheme }) => theme.colors.textSecondary};
   font-style: italic;
 `;

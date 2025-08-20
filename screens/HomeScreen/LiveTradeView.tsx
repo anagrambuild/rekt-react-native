@@ -1,7 +1,7 @@
-import { ActivityIndicator } from 'react-native';
+import { ActivityIndicator } from "react-native";
 
-import rektBomb from '@/assets/images/app-pngs/rekt-bomb.png';
-import UsdcIcon from '@/assets/images/app-svgs/usdc.svg';
+import rektBomb from "@/assets/images/app-pngs/rekt-bomb.png";
+import UsdcIcon from "@/assets/images/app-svgs/usdc.svg";
 import {
   BodyMEmphasized,
   BodyMSecondary,
@@ -11,14 +11,14 @@ import {
   PressableOpacity,
   Row,
   Title5,
-} from '@/components';
-import { useHomeContext } from '@/contexts';
-import { Trade } from '@/contexts/HomeContext';
+} from "@/components";
+import { useHomeContext } from "@/contexts";
+import { Trade } from "@/contexts/HomeContext";
 
-import { LongArrow, ShortArrow } from './long-short-buttons';
-import { Image } from 'expo-image';
-import { useTranslation } from 'react-i18next';
-import styled, { DefaultTheme, useTheme } from 'styled-components/native';
+import { LongArrow, ShortArrow } from "./long-short-buttons";
+import { Image } from "expo-image";
+import { useTranslation } from "react-i18next";
+import styled, { DefaultTheme, useTheme } from "styled-components/native";
 
 interface LiveTradeViewProps {
   trade: Trade;
@@ -39,7 +39,7 @@ export const LiveTradeView = ({ trade }: LiveTradeViewProps) => {
 
   // Find the actual position for this trade
   const currentPosition = openPositions.find(
-    (pos) =>
+    pos =>
       pos.asset === `${selectedToken.toUpperCase()}-PERP` &&
       pos.direction === trade.side
   );
@@ -60,15 +60,15 @@ export const LiveTradeView = ({ trade }: LiveTradeViewProps) => {
       const success = await closePosition(currentPosition.id);
       if (success) {
         // Clear local trade state after successful close
-        if (selectedToken === 'sol') setSolTrade(null);
-        else if (selectedToken === 'eth') setEthTrade(null);
+        if (selectedToken === "sol") setSolTrade(null);
+        else if (selectedToken === "eth") setEthTrade(null);
         else setBtcTrade(null);
       }
     } else {
       // Fallback: just clear local state if no backend position found
-      console.warn('No backend position found, clearing local state only');
-      if (selectedToken === 'sol') setSolTrade(null);
-      else if (selectedToken === 'eth') setEthTrade(null);
+      console.warn("No backend position found, clearing local state only");
+      if (selectedToken === "sol") setSolTrade(null);
+      else if (selectedToken === "eth") setEthTrade(null);
       else setBtcTrade(null);
     }
   };
@@ -77,67 +77,69 @@ export const LiveTradeView = ({ trade }: LiveTradeViewProps) => {
     <Card>
       <Column $gap={4}>
         <Row $padding={12} style={{ paddingTop: 8 }}>
-          <Row $gap={12} $width='auto'>
-            {trade.side === 'long' ? (
+          <Row $gap={12} $width="auto">
+            {trade.side === "long" ? (
               <LongArrow size={28} />
             ) : (
               <ShortArrow size={28} />
             )}
             <BodyMEmphasized>
-              {trade.leverage}x {t(trade.side === 'long' ? 'Long' : 'Short')}
+              {trade.leverage}x {t(trade.side === "long" ? "Long" : "Short")}
             </BodyMEmphasized>
           </Row>
           <SellNowButton onPress={handleClose} disabled={isTrading}>
             {isTrading ? (
-              <ActivityIndicator size='small' color={theme.colors.background} />
+              <ActivityIndicator size="small" color={theme.colors.background} />
             ) : (
-              <SellNowText>{t('Sell now')}</SellNowText>
+              <SellNowText>{t("Sell now")}</SellNowText>
             )}
           </SellNowButton>
         </Row>
 
         <InnerCard>
-          <Row $alignItems='flex-end'>
-            <Column $gap={4} $alignItems='flex-start' $width='auto'>
+          <Row $alignItems="flex-end">
+            <Column $gap={4} $alignItems="flex-start" $width="auto">
               <Title5>
                 $
-                {currentValue.toLocaleString('en-US', {
+                {currentValue.toLocaleString("en-US", {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })}
               </Title5>
-              <BodyMSecondary>{t('Current value')}</BodyMSecondary>
+              <BodyMSecondary>{t("Current value")}</BodyMSecondary>
             </Column>
-            <Column $gap={4} $alignItems='flex-end' $width='auto'>
+            <Column $gap={4} $alignItems="flex-end" $width="auto">
               <ProfitText $isProfit={isProfit} theme={theme}>
-                {isProfit ? '+' : ''}
+                {isProfit ? "+" : ""}
                 {profitPercent.toFixed(2)}%
               </ProfitText>
-              <BodyMSecondary>{t('Profit')}</BodyMSecondary>
+              <BodyMSecondary>{t("Profit")}</BodyMSecondary>
             </Column>
           </Row>
         </InnerCard>
 
         <InnerCard>
           <Row>
-            <Row $gap={8} $alignItems='center' $width='auto'>
+            <Row $gap={8} $alignItems="center" $width="auto">
               <RektIcon source={rektBomb} />
-              <BodyMSecondary>{t('Rekt at')}</BodyMSecondary>
+              <BodyMSecondary>{t("Rekt at")}</BodyMSecondary>
             </Row>
             <BodySEmphasized>
-              {rektAt ? `$${rektAt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : t('N/A')}
+              {rektAt
+                ? `$${rektAt.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                : t("N/A")}
             </BodySEmphasized>
           </Row>
         </InnerCard>
         <InnerCard>
           <Row>
-            <Row $gap={8} $alignItems='center' $width='auto'>
+            <Row $gap={8} $alignItems="center" $width="auto">
               <UsdcIcon width={20} height={20} />
-              <BodyMSecondary>{t('Amount invested')}</BodyMSecondary>
+              <BodyMSecondary>{t("Amount invested")}</BodyMSecondary>
             </Row>
             <BodySEmphasized>
               $
-              {trade.amount.toLocaleString('en-US', {
+              {trade.amount.toLocaleString("en-US", {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
               })}

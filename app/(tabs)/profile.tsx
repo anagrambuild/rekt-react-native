@@ -1,4 +1,4 @@
-import { ProfileScreen } from '@/screens';
+import { ProfileScreen } from "@/screens";
 
 const Profile = () => {
   return <ProfileScreen />;

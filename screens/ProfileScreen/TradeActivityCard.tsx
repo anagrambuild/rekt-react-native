@@ -1,18 +1,18 @@
-import BtcUnselected from '@/assets/images/app-svgs/btc-unselected.svg';
-import EthUnselected from '@/assets/images/app-svgs/eth-unselected.svg';
-import SolUnselected from '@/assets/images/app-svgs/sol-unselected.svg';
-import { BodyM, BodySMono, BodyXSMono, Card, Column, Row } from '@/components';
+import BtcUnselected from "@/assets/images/app-svgs/btc-unselected.svg";
+import EthUnselected from "@/assets/images/app-svgs/eth-unselected.svg";
+import SolUnselected from "@/assets/images/app-svgs/sol-unselected.svg";
+import { BodyM, BodySMono, BodyXSMono, Card, Column, Row } from "@/components";
 
-import Entypo from '@expo/vector-icons/Entypo';
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import Entypo from "@expo/vector-icons/Entypo";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 
-import { PnL } from './ProfileInfoCards';
-import { useTranslation } from 'react-i18next';
-import styled, { DefaultTheme, useTheme } from 'styled-components/native';
+import { PnL } from "./ProfileInfoCards";
+import { useTranslation } from "react-i18next";
+import styled, { DefaultTheme, useTheme } from "styled-components/native";
 
 interface TradeActivityCardProps {
-  type: 'long' | 'short';
-  symbol: 'btc' | 'eth' | 'sol';
+  type: "long" | "short";
+  symbol: "btc" | "eth" | "sol";
   amount: number;
   leverage: number;
   percentage: number;
@@ -34,24 +34,24 @@ export const TradeActivityCard = ({
 
   return (
     <Card $padding={12}>
-      <Row $width='auto'>
-        <Row $width='auto' $justifyContent='flex-start' $gap={24}>
+      <Row $width="auto">
+        <Row $width="auto" $justifyContent="flex-start" $gap={24}>
           <SymbolContainer>
             <Icon symbol={symbol} />
             <ArrowContainer>
               <MaterialCommunityIcons
-                name={isProfit ? 'arrow-top-right' : 'arrow-bottom-right'}
+                name={isProfit ? "arrow-top-right" : "arrow-bottom-right"}
                 size={11}
                 color={theme.colors.textPrimary}
               />
             </ArrowContainer>
           </SymbolContainer>
-          <Column $width='auto' $alignItems='flex-start'>
-            <BodyM>{t(type === 'long' ? 'Long' : 'Short')}</BodyM>
-            <Row $width='auto'>
+          <Column $width="auto" $alignItems="flex-start">
+            <BodyM>{t(type === "long" ? "Long" : "Short")}</BodyM>
+            <Row $width="auto">
               <BodyXSMono>{`$${amount}`}</BodyXSMono>
               <Entypo
-                name='dot-single'
+                name="dot-single"
                 size={24}
                 color={theme.colors.textSecondary}
               />
@@ -59,12 +59,12 @@ export const TradeActivityCard = ({
             </Row>
           </Column>
         </Row>
-        <Column $width='auto' $gap={12}>
+        <Column $width="auto" $gap={12}>
           <Row
-            $width='auto'
+            $width="auto"
             $gap={12}
             $padding={6}
-            $alignItems='flex-start'
+            $alignItems="flex-start"
             style={{ flex: 1 }}
           >
             <BodySMono>{`${percentage}%`}</BodySMono>
@@ -76,13 +76,13 @@ export const TradeActivityCard = ({
   );
 };
 
-const Icon = ({ symbol }: { symbol: 'btc' | 'eth' | 'sol' }) => {
+const Icon = ({ symbol }: { symbol: "btc" | "eth" | "sol" }) => {
   switch (symbol) {
-    case 'btc':
+    case "btc":
       return <BtcUnselected />;
-    case 'eth':
+    case "eth":
       return <EthUnselected />;
-    case 'sol':
+    case "sol":
       return <SolUnselected />;
   }
 };

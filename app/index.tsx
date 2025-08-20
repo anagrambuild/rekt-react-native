@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Platform } from 'react-native';
+import { useEffect, useRef, useState } from "react";
+import { Animated, Easing, Platform } from "react-native";
 
-import RektLogo from '@/assets/images/rekt-logo.svg';
-import { midFireUrl } from '@/assets/videos';
+import RektLogo from "@/assets/images/rekt-logo.svg";
+import { midFireUrl } from "@/assets/videos";
 import {
   BiometricAuthScreen,
   Column,
@@ -10,15 +10,15 @@ import {
   ScreenContainer,
   SignUpForm,
   WalletConnectionModal,
-} from '@/components';
-import { useAppContext, useWallet } from '@/contexts';
-import { LoadingScreen } from '@/screens';
-import { Steps } from '@/screens/LoginScreen/Steps';
+} from "@/components";
+import { useAppContext, useWallet } from "@/contexts";
+import { LoadingScreen } from "@/screens";
+import { Steps } from "@/screens/LoginScreen/Steps";
 
-import { router } from 'expo-router';
-import { useVideoPlayer, VideoView } from 'expo-video';
-import { useTranslation } from 'react-i18next';
-import styled from 'styled-components/native';
+import { router } from "expo-router";
+import { useVideoPlayer, VideoView } from "expo-video";
+import { useTranslation } from "react-i18next";
+import styled from "styled-components/native";
 
 const Index = () => {
   const {
@@ -47,10 +47,10 @@ const Index = () => {
   // Check if user is already authenticated and redirect to tabs
   useEffect(() => {
     if (isLoggedIn && !requiresBiometric) {
-      setForceRefresh((prev) => prev + 1);
+      setForceRefresh(prev => prev + 1);
       const delay = 50;
       setTimeout(() => {
-        router.replace('/(tabs)');
+        router.replace("/(tabs)");
       }, delay);
     }
   }, [isLoggedIn, requiresBiometric]);
@@ -77,7 +77,7 @@ const Index = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connected, showSignUpForm]);
 
-  const player = useVideoPlayer(midFireUrl, (player) => {
+  const player = useVideoPlayer(midFireUrl, player => {
     player.loop = true;
     player.play();
   });
@@ -130,7 +130,7 @@ const Index = () => {
 
   // Show biometric authentication screen if required
   if (requiresBiometric) {
-    return <BiometricAuthScreen key='biometric-auth' />;
+    return <BiometricAuthScreen key="biometric-auth" />;
   }
 
   // const connectWallet = () => {
@@ -141,26 +141,26 @@ const Index = () => {
   //   }
   // };
 
-  const connectWallet = () => router.push('/(tabs)');
+  const connectWallet = () => router.push("/(tabs)");
 
   if (showSignUpForm) {
     return (
       <ScreenContainer
-        alignItems='stretch'
-        justifyContent='flex-start'
+        alignItems="stretch"
+        justifyContent="flex-start"
         noPadding
-        contentContainerStyle={{ flex: 1, position: 'relative' }}
+        contentContainerStyle={{ flex: 1, position: "relative" }}
       >
-        <Column $width='100%' $height='100%' $justifyContent='flex-start'>
+        <Column $width="100%" $height="100%" $justifyContent="flex-start">
           <VideoView
             player={player}
             style={{
-              width: '100%',
-              height: '50%',
-              position: 'absolute',
+              width: "100%",
+              height: "50%",
+              position: "absolute",
               bottom: 0,
             }}
-            pointerEvents='none'
+            pointerEvents="none"
             nativeControls={false}
           />
           <SignUpForm onComplete={handleSignUpComplete} />
@@ -177,16 +177,16 @@ const Index = () => {
   return (
     <ScreenContainer
       key={`index-${forceRefresh}`}
-      alignItems='stretch'
-      justifyContent='flex-start'
+      alignItems="stretch"
+      justifyContent="flex-start"
       noPadding
-      contentContainerStyle={{ flex: 1, position: 'relative' }}
+      contentContainerStyle={{ flex: 1, position: "relative" }}
     >
-      <Column $height='100%' $justifyContent='flex-start'>
-        <Column $width='100%' $padding={12} $justifyContent='flex-start'>
+      <Column $height="100%" $justifyContent="flex-start">
+        <Column $width="100%" $padding={12} $justifyContent="flex-start">
           <Animated.View
             style={{
-              alignItems: 'center',
+              alignItems: "center",
               transform: [{ scale: scaleAnim }, { translateY: translateYAnim }],
             }}
           >
@@ -201,18 +201,18 @@ const Index = () => {
         <VideoView
           player={player}
           style={{
-            width: '100%',
-            height: '50%',
-            position: 'absolute',
+            width: "100%",
+            height: "50%",
+            position: "absolute",
             bottom: 0,
           }}
-          pointerEvents='none'
+          pointerEvents="none"
           nativeControls={false}
         />
       </Column>
       <AnimatedButtonsContainer style={{ opacity: welcomeOpacity }}>
         <PrimaryButton onPress={connectWallet} disabled={connecting}>
-          {connecting ? t('Connecting...') : t('Connect Wallet')}
+          {connecting ? t("Connecting...") : t("Connect Wallet")}
         </PrimaryButton>
       </AnimatedButtonsContainer>
       {showWalletModal && (

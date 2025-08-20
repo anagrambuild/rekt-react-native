@@ -1,11 +1,11 @@
-import React from 'react';
+import React from "react";
 
-import { BodyXSMonoSecondary, Card, Column, Divider } from '@/components';
+import { BodyXSMonoSecondary, Card, Column, Divider } from "@/components";
 
-import { SettingsOptionData } from './settingsData';
-import { SettingsOption } from './SettingsOption';
-import { useTranslation } from 'react-i18next';
-import { useTheme } from 'styled-components/native';
+import { SettingsOptionData } from "./settingsData";
+import { SettingsOption } from "./SettingsOption";
+import { useTranslation } from "react-i18next";
+import { useTheme } from "styled-components/native";
 
 interface SettingsSectionProps {
   titleKey: string;
@@ -20,11 +20,11 @@ export const SettingsSection: React.FC<SettingsSectionProps> = ({
   const { t } = useTranslation();
 
   return (
-    <Column $gap={8} $alignItems='flex-start'>
+    <Column $gap={8} $alignItems="flex-start">
       <BodyXSMonoSecondary style={{ paddingStart: 8 }}>
         {t(titleKey).toUpperCase()}
       </BodyXSMonoSecondary>
-      <Card $padding={16} style={{ width: '100%' }}>
+      <Card $padding={16} style={{ width: "100%" }}>
         <Column $gap={16}>
           {options.map((option, index) => (
             <React.Fragment key={option.id}>

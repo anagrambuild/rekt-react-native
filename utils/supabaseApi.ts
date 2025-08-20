@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase } from "./supabase";
 
 /**
  * Get the current Supabase access token for authenticated API calls
@@ -10,7 +10,7 @@ export const getSupabaseToken = async (): Promise<string | null> => {
     } = await supabase.auth.getSession();
     return session?.access_token || null;
   } catch (error) {
-    console.error('Error getting Supabase token:', error);
+    console.error("Error getting Supabase token:", error);
     return null;
   }
 };
@@ -25,11 +25,11 @@ export const authenticatedApiCall = async (
   const token = await getSupabaseToken();
 
   if (!token) {
-    throw new Error('No authentication token available');
+    throw new Error("No authentication token available");
   }
 
   const headers = {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
     Authorization: `Bearer ${token}`,
     ...options.headers,
   };
@@ -50,7 +50,7 @@ export const isAuthenticated = async (): Promise<boolean> => {
     } = await supabase.auth.getSession();
     return !!session;
   } catch (error) {
-    console.error('Error checking authentication:', error);
+    console.error("Error checking authentication:", error);
     return false;
   }
 };
@@ -65,7 +65,7 @@ export const getCurrentUser = async () => {
     } = await supabase.auth.getUser();
     return user;
   } catch (error) {
-    console.error('Error getting current user:', error);
+    console.error("Error getting current user:", error);
     return null;
   }
 };
@@ -80,7 +80,7 @@ export const getCurrentSession = async () => {
     } = await supabase.auth.getSession();
     return session;
   } catch (error) {
-    console.error('Error getting current session:', error);
+    console.error("Error getting current session:", error);
     return null;
   }
 };

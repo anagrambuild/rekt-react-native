@@ -1,4 +1,4 @@
-import { TradeScreen } from '@/screens';
+import { TradeScreen } from "@/screens";
 
 const Trade = () => {
   return <TradeScreen />;

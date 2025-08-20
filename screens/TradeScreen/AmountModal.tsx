@@ -1,7 +1,7 @@
-import { useRef, useState } from 'react';
-import { Alert, TextInput } from 'react-native';
+import { useRef, useState } from "react";
+import { Alert, TextInput } from "react-native";
 
-import WalletIcon from '@/assets/images/app-svgs/wallet.svg';
+import WalletIcon from "@/assets/images/app-svgs/wallet.svg";
 import {
   BodyMEmphasized,
   BodyS,
@@ -9,12 +9,12 @@ import {
   PrimaryButton,
   Row,
   ScrollRow,
-} from '@/components';
-import { Modal } from '@/components/common/Modal';
-import { useHomeContext } from '@/contexts/HomeContext';
+} from "@/components";
+import { Modal } from "@/components/common/Modal";
+import { useHomeContext } from "@/contexts/HomeContext";
 
-import { useTranslation } from 'react-i18next';
-import styled, { useTheme } from 'styled-components/native';
+import { useTranslation } from "react-i18next";
+import styled, { useTheme } from "styled-components/native";
 
 export const AmountModal = ({
   visible,
@@ -38,18 +38,18 @@ export const AmountModal = ({
   const inputRef = useRef<TextInput>(null);
 
   const trade =
-    selectedToken === 'sol'
+    selectedToken === "sol"
       ? solTrade
-      : selectedToken === 'eth'
-      ? ethTrade
-      : btcTrade;
+      : selectedToken === "eth"
+        ? ethTrade
+        : btcTrade;
 
   const setTrade =
-    selectedToken === 'sol'
+    selectedToken === "sol"
       ? setSolTrade
-      : selectedToken === 'eth'
-      ? setEthTrade
-      : setBtcTrade;
+      : selectedToken === "eth"
+        ? setEthTrade
+        : setBtcTrade;
 
   const amount = trade?.amount ?? 10;
 
@@ -59,7 +59,7 @@ export const AmountModal = ({
   const onSetAmount = () => {
     const parsed = Number(localAmount);
     if (isNaN(parsed) || parsed < 10) {
-      Alert.alert(t('Trades must be at least 10 USDC'));
+      Alert.alert(t("Trades must be at least 10 USDC"));
       return;
     }
     if (trade) {
@@ -78,18 +78,18 @@ export const AmountModal = ({
   return (
     <Modal visible={visible} onRequestClose={onClose}>
       <StyledSheetContainer>
-        <BodyMEmphasized>{t('Enter amount')}</BodyMEmphasized>
+        <BodyMEmphasized>{t("Enter amount")}</BodyMEmphasized>
         <StyledInput
           ref={inputRef}
           value={localAmount}
           onChangeText={handleAmountChange}
-          keyboardType='numeric'
+          keyboardType="numeric"
           selectionColor={theme.colors.loss}
         />
         <Row
           $gap={8}
-          $alignItems='center'
-          $width='auto'
+          $alignItems="center"
+          $width="auto"
           $padding={12}
           style={{
             backgroundColor: theme.colors.secondary,
@@ -99,15 +99,15 @@ export const AmountModal = ({
           <WalletIcon width={24} height={24} />
           <BodyS>${walletBalance.toLocaleString()} USDC</BodyS>
         </Row>
-        <ScrollRow $gap={8} keyboardShouldPersistTaps='always'>
-          <PresetButton value={10} onPress={() => setLocalAmount('10')} />
-          <PresetButton value={50} onPress={() => setLocalAmount('50')} />
-          <PresetButton value={100} onPress={() => setLocalAmount('100')} />
-          <PresetButton value={200} onPress={() => setLocalAmount('200')} />
-          <PresetButton value={500} onPress={() => setLocalAmount('500')} />
-          <PresetButton value={1000} onPress={() => setLocalAmount('1000')} />
+        <ScrollRow $gap={8} keyboardShouldPersistTaps="always">
+          <PresetButton value={10} onPress={() => setLocalAmount("10")} />
+          <PresetButton value={50} onPress={() => setLocalAmount("50")} />
+          <PresetButton value={100} onPress={() => setLocalAmount("100")} />
+          <PresetButton value={200} onPress={() => setLocalAmount("200")} />
+          <PresetButton value={500} onPress={() => setLocalAmount("500")} />
+          <PresetButton value={1000} onPress={() => setLocalAmount("1000")} />
         </ScrollRow>
-        <PrimaryButton onPress={onSetAmount}>{t('Set amount')}</PrimaryButton>
+        <PrimaryButton onPress={onSetAmount}>{t("Set amount")}</PrimaryButton>
       </StyledSheetContainer>
     </Modal>
   );
@@ -123,7 +123,7 @@ const StyledSheetContainer = styled.View<any>`
 
 const StyledInput = styled.TextInput`
   color: ${({ theme }: any) => theme.colors.textPrimary};
-  font-family: 'Unbounded';
+  font-family: "Unbounded";
   font-size: 40px;
   font-weight: 500;
 `;

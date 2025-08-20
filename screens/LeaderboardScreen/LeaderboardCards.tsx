@@ -1,8 +1,8 @@
-import { Image } from 'react-native';
+import { Image } from "react-native";
 
-import LeaderLeavesLeft from '@/assets/images/app-svgs/leader-leaves-left.svg';
-import LeaderLeavesRight from '@/assets/images/app-svgs/leader-leaves-right.svg';
-import PointsNoBg from '@/assets/images/app-svgs/points-no-bg.svg';
+import LeaderLeavesLeft from "@/assets/images/app-svgs/leader-leaves-left.svg";
+import LeaderLeavesRight from "@/assets/images/app-svgs/leader-leaves-right.svg";
+import PointsNoBg from "@/assets/images/app-svgs/points-no-bg.svg";
 import {
   BodyM,
   BodySMono,
@@ -11,10 +11,10 @@ import {
   Column,
   Row,
   Title4,
-} from '@/components';
+} from "@/components";
 
-import { LeaderboardEntry } from './leaderboardMockData';
-import styled, { DefaultTheme } from 'styled-components/native';
+import { LeaderboardEntry } from "./leaderboardMockData";
+import styled, { DefaultTheme } from "styled-components/native";
 
 interface FirstPlaceCardProps {
   entry: LeaderboardEntry;
@@ -26,7 +26,7 @@ export const FirstPlaceCardComponent: React.FC<FirstPlaceCardProps> = ({
   <Card>
     <Column $gap={12} $padding={12}>
       <RankText>#{entry.rank}</RankText>
-      <Row $padding={12} $width='auto'>
+      <Row $padding={12} $width="auto">
         <LeaderLeavesLeft />
         <AvatarContainer>
           <Avatar source={entry.avatar} />
@@ -69,11 +69,11 @@ interface GenericCardProps {
 export const GenericCardComponent: React.FC<GenericCardProps> = ({ entry }) => (
   <GenericCard>
     <GenericAvatar source={entry.avatar} />
-    <Column $gap={4} $alignItems='flex-start' style={{ flex: 1 }}>
+    <Column $gap={4} $alignItems="flex-start" style={{ flex: 1 }}>
       <BodyXSMonoSecondary>#{entry.rank}</BodyXSMonoSecondary>
-      <Row $justifyContent='space-between'>
+      <Row $justifyContent="space-between">
         <BodyM>{entry.username}</BodyM>
-        <Row $gap={4} $width='auto' $justifyContent='flex-end'>
+        <Row $gap={4} $width="auto" $justifyContent="flex-end">
           <PointsNoBg />
           <BodySMono>{entry.score.toLocaleString()}</BodySMono>
         </Row>
@@ -86,7 +86,7 @@ const RankText = styled.Text`
   color: ${({ theme }: { theme: DefaultTheme }) => theme.colors.loss};
   font-size: 14px;
   font-weight: 600;
-  font-family: 'Geist';
+  font-family: "Geist";
   position: absolute;
   top: 12px;
   left: 12px;

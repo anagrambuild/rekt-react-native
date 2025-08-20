@@ -1,15 +1,15 @@
-import { Card, ScrollRow, TokenTab } from '@/components';
-import { useMiniGameContext } from '@/contexts';
+import { Card, ScrollRow, TokenTab } from "@/components";
+import { useMiniGameContext } from "@/contexts";
 
-import { CandleChart } from './CandleChart';
-import styled from 'styled-components/native';
+import { CandleChart } from "./CandleChart";
+import styled from "styled-components/native";
 
 export const CandleChartCard = () => {
   const { gameState, selectedToken, setSelectedToken } = useMiniGameContext();
 
   // Format price for display
   const formatPrice = (price: number | undefined) => {
-    if (!price) return '---';
+    if (!price) return "---";
     if (price >= 1000) {
       return `${(price / 1000).toFixed(1)}K`;
     }
@@ -20,22 +20,22 @@ export const CandleChartCard = () => {
     <Card style={{ gap: 4 }}>
       <ScrollRow contentContainerStyle={{ gap: 4 }}>
         <TokenTab
-          name='sol'
+          name="sol"
           price={formatPrice(gameState.tokenPrices.sol.current_price)}
-          selected={selectedToken === 'sol'}
-          onPress={() => setSelectedToken('sol')}
+          selected={selectedToken === "sol"}
+          onPress={() => setSelectedToken("sol")}
         />
         <TokenTab
-          name='eth'
+          name="eth"
           price={formatPrice(gameState.tokenPrices.eth.current_price)}
-          selected={selectedToken === 'eth'}
-          onPress={() => setSelectedToken('eth')}
+          selected={selectedToken === "eth"}
+          onPress={() => setSelectedToken("eth")}
         />
         <TokenTab
-          name='btc'
+          name="btc"
           price={formatPrice(gameState.tokenPrices.btc.current_price)}
-          selected={selectedToken === 'btc'}
-          onPress={() => setSelectedToken('btc')}
+          selected={selectedToken === "btc"}
+          onPress={() => setSelectedToken("btc")}
         />
       </ScrollRow>
       <ChartContainer>
@@ -48,5 +48,3 @@ export const CandleChartCard = () => {
 const ChartContainer = styled.View`
   position: relative;
 `;
-
-

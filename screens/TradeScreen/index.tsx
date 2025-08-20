@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
-import { View } from 'react-native';
+import { useEffect, useRef, useState } from "react";
+import { View } from "react-native";
 
-import { highFireUrl, lowFireUrl, midFireUrl } from '@/assets/videos';
+import { highFireUrl, lowFireUrl, midFireUrl } from "@/assets/videos";
 import {
   Column,
   PressableOpacity,
@@ -10,23 +10,23 @@ import {
   ScreenContainer,
   SegmentContainer,
   SegmentControl,
-} from '@/components';
-import { Trade, useHomeContext } from '@/contexts/HomeContext';
+} from "@/components";
+import { Trade, useHomeContext } from "@/contexts/HomeContext";
 
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import MaterialIcon from '@expo/vector-icons/MaterialIcons';
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import MaterialIcon from "@expo/vector-icons/MaterialIcons";
 
-import { AnimatedBannerRow } from '../HomeScreen/AnimatedBannerRow';
-import { perpSocials } from '../HomeScreen/mockData';
-import { PriceChartCard } from '../HomeScreen/PriceChartCard';
-import { AmountCard } from './AmountCard';
-import { AmountModal } from './AmountModal';
-import { SliderCard } from './SliderCard';
-import * as Haptics from 'expo-haptics';
-import { router, Stack } from 'expo-router';
-import { useVideoPlayer, VideoView } from 'expo-video';
-import { useTranslation } from 'react-i18next';
-import { useTheme } from 'styled-components/native';
+import { AnimatedBannerRow } from "../HomeScreen/AnimatedBannerRow";
+import { perpSocials } from "../HomeScreen/mockData";
+import { PriceChartCard } from "../HomeScreen/PriceChartCard";
+import { AmountCard } from "./AmountCard";
+import { AmountModal } from "./AmountModal";
+import { SliderCard } from "./SliderCard";
+import * as Haptics from "expo-haptics";
+import { router, Stack } from "expo-router";
+import { useVideoPlayer, VideoView } from "expo-video";
+import { useTranslation } from "react-i18next";
+import { useTheme } from "styled-components/native";
 
 export const TradeScreen = () => {
   const theme = useTheme();
@@ -48,11 +48,11 @@ export const TradeScreen = () => {
   // Get current trade state based on selected token
   const getCurrentTrade = () => {
     switch (selectedToken) {
-      case 'sol':
+      case "sol":
         return solTrade;
-      case 'eth':
+      case "eth":
         return ethTrade;
-      case 'btc':
+      case "btc":
         return btcTrade;
       default:
         return solTrade;
@@ -61,13 +61,13 @@ export const TradeScreen = () => {
 
   const setCurrentTrade = (trade: Trade | null) => {
     switch (selectedToken) {
-      case 'sol':
+      case "sol":
         setSolTrade(trade);
         break;
-      case 'eth':
+      case "eth":
         setEthTrade(trade);
         break;
-      case 'btc':
+      case "btc":
         setBtcTrade(trade);
         break;
       default:
@@ -77,20 +77,20 @@ export const TradeScreen = () => {
   };
 
   const currentTrade = getCurrentTrade();
-  
+
   // Use trade state or defaults
-  const tradeSide = currentTrade?.side || 'short';
+  const tradeSide = currentTrade?.side || "short";
   const amount = currentTrade?.amount || 10;
   const leverage = currentTrade?.leverage || 1;
 
   // Update trade state functions
-  const setTradeSide = (side: 'long' | 'short') => {
+  const setTradeSide = (side: "long" | "short") => {
     setCurrentTrade({
       ...currentTrade,
       side,
       amount: currentTrade?.amount || 10,
       leverage: currentTrade?.leverage || 1,
-      status: 'draft',
+      status: "draft",
       entryPrice: 0,
       isMaxLeverageOn: currentTrade?.isMaxLeverageOn || false,
     });
@@ -99,25 +99,25 @@ export const TradeScreen = () => {
   const setAmount = (newAmount: number) => {
     setCurrentTrade({
       ...currentTrade,
-      side: currentTrade?.side || 'short',
+      side: currentTrade?.side || "short",
       amount: Math.max(10, newAmount),
       leverage: currentTrade?.leverage || 1,
-      status: 'draft',
+      status: "draft",
       entryPrice: 0,
       isMaxLeverageOn: currentTrade?.isMaxLeverageOn || false,
     });
   };
   // Convert token symbol to backend format
-  const getAssetSymbol = (): 'SOL-PERP' | 'BTC-PERP' | 'ETH-PERP' => {
+  const getAssetSymbol = (): "SOL-PERP" | "BTC-PERP" | "ETH-PERP" => {
     switch (selectedToken) {
-      case 'sol':
-        return 'SOL-PERP';
-      case 'eth':
-        return 'ETH-PERP';
-      case 'btc':
-        return 'BTC-PERP';
+      case "sol":
+        return "SOL-PERP";
+      case "eth":
+        return "ETH-PERP";
+      case "btc":
+        return "BTC-PERP";
       default:
-        return 'SOL-PERP';
+        return "SOL-PERP";
     }
   };
 
@@ -131,16 +131,16 @@ export const TradeScreen = () => {
 
     if (success) {
       // Navigate back to home screen after successful trade
-      router.replace('/');
+      router.replace("/");
     }
   };
 
   // Select video based on leverage
-  let videoLevel: 'low' | 'mid' | 'high' = 'low';
+  let videoLevel: "low" | "mid" | "high" = "low";
   if (leverage > 100) {
-    videoLevel = 'high';
+    videoLevel = "high";
   } else if (leverage > 50) {
-    videoLevel = 'mid';
+    videoLevel = "mid";
   }
 
   // Haptic feedback on leverage increase
@@ -159,23 +159,23 @@ export const TradeScreen = () => {
   }, [leverage]);
 
   // Always call all three hooks
-  const lowPlayer = useVideoPlayer(lowFireUrl, (player) => {
+  const lowPlayer = useVideoPlayer(lowFireUrl, player => {
     player.loop = true;
     player.play();
   });
-  const midPlayer = useVideoPlayer(midFireUrl, (player) => {
+  const midPlayer = useVideoPlayer(midFireUrl, player => {
     player.loop = true;
     player.play();
   });
-  const highPlayer = useVideoPlayer(highFireUrl, (player) => {
+  const highPlayer = useVideoPlayer(highFireUrl, player => {
     player.loop = true;
     player.play();
   });
 
   let player;
-  if (videoLevel === 'low') {
+  if (videoLevel === "low") {
     player = lowPlayer;
-  } else if (videoLevel === 'mid') {
+  } else if (videoLevel === "mid") {
     player = midPlayer;
   } else {
     player = highPlayer;
@@ -187,33 +187,33 @@ export const TradeScreen = () => {
       <VideoView
         player={player}
         style={{
-          position: 'absolute',
+          position: "absolute",
           left: 0,
           right: 0,
           bottom: 0,
-          width: '100%',
-          height: '50%',
+          width: "100%",
+          height: "50%",
         }}
-        pointerEvents='none'
+        pointerEvents="none"
         nativeControls={false}
       />
-      <View style={{ flex: 1, position: 'relative' }}>
+      <View style={{ flex: 1, position: "relative" }}>
         <Stack.Screen options={{ headerShown: false }} />
         <ScreenContainer
-          style={{ height: '100%', backgroundColor: 'transparent' }}
+          style={{ height: "100%", backgroundColor: "transparent" }}
           noPadding
           contentContainerStyle={{
-            position: 'relative',
+            position: "relative",
             paddingBottom: 80,
             marginTop: 50,
           }}
         >
-          <Column $padding={16} $gap={12} style={{ height: '100%' }}>
+          <Column $padding={16} $gap={12} style={{ height: "100%" }}>
             <Column>
               <Row>
                 <PressableOpacity onPress={() => router.back()}>
                   <MaterialIcon
-                    name='keyboard-arrow-left'
+                    name="keyboard-arrow-left"
                     size={32}
                     color={theme.colors.textSecondary}
                   />
@@ -222,18 +222,18 @@ export const TradeScreen = () => {
                   <SegmentControl
                     Svg={MaterialCommunityIcons}
                     svgProps={{
-                      name: 'arrow-bottom-right-thin-circle-outline',
+                      name: "arrow-bottom-right-thin-circle-outline",
                     }}
-                    label={t('Short')}
-                    selected={tradeSide === 'short'}
-                    onPress={() => setTradeSide('short')}
+                    label={t("Short")}
+                    selected={tradeSide === "short"}
+                    onPress={() => setTradeSide("short")}
                   />
                   <SegmentControl
                     Svg={MaterialCommunityIcons}
-                    svgProps={{ name: 'arrow-top-right-thin-circle-outline' }}
-                    label={t('Long')}
-                    selected={tradeSide === 'long'}
-                    onPress={() => setTradeSide('long')}
+                    svgProps={{ name: "arrow-top-right-thin-circle-outline" }}
+                    label={t("Long")}
+                    selected={tradeSide === "long"}
+                    onPress={() => setTradeSide("long")}
                   />
                 </SegmentContainer>
                 <View style={{ width: 32 }} />
@@ -249,17 +249,14 @@ export const TradeScreen = () => {
                 amount={amount}
                 setAmount={setAmount}
               />
-              <SliderCard
-                leverage={leverage}
-                amount={amount}
-              />
+              <SliderCard leverage={leverage} amount={amount} />
             </Column>
           </Column>
         </ScreenContainer>
         {/* Button container absolutely positioned above the video area */}
         <View
           style={{
-            position: 'absolute',
+            position: "absolute",
             left: 0,
             right: 0,
             bottom: 0,
@@ -268,13 +265,10 @@ export const TradeScreen = () => {
             zIndex: 10,
           }}
         >
-          <PrimaryButton 
-            onPress={handleTrade} 
-            loading={isTrading}
-          >
-            {t('{{side}} {{token}}', { 
-              side: tradeSide === 'long' ? 'Long' : 'Short',
-              token: selectedToken.toUpperCase()
+          <PrimaryButton onPress={handleTrade} loading={isTrading}>
+            {t("{{side}} {{token}}", {
+              side: tradeSide === "long" ? "Long" : "Short",
+              token: selectedToken.toUpperCase(),
             })}
           </PrimaryButton>
         </View>

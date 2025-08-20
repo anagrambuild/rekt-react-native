@@ -1,8 +1,8 @@
-import { useState } from 'react';
-import { Alert, Linking } from 'react-native';
+import { useState } from "react";
+import { Alert, Linking } from "react-native";
 
-import * as ImagePicker from 'expo-image-picker';
-import { useTranslation } from 'react-i18next';
+import * as ImagePicker from "expo-image-picker";
+import { useTranslation } from "react-i18next";
 
 export interface ImagePickerResult {
   uri: string;
@@ -17,14 +17,14 @@ export const useImagePicker = () => {
   const requestCameraPermission = async (): Promise<boolean> => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
 
-    if (status !== 'granted') {
+    if (status !== "granted") {
       Alert.alert(
-        t('Camera permission required'),
-        t('We need access to your camera to take photos'),
+        t("Camera permission required"),
+        t("We need access to your camera to take photos"),
         [
-          { text: t('Cancel'), style: 'cancel' },
+          { text: t("Cancel"), style: "cancel" },
           {
-            text: t('Go to Settings'),
+            text: t("Go to Settings"),
             onPress: () => Linking.openSettings(),
           },
         ]
@@ -38,14 +38,14 @@ export const useImagePicker = () => {
   const requestMediaLibraryPermission = async (): Promise<boolean> => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-    if (status !== 'granted') {
+    if (status !== "granted") {
       Alert.alert(
-        t('Photo library permission required'),
-        t('We need access to your photo library to select images'),
+        t("Photo library permission required"),
+        t("We need access to your photo library to select images"),
         [
-          { text: t('Cancel'), style: 'cancel' },
+          { text: t("Cancel"), style: "cancel" },
           {
-            text: t('Go to Settings'),
+            text: t("Go to Settings"),
             onPress: () => Linking.openSettings(),
           },
         ]
@@ -66,7 +66,7 @@ export const useImagePicker = () => {
       }
 
       const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ['images'],
+        mediaTypes: ["images"],
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
@@ -76,15 +76,15 @@ export const useImagePicker = () => {
         const asset = result.assets[0];
         return {
           uri: asset.uri,
-          type: asset.type || 'image',
+          type: asset.type || "image",
           name: asset.fileName || `photo_${Date.now()}.jpg`,
         };
       }
 
       return null;
     } catch (error) {
-      console.error('Error taking photo:', error);
-      Alert.alert(t('Permission denied'), t('Unable to access camera'));
+      console.error("Error taking photo:", error);
+      Alert.alert(t("Permission denied"), t("Unable to access camera"));
       return null;
     } finally {
       setIsLoading(false);
@@ -101,7 +101,7 @@ export const useImagePicker = () => {
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
+        mediaTypes: ["images"],
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
@@ -111,15 +111,15 @@ export const useImagePicker = () => {
         const asset = result.assets[0];
         return {
           uri: asset.uri,
-          type: asset.type || 'image',
+          type: asset.type || "image",
           name: asset.fileName || `image_${Date.now()}.jpg`,
         };
       }
 
       return null;
     } catch (error) {
-      console.error('Error picking from library:', error);
-      Alert.alert(t('Permission denied'), t('Unable to access photo library'));
+      console.error("Error picking from library:", error);
+      Alert.alert(t("Permission denied"), t("Unable to access photo library"));
       return null;
     } finally {
       setIsLoading(false);
@@ -127,10 +127,10 @@ export const useImagePicker = () => {
   };
 
   const showImagePicker = () => {
-    Alert.alert(t('Upload'), '', [
-      { text: t('Take photo'), onPress: takePhoto },
-      { text: t('Choose from library'), onPress: pickFromLibrary },
-      { text: t('Cancel'), style: 'cancel' },
+    Alert.alert(t("Upload"), "", [
+      { text: t("Take photo"), onPress: takePhoto },
+      { text: t("Choose from library"), onPress: pickFromLibrary },
+      { text: t("Cancel"), style: "cancel" },
     ]);
   };
 

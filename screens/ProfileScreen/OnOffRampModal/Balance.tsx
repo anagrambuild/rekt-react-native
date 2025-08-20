@@ -1,10 +1,10 @@
-import { useMemo, useRef, useState } from 'react';
-import { Platform, View } from 'react-native';
+import { useMemo, useRef, useState } from "react";
+import { Platform, View } from "react-native";
 
-import coinIcon from '@/assets/images/app-pngs/coin.png';
-import UsdcIcon from '@/assets/images/app-svgs/usdc.svg';
-import WalletSecondaryIcon from '@/assets/images/app-svgs/wallet-secondary.svg';
-import { blueFlameUrl } from '@/assets/videos';
+import coinIcon from "@/assets/images/app-pngs/coin.png";
+import UsdcIcon from "@/assets/images/app-svgs/usdc.svg";
+import WalletSecondaryIcon from "@/assets/images/app-svgs/wallet-secondary.svg";
+import { blueFlameUrl } from "@/assets/videos";
 import {
   BodyMEmphasized,
   BodyMSecondary,
@@ -19,20 +19,20 @@ import {
   PulsatingContainer,
   Row,
   Title2,
-} from '@/components';
-import { useAppContext, useProfileContext } from '@/contexts';
+} from "@/components";
+import { useAppContext, useProfileContext } from "@/contexts";
 
-import AntDesign from '@expo/vector-icons/AntDesign';
-import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import AntDesign from "@expo/vector-icons/AntDesign";
+import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
-import { EarningsCard } from './EarningsCard';
-import { Image } from 'expo-image';
-import { useVideoPlayer, VideoView } from 'expo-video';
-import { useTranslation } from 'react-i18next';
-import styled, { DefaultTheme, useTheme } from 'styled-components/native';
+import { EarningsCard } from "./EarningsCard";
+import { Image } from "expo-image";
+import { useVideoPlayer, VideoView } from "expo-video";
+import { useTranslation } from "react-i18next";
+import styled, { DefaultTheme, useTheme } from "styled-components/native";
 
-const videoOffset = Platform.OS === 'ios' ? 38 : 30;
+const videoOffset = Platform.OS === "ios" ? 38 : 30;
 
 export const Balance = ({
   setView,
@@ -40,11 +40,11 @@ export const Balance = ({
 }: {
   setView: (
     view:
-      | 'transfer'
-      | 'withdraw'
-      | 'withdrawal address'
-      | 'withdrawal success'
-      | 'confirm breeze'
+      | "transfer"
+      | "withdraw"
+      | "withdrawal address"
+      | "withdrawal success"
+      | "confirm breeze"
   ) => void;
   loginScreen?: boolean;
 }) => {
@@ -61,27 +61,27 @@ export const Balance = ({
     y: 0,
   });
 
-  const player = useVideoPlayer(blueFlameUrl, (player) => {
+  const player = useVideoPlayer(blueFlameUrl, player => {
     player.loop = true;
     player.play();
   });
 
   const goToTransfer = () => {
     if (loginScreen) return;
-    setView('transfer');
+    setView("transfer");
   };
   const goToWithdraw = () => {
     if (loginScreen) return;
-    setView('withdraw');
+    setView("withdraw");
   };
   const goToConfirmBreeze = () => {
     if (loginScreen) return;
-    setView('confirm breeze');
+    setView("confirm breeze");
   };
   const goToCard = () => {
     if (loginScreen) return;
     // setView('card');
-    console.log('go to card');
+    console.log("go to card");
   };
 
   const handleUsdcIconLayout = () => {
@@ -119,22 +119,22 @@ export const Balance = ({
         <VideoView
           player={player}
           style={{
-            width: '100%',
-            height: '100%',
-            position: 'absolute',
+            width: "100%",
+            height: "100%",
+            position: "absolute",
             bottom: videoOffset,
             left: 0,
-            backgroundColor: 'transparent',
+            backgroundColor: "transparent",
           }}
-          pointerEvents='none'
+          pointerEvents="none"
           nativeControls={false}
         />
       )}
-      <Column $gap={24} $alignItems='flex-start' $padding={8}>
+      <Column $gap={24} $alignItems="flex-start" $padding={8}>
         {/* Header Section */}
         <Column
-          $justifyContent='space-between'
-          $alignItems='flex-start'
+          $justifyContent="space-between"
+          $alignItems="flex-start"
           $gap={8}
         >
           <IconContainer>
@@ -144,15 +144,15 @@ export const Balance = ({
               color={theme.colors.textSecondary}
             />
           </IconContainer>
-          <Row $justifyContent='space-between'>
-            <Column $alignItems='flex-start' $width='auto'>
-              <BodyMSecondary>{t('Your balance')}</BodyMSecondary>
-              <Row $width='auto' $gap={4} $justifyContent='flex-start'>
+          <Row $justifyContent="space-between">
+            <Column $alignItems="flex-start" $width="auto">
+              <BodyMSecondary>{t("Your balance")}</BodyMSecondary>
+              <Row $width="auto" $gap={4} $justifyContent="flex-start">
                 {loginScreen ? (
                   <Title2>1800.00</Title2>
                 ) : (
                   <Title2>
-                    {userData.balance.toLocaleString('en-US', {
+                    {userData.balance.toLocaleString("en-US", {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
                     })}
@@ -172,21 +172,21 @@ export const Balance = ({
 
             {userData.balance > 0 ||
               (loginScreen && (
-                <Row $width='auto' $gap={8}>
+                <Row $width="auto" $gap={8}>
                   <ModalIconButton
                     onPress={goToWithdraw}
                     icon={
                       <AntDesign
-                        name='minuscircle'
+                        name="minuscircle"
                         size={12}
                         color={theme.colors.textPrimary}
                       />
                     }
                   >
-                    {t('Withdraw')}
+                    {t("Withdraw")}
                   </ModalIconButton>
                   <IconButton
-                    name='history'
+                    name="history"
                     size={12}
                     color={theme.colors.textPrimary}
                     onPress={handleHistory}
@@ -208,13 +208,13 @@ export const Balance = ({
         ) : (
           <Card $padding={16}>
             <PressableOpacity onPress={goToConfirmBreeze}>
-              <Column $width='auto' $gap={4} $alignItems='flex-start'>
+              <Column $width="auto" $gap={4} $alignItems="flex-start">
                 <Image source={coinIcon} style={{ width: 64, height: 64 }} />
                 <BodyMEmphasized>
-                  {t('Earn 5% APY on your balance')}
+                  {t("Earn 5% APY on your balance")}
                 </BodyMEmphasized>
                 <BodyMSecondary>
-                  {t('Put your idle dollars to work')}
+                  {t("Put your idle dollars to work")}
                 </BodyMSecondary>
               </Column>
             </PressableOpacity>
@@ -222,46 +222,46 @@ export const Balance = ({
         )}
 
         {/* Deposit Options Section */}
-        <Column $gap={4} $width='100%' $alignItems='flex-start'>
+        <Column $gap={4} $width="100%" $alignItems="flex-start">
           <BodyXSMonoSecondary>
-            {t('Deposit funds').toUpperCase()}
+            {t("Deposit funds").toUpperCase()}
           </BodyXSMonoSecondary>
 
           <DepositOption onPress={goToTransfer}>
-            <Row $width='auto' $gap={12} $alignItems='center'>
+            <Row $width="auto" $gap={12} $alignItems="center">
               <FontAwesome5
-                name='arrow-circle-down'
+                name="arrow-circle-down"
                 size={24}
                 color={theme.colors.textSecondary}
               />
-              <Column $width='auto' $alignItems='flex-start'>
-                <BodyMEmphasized>{t('Transfer-in')}</BodyMEmphasized>
-                <BodySSecondary>{t('From Solana wallet')}</BodySSecondary>
+              <Column $width="auto" $alignItems="flex-start">
+                <BodyMEmphasized>{t("Transfer-in")}</BodyMEmphasized>
+                <BodySSecondary>{t("From Solana wallet")}</BodySSecondary>
               </Column>
             </Row>
             <MaterialIcons
-              name='chevron-right'
+              name="chevron-right"
               size={20}
               color={theme.colors.textSecondary}
             />
           </DepositOption>
           <Divider />
           <DepositOption onPress={goToCard}>
-            <Row $width='auto' $gap={12} $alignItems='center'>
+            <Row $width="auto" $gap={12} $alignItems="center">
               <FontAwesome5
-                name='cc-apple-pay'
+                name="cc-apple-pay"
                 size={24}
                 color={theme.colors.textSecondary}
               />
-              <Column $width='auto' $alignItems='flex-start'>
-                <BodyMEmphasized>{t('Card or Apple pay')}</BodyMEmphasized>
+              <Column $width="auto" $alignItems="flex-start">
+                <BodyMEmphasized>{t("Card or Apple pay")}</BodyMEmphasized>
                 <BodySSecondary>
-                  {t('Instant and secure payment')}
+                  {t("Instant and secure payment")}
                 </BodySSecondary>
               </Column>
             </Row>
             <MaterialIcons
-              name='chevron-right'
+              name="chevron-right"
               size={20}
               color={theme.colors.textSecondary}
             />

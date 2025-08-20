@@ -1,21 +1,21 @@
-import { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { useEffect, useState } from "react";
+import { View } from "react-native";
 
-import coinDarkIcon from '@/assets/images/app-pngs/coin-dark.png';
+import coinDarkIcon from "@/assets/images/app-pngs/coin-dark.png";
 import {
   BodyMEmphasized,
   BodyMSecondary,
   Card,
   Column,
   Row,
-} from '@/components';
+} from "@/components";
 
-import MaterialIcon from '@expo/vector-icons/MaterialIcons';
+import MaterialIcon from "@expo/vector-icons/MaterialIcons";
 
-import { FloatingUsdcIcon } from './FloatingUsdcIcon';
-import { Image } from 'expo-image';
-import { useTranslation } from 'react-i18next';
-import styled, { useTheme } from 'styled-components/native';
+import { FloatingUsdcIcon } from "./FloatingUsdcIcon";
+import { Image } from "expo-image";
+import { useTranslation } from "react-i18next";
+import styled, { useTheme } from "styled-components/native";
 
 interface EarningsCardProps {
   targetPosition: { x: number; y: number };
@@ -37,7 +37,7 @@ export const EarningsCard = ({
   // Increment earnings every 2 seconds
   useEffect(() => {
     const interval = setInterval(() => {
-      setEarnings((prev) => {
+      setEarnings(prev => {
         const newValue = prev + 0.0000001;
         return parseFloat(newValue.toFixed(7));
       });
@@ -51,8 +51,8 @@ export const EarningsCard = ({
       ref={earningAmountRef}
       onLayout={handleEarningAmountLayout}
     >
-      <Row $gap={16} $alignItems='center' $width='auto'>
-        <Row $gap={12} $alignItems='center' $width='auto' style={{ flex: 1 }}>
+      <Row $gap={16} $alignItems="center" $width="auto">
+        <Row $gap={12} $alignItems="center" $width="auto" style={{ flex: 1 }}>
           <CoinContainer>
             <Image
               source={coinDarkIcon}
@@ -64,9 +64,9 @@ export const EarningsCard = ({
           </CoinContainer>
 
           {/* Text content */}
-          <Column $gap={4} $alignItems='flex-start'>
-            <BodyMEmphasized>{t('Earnings so far')}</BodyMEmphasized>
-            <Row $alignItems='center' $justifyContent='flex-start'>
+          <Column $gap={4} $alignItems="flex-start">
+            <BodyMEmphasized>{t("Earnings so far")}</BodyMEmphasized>
+            <Row $alignItems="center" $justifyContent="flex-start">
               <BodyMSecondary>${earnings.toFixed(7)}</BodyMSecondary>
               <View
                 ref={earningAmountTextRef}
@@ -81,7 +81,7 @@ export const EarningsCard = ({
 
         {/* Right arrow */}
         <MaterialIcon
-          name='chevron-right'
+          name="chevron-right"
           size={24}
           color={theme.colors.textPrimary}
         />

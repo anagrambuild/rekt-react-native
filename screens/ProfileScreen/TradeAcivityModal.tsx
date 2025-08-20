@@ -1,9 +1,9 @@
-import { Share } from 'react-native';
+import { Share } from "react-native";
 
-import BtcUnselected from '@/assets/images/app-svgs/btc-unselected.svg';
-import EthUnselected from '@/assets/images/app-svgs/eth-unselected.svg';
-import SolUnselected from '@/assets/images/app-svgs/sol-unselected.svg';
-import UsdcIcon from '@/assets/images/app-svgs/usdc.svg';
+import BtcUnselected from "@/assets/images/app-svgs/btc-unselected.svg";
+import EthUnselected from "@/assets/images/app-svgs/eth-unselected.svg";
+import SolUnselected from "@/assets/images/app-svgs/sol-unselected.svg";
+import UsdcIcon from "@/assets/images/app-svgs/usdc.svg";
 import {
   Body1,
   BodyM,
@@ -16,16 +16,16 @@ import {
   PrimaryButton,
   Row,
   SecondaryButton,
-} from '@/components';
-import { useHomeContext, useProfileContext } from '@/contexts';
+} from "@/components";
+import { useHomeContext, useProfileContext } from "@/contexts";
 
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
-import { TradeActivityChart } from './TradeActivityChart';
-import { router } from 'expo-router';
-import { useTranslation } from 'react-i18next';
-import styled, { DefaultTheme, useTheme } from 'styled-components/native';
+import { TradeActivityChart } from "./TradeActivityChart";
+import { router } from "expo-router";
+import { useTranslation } from "react-i18next";
+import styled, { DefaultTheme, useTheme } from "styled-components/native";
 
 // Mock trade data for the chart
 const createMockTrade = (selectedTrade: any) => ({
@@ -33,7 +33,7 @@ const createMockTrade = (selectedTrade: any) => ({
   entryPrice: selectedTrade.entryPrice,
   amount: selectedTrade.amount,
   leverage: selectedTrade.leverage,
-  status: 'closed' as const,
+  status: "closed" as const,
   timestamp: Date.now(),
 });
 
@@ -61,7 +61,7 @@ export const TradeActivityModal = () => {
       entryPrice: selectedTrade.entryPrice,
       amount: selectedTrade.amount,
       leverage: selectedTrade.leverage,
-      status: 'open' as const,
+      status: "open" as const,
       timestamp: Date.now(),
     };
 
@@ -70,13 +70,13 @@ export const TradeActivityModal = () => {
 
     // Set the trade for the appropriate token
     switch (selectedTrade.symbol) {
-      case 'sol':
+      case "sol":
         setSolTrade(newTrade);
         break;
-      case 'eth':
+      case "eth":
         setEthTrade(newTrade);
         break;
-      case 'btc':
+      case "btc":
         setBtcTrade(newTrade);
         break;
     }
@@ -85,20 +85,20 @@ export const TradeActivityModal = () => {
     handleClose();
 
     // Navigate to home page
-    router.push('/');
+    router.push("/");
   };
 
   const handleShare = async () => {
     if (!selectedTrade) return;
 
     try {
-      const profitText = selectedTrade.isProfit ? 'profit' : 'loss';
-      const profitAmount = selectedTrade.isProfit ? '+' : '';
+      const profitText = selectedTrade.isProfit ? "profit" : "loss";
+      const profitAmount = selectedTrade.isProfit ? "+" : "";
       const symbol = selectedTrade.symbol.toUpperCase();
-      const tradeType = selectedTrade.type === 'long' ? 'Long' : 'Short';
+      const tradeType = selectedTrade.type === "long" ? "Long" : "Short";
 
       const shareMessage = `🚀 Just ${
-        selectedTrade.isProfit ? 'made' : 'took'
+        selectedTrade.isProfit ? "made" : "took"
       } a ${profitText} on my ${tradeType} ${symbol} trade!
 
 💰 ${profitAmount}$${selectedTrade.profitAmount.toFixed(2)}
@@ -108,20 +108,20 @@ export const TradeActivityModal = () => {
 ⚡ Leverage: ${selectedTrade.leverage}x
 ⏱️ Duration: ${selectedTrade.duration}
 
-#Trading #${symbol} #${selectedTrade.isProfit ? 'Profit' : 'REKT'}`;
+#Trading #${symbol} #${selectedTrade.isProfit ? "Profit" : "REKT"}`;
 
       const result = await Share.share({
         message: shareMessage,
         title: `${tradeType} ${symbol} Trade ${
-          selectedTrade.isProfit ? 'Profit' : 'Loss'
+          selectedTrade.isProfit ? "Profit" : "Loss"
         }`,
       });
 
       if (result.action === Share.sharedAction) {
-        console.log('Trade shared successfully');
+        console.log("Trade shared successfully");
       }
     } catch (error) {
-      console.error('Error sharing trade:', error);
+      console.error("Error sharing trade:", error);
     }
   };
 
@@ -131,36 +131,36 @@ export const TradeActivityModal = () => {
 
   return (
     <Modal visible={isTradeActivityModalVisible} onRequestClose={handleClose}>
-      <Column $gap={24} $alignItems='flex-start' $padding={8}>
+      <Column $gap={24} $alignItems="flex-start" $padding={8}>
         {/* Header Section */}
-        <Row $justifyContent='space-between' $alignItems='flex-start'>
-          <Row $width='auto' $gap={12} $alignItems='center'>
+        <Row $justifyContent="space-between" $alignItems="flex-start">
+          <Row $width="auto" $gap={12} $alignItems="center">
             <SymbolContainer>
               <Icon symbol={selectedTrade.symbol} />
               <ArrowContainer>
                 <MaterialCommunityIcons
                   name={
                     selectedTrade.isProfit
-                      ? 'arrow-top-right'
-                      : 'arrow-bottom-right'
+                      ? "arrow-top-right"
+                      : "arrow-bottom-right"
                   }
                   size={11}
                   color={theme.colors.textPrimary}
                 />
               </ArrowContainer>
             </SymbolContainer>
-            <Column $width='auto' $alignItems='flex-start'>
+            <Column $width="auto" $alignItems="flex-start">
               <BodyM>
-                {t(selectedTrade.type === 'long' ? 'Long' : 'Short')}
+                {t(selectedTrade.type === "long" ? "Long" : "Short")}
               </BodyM>
             </Column>
           </Row>
-          <Column $width='auto' $alignItems='flex-end'>
+          <Column $width="auto" $alignItems="flex-end">
             <ProfitPill isProfit={selectedTrade.isProfit}>
-              <BodyS>{t('Profit')}</BodyS>
+              <BodyS>{t("Profit")}</BodyS>
             </ProfitPill>
             <ProfitAmount isProfit={selectedTrade.isProfit}>
-              {selectedTrade.isProfit ? '+' : ''}$
+              {selectedTrade.isProfit ? "+" : ""}$
               {selectedTrade.profitAmount.toFixed(2)}
             </ProfitAmount>
           </Column>
@@ -168,33 +168,33 @@ export const TradeActivityModal = () => {
 
         {/* Data Cards Section */}
         <Column $gap={4}>
-          <Row $width='auto' $gap={4}>
+          <Row $width="auto" $gap={4}>
             <DataCard>
               <BodyXSMonoSecondary>
-                {t('Invested').toUpperCase()}
+                {t("Invested").toUpperCase()}
               </BodyXSMonoSecondary>
-              <Row $width='auto' $gap={4} $alignItems='center'>
+              <Row $width="auto" $gap={4} $alignItems="center">
                 <Body1>{selectedTrade.amount}</Body1>
                 <UsdcIcon width={20} height={20} />
               </Row>
             </DataCard>
             <DataCard>
               <BodyXSMonoSecondary>
-                {t('Leverage').toUpperCase()}
+                {t("Leverage").toUpperCase()}
               </BodyXSMonoSecondary>
               <Body1>{selectedTrade.leverage}x</Body1>
             </DataCard>
           </Row>
-          <Row $width='auto' $gap={4}>
+          <Row $width="auto" $gap={4}>
             <DataCard>
               <BodyXSMonoSecondary>
-                {t('Entry').toUpperCase()}
+                {t("Entry").toUpperCase()}
               </BodyXSMonoSecondary>
               <Body1>${selectedTrade.entryPrice.toFixed(2)}</Body1>
             </DataCard>
             <DataCard>
               <BodyXSMonoSecondary>
-                {t('Exit').toUpperCase()}
+                {t("Exit").toUpperCase()}
               </BodyXSMonoSecondary>
               <Body1>${selectedTrade.exitPrice.toFixed(2)}</Body1>
             </DataCard>
@@ -204,9 +204,9 @@ export const TradeActivityModal = () => {
           <Card $padding={16}>
             <Column $gap={12}>
               <Row
-                $width='auto'
-                $justifyContent='space-between'
-                $alignItems='center'
+                $width="auto"
+                $justifyContent="space-between"
+                $alignItems="center"
               >
                 <BodyXSMonoSecondary>
                   {selectedTrade.entryTime} - {selectedTrade.exitTime}
@@ -216,9 +216,9 @@ export const TradeActivityModal = () => {
                 trade={mockTrade}
                 symbol={selectedTrade.symbol}
               />
-              <Row $width='auto' $gap={4} $alignItems='center'>
+              <Row $width="auto" $gap={4} $alignItems="center">
                 <MaterialIcons
-                  name='access-time'
+                  name="access-time"
                   size={14}
                   color={theme.colors.textSecondary}
                 />
@@ -229,30 +229,30 @@ export const TradeActivityModal = () => {
         </Column>
 
         {/* Action Buttons */}
-        <Column $gap={8} $width='100%'>
+        <Column $gap={8} $width="100%">
           <PrimaryButton
             onPress={handleTradeAgain}
             icon={
               <MaterialIcons
-                name='refresh'
+                name="refresh"
                 size={18}
                 color={theme.colors.background}
               />
             }
           >
-            {t('Trade again')}
+            {t("Trade again")}
           </PrimaryButton>
           <SecondaryButton
             onPress={handleShare}
             icon={
               <MaterialIcons
-                name='share'
+                name="share"
                 size={18}
                 color={theme.colors.textPrimary}
               />
             }
           >
-            {t('Share')}
+            {t("Share")}
           </SecondaryButton>
         </Column>
       </Column>
@@ -260,13 +260,13 @@ export const TradeActivityModal = () => {
   );
 };
 
-const Icon = ({ symbol }: { symbol: 'btc' | 'eth' | 'sol' }) => {
+const Icon = ({ symbol }: { symbol: "btc" | "eth" | "sol" }) => {
   switch (symbol) {
-    case 'btc':
+    case "btc":
       return <BtcUnselected />;
-    case 'eth':
+    case "eth":
       return <EthUnselected />;
-    case 'sol':
+    case "sol":
       return <SolUnselected />;
   }
 };
@@ -297,7 +297,7 @@ const ProfitPill = styled.View<{ isProfit: boolean }>`
   }: {
     theme: DefaultTheme;
     isProfit: boolean;
-  }) => (isProfit ? theme.colors.profit + '20' : theme.colors.loss + '20')};
+  }) => (isProfit ? theme.colors.profit + "20" : theme.colors.loss + "20")};
   padding: 4px 8px;
   border-radius: 100px;
   border-width: 1px;
@@ -311,7 +311,7 @@ const ProfitPill = styled.View<{ isProfit: boolean }>`
 `;
 
 const ProfitAmount = styled.Text<{ isProfit: boolean }>`
-  font-family: 'Geist';
+  font-family: "Geist";
   font-size: 24px;
   font-weight: 600;
   color: ${({ theme, isProfit }: { theme: DefaultTheme; isProfit: boolean }) =>

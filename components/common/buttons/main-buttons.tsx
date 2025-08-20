@@ -1,7 +1,7 @@
-import { ActivityIndicator } from 'react-native';
+import { ActivityIndicator } from "react-native";
 
-import { PressableOpacity } from './PressableOpacity';
-import styled, { css, DefaultTheme } from 'styled-components/native';
+import { PressableOpacity } from "./PressableOpacity";
+import styled, { css, DefaultTheme } from "styled-components/native";
 
 interface ThemedButtonProps {
   theme: DefaultTheme;
@@ -62,7 +62,7 @@ const StyledPrimaryButton = styled(PressableOpacity)<{
 
 const PrimaryButtonText = styled.Text`
   color: ${({ theme }: ThemedButtonTextProps) => theme.colors.background};
-  font-family: 'Geist';
+  font-family: "Geist";
   font-weight: 400;
   ${sharedTextStyles}
 `;
@@ -108,7 +108,7 @@ const StyledSecondaryButton = styled(PressableOpacity)<{
 
 const SecondaryButtonText = styled.Text`
   color: ${({ theme }: ThemedButtonTextProps) => theme.colors.textPrimary};
-  font-family: 'Geist';
+  font-family: "Geist";
   font-weight: 400;
   ${sharedTextStyles}
 `;

@@ -1,25 +1,25 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from "react";
 
-import { fetchTokenPrices, SupportedToken, TokenPrice } from '@/utils';
+import { fetchTokenPrices, SupportedToken, TokenPrice } from "@/utils";
 import {
   getOpenPositions,
   getTradingBalance,
   getTradingHistory,
   Position,
   TradingBalance,
-} from '@/utils/backendApi';
-import { TradingService } from '@/utils/tradingService';
+} from "@/utils/backendApi";
+import { TradingService } from "@/utils/tradingService";
 
-import { useProfileContext } from './ProfileContext';
-import { useSolana } from './SolanaContext';
-import { useWallet } from './WalletContext';
-import { useTranslation } from 'react-i18next';
-import { Toast } from 'toastify-react-native';
+import { useProfileContext } from "./ProfileContext";
+import { useSolana } from "./SolanaContext";
+import { useWallet } from "./WalletContext";
+import { useTranslation } from "react-i18next";
+import { Toast } from "toastify-react-native";
 
 // Trade type for active trades (keeping for backward compatibility)
-export type TradeStatus = 'draft' | 'open' | 'closed';
+export type TradeStatus = "draft" | "open" | "closed";
 export interface Trade {
-  side: 'long' | 'short';
+  side: "long" | "short";
   entryPrice: number;
   amount: number;
   leverage: number;
@@ -58,8 +58,8 @@ interface HomeContextType {
   historyError: string | null;
   isTrading: boolean;
   openPosition: (
-    asset: 'SOL-PERP' | 'BTC-PERP' | 'ETH-PERP',
-    direction: 'long' | 'short',
+    asset: "SOL-PERP" | "BTC-PERP" | "ETH-PERP",
+    direction: "long" | "short",
     amount: number,
     leverage: number
   ) => Promise<boolean>;
@@ -71,9 +71,9 @@ interface HomeContextType {
 }
 
 export const HomeContext = createContext<HomeContextType>({
-  selectedToken: 'sol',
+  selectedToken: "sol",
   setSelectedToken: () => {},
-  selectedTimeframe: '1m',
+  selectedTimeframe: "1m",
   setSelectedTimeframe: () => {},
   priceChartTimeframes: [],
   solTrade: null,
@@ -113,8 +113,8 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
   const { usdcBalance } = useWallet();
   const { userId } = useProfileContext();
   const { connection } = useSolana();
-  const [selectedToken, setSelectedToken] = useState<string>('sol');
-  const [selectedTimeframe, setSelectedTimeframe] = useState<string>('1m');
+  const [selectedToken, setSelectedToken] = useState<string>("sol");
+  const [selectedTimeframe, setSelectedTimeframe] = useState<string>("1m");
   const [solTrade, setSolTrade] = useState<Trade | null>(null);
   const [ethTrade, setEthTrade] = useState<Trade | null>(null);
   const [btcTrade, setBtcTrade] = useState<Trade | null>(null);
@@ -155,9 +155,9 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
       const balanceData = await getTradingBalance(userId);
       setBalance(balanceData);
     } catch (error) {
-      console.error('Error refreshing balance:', error);
+      console.error("Error refreshing balance:", error);
       setBalanceError(
-        error instanceof Error ? error.message : 'Failed to load balance'
+        error instanceof Error ? error.message : "Failed to load balance"
       );
     } finally {
       setIsLoadingBalance(false);
@@ -177,7 +177,7 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (error) {
       // console.error('Error refreshing positions:', error);
       setPositionsError(
-        error instanceof Error ? error.message : 'Failed to load positions'
+        error instanceof Error ? error.message : "Failed to load positions"
       );
     } finally {
       setIsLoadingPositions(false);
@@ -197,7 +197,7 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (error) {
       // console.error('Error refreshing history:', error);
       setHistoryError(
-        error instanceof Error ? error.message : 'Failed to load history'
+        error instanceof Error ? error.message : "Failed to load history"
       );
     } finally {
       setIsLoadingHistory(false);
@@ -211,16 +211,16 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Open a new position using Swig trading flow
   const openPosition = async (
-    asset: 'SOL-PERP' | 'BTC-PERP' | 'ETH-PERP',
-    direction: 'long' | 'short',
+    asset: "SOL-PERP" | "BTC-PERP" | "ETH-PERP",
+    direction: "long" | "short",
     amount: number,
     leverage: number
   ): Promise<boolean> => {
     if (!userId) {
       Toast.show({
-        text1: t('Error'),
-        text2: t('Profile not found. Please try again.'),
-        type: 'error',
+        text1: t("Error"),
+        text2: t("Profile not found. Please try again."),
+        type: "error",
       });
       return false;
     }
@@ -234,18 +234,18 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (!validAmount || validAmount < 10) {
         Toast.show({
-          text1: t('Invalid Amount'),
-          text2: t('Minimum trade amount is $10'),
-          type: 'error',
+          text1: t("Invalid Amount"),
+          text2: t("Minimum trade amount is $10"),
+          type: "error",
         });
         return false;
       }
 
       if (!validLeverage || validLeverage < 1) {
         Toast.show({
-          text1: t('Invalid Leverage'),
-          text2: t('Please enter a valid leverage of 1 or higher'),
-          type: 'error',
+          text1: t("Invalid Leverage"),
+          text2: t("Please enter a valid leverage of 1 or higher"),
+          type: "error",
         });
         return false;
       }
@@ -261,29 +261,29 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (result.success) {
         Toast.show({
-          text1: t('Position Opened'),
-          text2: t('Position opened successfully!'),
-          type: 'success',
+          text1: t("Position Opened"),
+          text2: t("Position opened successfully!"),
+          type: "success",
         });
 
         // Update local trade state to reflect the successful trade
         const token =
-          asset === 'SOL-PERP' ? 'sol' : asset === 'ETH-PERP' ? 'eth' : 'btc';
+          asset === "SOL-PERP" ? "sol" : asset === "ETH-PERP" ? "eth" : "btc";
         const currentTrade =
-          token === 'sol' ? solTrade : token === 'eth' ? ethTrade : btcTrade;
+          token === "sol" ? solTrade : token === "eth" ? ethTrade : btcTrade;
         const updatedTrade = {
           ...currentTrade,
           side: direction,
           entryPrice: 0, // Will be updated when positions refresh
           amount: validAmount,
           leverage: validLeverage,
-          status: 'open' as TradeStatus,
+          status: "open" as TradeStatus,
           timestamp: Date.now(),
         };
 
-        if (token === 'sol') {
+        if (token === "sol") {
           setSolTrade(updatedTrade);
-        } else if (token === 'eth') {
+        } else if (token === "eth") {
           setEthTrade(updatedTrade);
         } else {
           setBtcTrade(updatedTrade);
@@ -295,11 +295,11 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
       } else if (result.requiresInitialization) {
         // Handle initialization requirement
         Toast.show({
-          text1: t('Initialization Required'),
+          text1: t("Initialization Required"),
           text2: t(
-            'Your Drift account needs to be initialized first. Please try again.'
+            "Your Drift account needs to be initialized first. Please try again."
           ),
-          type: 'info',
+          type: "info",
         });
 
         if (result.initializationData) {
@@ -309,36 +309,36 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
           );
           if (initResult.success) {
             Toast.show({
-              text1: t('Account Initialized'),
+              text1: t("Account Initialized"),
               text2: t(
-                'Your Drift account has been initialized. Please try your trade again.'
+                "Your Drift account has been initialized. Please try your trade again."
               ),
-              type: 'success',
+              type: "success",
             });
           } else {
             Toast.show({
-              text1: t('Initialization Failed'),
-              text2: initResult.error || t('Failed to initialize account'),
-              type: 'error',
+              text1: t("Initialization Failed"),
+              text2: initResult.error || t("Failed to initialize account"),
+              type: "error",
             });
           }
         }
         return false;
       } else {
         Toast.show({
-          text1: t('Trade Failed'),
-          text2: result.error || t('Failed to open position'),
-          type: 'error',
+          text1: t("Trade Failed"),
+          text2: result.error || t("Failed to open position"),
+          type: "error",
         });
         return false;
       }
     } catch (error) {
-      console.error('Error opening position:', error);
+      console.error("Error opening position:", error);
       Toast.show({
-        text1: t('Trade Failed'),
+        text1: t("Trade Failed"),
         text2:
-          error instanceof Error ? error.message : t('Failed to open position'),
-        type: 'error',
+          error instanceof Error ? error.message : t("Failed to open position"),
+        type: "error",
       });
       return false;
     } finally {
@@ -350,9 +350,9 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
   const closePosition = async (positionId: string): Promise<boolean> => {
     if (!userId) {
       Toast.show({
-        text1: t('Error'),
-        text2: t('Profile not found. Please try again.'),
-        type: 'error',
+        text1: t("Error"),
+        text2: t("Profile not found. Please try again."),
+        type: "error",
       });
       return false;
     }
@@ -370,17 +370,17 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
           ? pnlData.pnl >= 0
             ? `+$${pnlData.pnl.toFixed(2)}`
             : `$${pnlData.pnl.toFixed(2)}`
-          : 'N/A';
+          : "N/A";
 
         Toast.show({
-          text1: t('Position Closed'),
+          text1: t("Position Closed"),
           text2: pnlData?.pnl
-            ? t('Position closed with PnL: {{pnl}} ({{percentage}}%)', {
+            ? t("Position closed with PnL: {{pnl}} ({{percentage}}%)", {
                 pnl: pnlText,
-                percentage: pnlData.pnlPercentage?.toFixed(2) || '0.00',
+                percentage: pnlData.pnlPercentage?.toFixed(2) || "0.00",
               })
-            : t('Position closed successfully'),
-          type: 'success',
+            : t("Position closed successfully"),
+          type: "success",
         });
 
         // Refresh data after successful close
@@ -388,21 +388,21 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
         return true;
       } else {
         Toast.show({
-          text1: t('Close Failed'),
-          text2: result.error || t('Failed to close position'),
-          type: 'error',
+          text1: t("Close Failed"),
+          text2: result.error || t("Failed to close position"),
+          type: "error",
         });
         return false;
       }
     } catch (error) {
-      console.error('Error closing position:', error);
+      console.error("Error closing position:", error);
       Toast.show({
-        text1: t('Close Failed'),
+        text1: t("Close Failed"),
         text2:
           error instanceof Error
             ? error.message
-            : t('Failed to close position'),
-        type: 'error',
+            : t("Failed to close position"),
+        type: "error",
       });
       return false;
     } finally {
@@ -428,7 +428,7 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
       try {
         setIsPricesLoading(true);
         setPricesError(null);
-        const prices = await fetchTokenPrices(['sol', 'eth', 'btc']);
+        const prices = await fetchTokenPrices(["sol", "eth", "btc"]);
         if (prices.sol && prices.eth && prices.btc) {
           setTokenPrices(prices as Record<SupportedToken, TokenPrice>);
         }
@@ -438,9 +438,9 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
         // Fallback to mock data if API fails
         setTokenPrices({
           sol: {
-            id: 'solana',
-            symbol: 'SOL',
-            name: 'Solana',
+            id: "solana",
+            symbol: "SOL",
+            name: "Solana",
             current_price: 171.9,
             price_change_24h: 2.5,
             price_change_percentage_24h: 1.5,
@@ -449,9 +449,9 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
             last_updated: new Date().toISOString(),
           },
           eth: {
-            id: 'ethereum',
-            symbol: 'ETH',
-            name: 'Ethereum',
+            id: "ethereum",
+            symbol: "ETH",
+            name: "Ethereum",
             current_price: 2568.45,
             price_change_24h: 45.2,
             price_change_percentage_24h: 1.8,
@@ -460,9 +460,9 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
             last_updated: new Date().toISOString(),
           },
           btc: {
-            id: 'bitcoin',
-            symbol: 'BTC',
-            name: 'Bitcoin',
+            id: "bitcoin",
+            symbol: "BTC",
+            name: "Bitcoin",
             current_price: 109200,
             price_change_24h: 1200,
             price_change_percentage_24h: 1.1,
@@ -524,9 +524,9 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
 };
 
 const priceChartTimeframes = [
-  { label: '1m', value: '1m' },
-  { label: '5m', value: '5m' },
-  { label: '1h', value: '1h' },
-  { label: '4h', value: '4h' },
-  { label: '1d', value: '1d' },
+  { label: "1m", value: "1m" },
+  { label: "5m", value: "5m" },
+  { label: "1h", value: "1h" },
+  { label: "4h", value: "4h" },
+  { label: "1d", value: "1d" },
 ];

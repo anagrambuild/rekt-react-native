@@ -1,9 +1,9 @@
-import goldPfp from '@/assets/images/mock-pngs/gold-pfp.png';
-import greenPfp from '@/assets/images/mock-pngs/green-pfp.png';
-import orangePfp from '@/assets/images/mock-pngs/orange-pfp.png';
-import pinkPfp from '@/assets/images/mock-pngs/pink-pfp.png';
+import goldPfp from "@/assets/images/mock-pngs/gold-pfp.png";
+import greenPfp from "@/assets/images/mock-pngs/green-pfp.png";
+import orangePfp from "@/assets/images/mock-pngs/orange-pfp.png";
+import pinkPfp from "@/assets/images/mock-pngs/pink-pfp.png";
 
-import type { PerpPosition } from './PerpSocialChip';
+import type { PerpPosition } from "./PerpSocialChip";
 
 export const perpSocials: {
   id: number;
@@ -15,42 +15,36 @@ export const perpSocials: {
   {
     id: 0,
     imgSrc: goldPfp,
-    position: 'long',
-    meta: '100x at $163.20',
+    position: "long",
+    meta: "100x at $163.20",
     earningMultiple: null,
   },
   {
     id: 1,
     imgSrc: pinkPfp,
-    position: 'short',
-    meta: '20x at $158.90',
+    position: "short",
+    meta: "20x at $158.90",
     earningMultiple: null,
   },
   {
     id: 2,
     imgSrc: greenPfp,
-    position: 'won',
-    meta: '+200%',
+    position: "won",
+    meta: "+200%",
     earningMultiple: 2,
   },
   {
     id: 3,
     imgSrc: orangePfp,
-    position: 'lost',
-    meta: '-58%',
+    position: "lost",
+    meta: "-58%",
     earningMultiple: null,
   },
   {
     id: 4,
     imgSrc: pinkPfp,
-    position: 'lost',
-    meta: 'Got rekt',
+    position: "lost",
+    meta: "Got rekt",
     earningMultiple: null,
   },
 ];
-
-
-
-
-
-

@@ -1,9 +1,9 @@
-import { PressableProps } from 'react-native';
+import { PressableProps } from "react-native";
 
-import MaterialIcon from '@expo/vector-icons/MaterialIcons';
+import MaterialIcon from "@expo/vector-icons/MaterialIcons";
 
-import { PressableOpacity } from './PressableOpacity';
-import styled, { DefaultTheme, useTheme } from 'styled-components/native';
+import { PressableOpacity } from "./PressableOpacity";
+import styled, { DefaultTheme, useTheme } from "styled-components/native";
 
 const Container = styled.View`
   background: ${({ theme }: { theme: DefaultTheme }) =>
@@ -45,7 +45,7 @@ export const IconButton = ({
         <MaterialIcon
           name={name}
           size={size}
-          color={color || theme.colors.onSecondary || 'white'}
+          color={color || theme.colors.onSecondary}
         />
       </StyledPressable>
     </Container>

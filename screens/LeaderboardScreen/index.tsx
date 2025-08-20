@@ -1,19 +1,18 @@
-import React from 'react';
-import { FlatList, Platform } from 'react-native';
+import { FlatList, Platform } from "react-native";
 
-import { Column, Gap, Row, Title2 } from '@/components';
+import { Column, Gap, Row, Title2 } from "@/components";
 
 import {
   FirstPlaceCardComponent,
   GenericCardComponent,
   SecondThirdCardComponent,
-} from './LeaderboardCards';
-import { LeaderboardEntry, leaderboardMockData } from './leaderboardMockData';
-import { useTranslation } from 'react-i18next';
-import styled from 'styled-components/native';
+} from "./LeaderboardCards";
+import { LeaderboardEntry, leaderboardMockData } from "./leaderboardMockData";
+import { useTranslation } from "react-i18next";
+import styled from "styled-components/native";
 
 const screenPadding = 16;
-const paddingTop = Platform.OS === 'ios' ? 60 : 40;
+const paddingTop = Platform.OS === "ios" ? 60 : 40;
 
 export const renderTopThree = () => {
   const firstPlace = leaderboardMockData[0];
@@ -23,7 +22,7 @@ export const renderTopThree = () => {
   return (
     <Column $gap={4}>
       <FirstPlaceCardComponent entry={firstPlace} />
-      <Row $gap={4} $justifyContent='center'>
+      <Row $gap={4} $justifyContent="center">
         <SecondThirdCardComponent entry={secondPlace} />
         <SecondThirdCardComponent entry={thirdPlace} />
       </Row>
@@ -42,10 +41,10 @@ export const LeaderboardScreen = () => {
   return (
     <Column
       style={{ flex: 1, marginTop: paddingTop, padding: screenPadding }}
-      alignItems='flex-start'
+      alignItems="flex-start"
     >
-      <Column $gap={4} $alignItems='flex-start'>
-        <Title2>{t('Leaderboard')}</Title2>
+      <Column $gap={4} $alignItems="flex-start">
+        <Title2>{t("Leaderboard")}</Title2>
         <Gap height={36} />
         {renderTopThree()}
       </Column>
@@ -53,7 +52,7 @@ export const LeaderboardScreen = () => {
         <FlatList
           data={remainingEntries}
           renderItem={renderGenericCard}
-          keyExtractor={(item) => item.id}
+          keyExtractor={item => item.id}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 20, gap: 4 }}
         />

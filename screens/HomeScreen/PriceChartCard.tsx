@@ -1,8 +1,8 @@
-import { Card, Picker, ScrollRow, TokenTab } from '@/components';
-import { useHomeContext } from '@/contexts';
+import { Card, Picker, ScrollRow, TokenTab } from "@/components";
+import { useHomeContext } from "@/contexts";
 
-import { PriceChart } from './PriceChart';
-import styled from 'styled-components/native';
+import { PriceChart } from "./PriceChart";
+import styled from "styled-components/native";
 
 // Generate dummy SOL chart data for login screen that matches the design
 const generateDummySolData = () => {
@@ -48,11 +48,11 @@ export const PriceChartCard = ({
   // Get the current trade based on selected token
   const getCurrentTrade = () => {
     switch (selectedToken) {
-      case 'sol':
+      case "sol":
         return solTrade;
-      case 'eth':
+      case "eth":
         return ethTrade;
-      case 'btc':
+      case "btc":
         return btcTrade;
       default:
         return null;
@@ -63,7 +63,7 @@ export const PriceChartCard = ({
 
   // Format price for display
   const formatPrice = (price: number | undefined) => {
-    if (!price) return '---';
+    if (!price) return "---";
     if (price >= 1000) {
       return `${(price / 1000).toFixed(1)}K`;
     }
@@ -71,37 +71,37 @@ export const PriceChartCard = ({
   };
 
   // For login screen, always show SOL data and disable token selection
-  const displayToken = loginScreen ? 'sol' : selectedToken;
+  const displayToken = loginScreen ? "sol" : selectedToken;
   const displayPrice = loginScreen
-    ? '171.90'
+    ? "171.90"
     : formatPrice(tokenPrices?.sol?.current_price);
 
   return (
     <Card style={{ gap: 4 }}>
       <ScrollRow contentContainerStyle={{ gap: 4 }}>
         <TokenTab
-          name='sol'
+          name="sol"
           price={
             loginScreen
               ? displayPrice
               : formatPrice(tokenPrices?.sol?.current_price)
           }
-          selected={displayToken === 'sol'}
-          onPress={loginScreen ? undefined : () => setSelectedToken('sol')}
+          selected={displayToken === "sol"}
+          onPress={loginScreen ? undefined : () => setSelectedToken("sol")}
           disabled={loginScreen}
         />
         <TokenTab
-          name='eth'
+          name="eth"
           price={formatPrice(tokenPrices?.eth?.current_price)}
-          selected={displayToken === 'eth'}
-          onPress={loginScreen ? undefined : () => setSelectedToken('eth')}
+          selected={displayToken === "eth"}
+          onPress={loginScreen ? undefined : () => setSelectedToken("eth")}
           disabled={loginScreen}
         />
         <TokenTab
-          name='btc'
+          name="btc"
           price={formatPrice(tokenPrices?.btc?.current_price)}
-          selected={displayToken === 'btc'}
-          onPress={loginScreen ? undefined : () => setSelectedToken('btc')}
+          selected={displayToken === "btc"}
+          onPress={loginScreen ? undefined : () => setSelectedToken("btc")}
           disabled={loginScreen}
         />
       </ScrollRow>

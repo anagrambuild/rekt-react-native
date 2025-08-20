@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import { View } from 'react-native';
+import React, { useState } from "react";
+import { View } from "react-native";
 
-import { useMiniGameContext } from '@/contexts/MiniGameContext';
-import { CandleData } from '@/utils/miniGameData';
+import { useMiniGameContext } from "@/contexts/MiniGameContext";
+import { CandleData } from "@/utils/miniGameData";
 
-import { Candlestick } from './Candlestick';
-import Svg, { Line } from 'react-native-svg';
-import { useTheme } from 'styled-components/native';
+import { Candlestick } from "./Candlestick";
+import Svg, { Line } from "react-native-svg";
+import { useTheme } from "styled-components/native";
 
 interface CandlestickChartProps {
   data: CandleData[];
@@ -37,7 +37,7 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
   }
 
   const chartOffset =
-    selectedToken === 'sol' ? 84 : selectedToken === 'eth' ? 94 : 110;
+    selectedToken === "sol" ? 84 : selectedToken === "eth" ? 94 : 110;
 
   // Calculate dimensions - leave 80px for y-axis labels
   const chartAreaWidth = width - chartOffset;
@@ -60,14 +60,14 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
         stroke={theme.colors.textPrimary}
         strokeWidth={0.5}
         opacity={0.3}
-        strokeDasharray='5,5'
+        strokeDasharray="5,5"
       />
     );
   }
 
   return (
     <View
-      onLayout={(event) => {
+      onLayout={event => {
         const { height: layoutHeight } = event.nativeEvent.layout;
         setViewHeight(layoutHeight);
       }}
@@ -104,4 +104,4 @@ export const CandlestickChart: React.FC<CandlestickChartProps> = ({
 };
 
 // Utility function to generate dummy OHLC data
-export { generateDummyCandleData } from '@/utils/miniGameData';
+export { generateDummyCandleData } from "@/utils/miniGameData";

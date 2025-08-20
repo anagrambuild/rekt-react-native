@@ -1,12 +1,12 @@
-import { View } from 'react-native';
+import { View } from "react-native";
 
-import iphoneFrame from '@/assets/images/app-pngs/iphone-frame.png';
-import topNav from '@/assets/images/app-pngs/top-nav.png';
-import { Column, Title4 } from '@/components';
-import { renderTopThree } from '@/screens/LeaderboardScreen';
+import iphoneFrame from "@/assets/images/app-pngs/iphone-frame.png";
+import topNav from "@/assets/images/app-pngs/top-nav.png";
+import { Column, Title4 } from "@/components";
+import { renderTopThree } from "@/screens/LeaderboardScreen";
 
-import { Image } from 'expo-image';
-import { useTranslation } from 'react-i18next';
+import { Image } from "expo-image";
+import { useTranslation } from "react-i18next";
 
 export const Step3 = () => {
   const { t } = useTranslation();
@@ -14,21 +14,21 @@ export const Step3 = () => {
   return (
     <Column
       $padding={0}
-      $alignItems='center'
+      $alignItems="center"
       style={{
-        justifyContent: 'flex-start',
-        position: 'relative',
-        overflow: 'hidden',
+        justifyContent: "flex-start",
+        position: "relative",
+        overflow: "hidden",
       }}
     >
       {/* iPhone Frame as background wrapper */}
       <Image
         source={iphoneFrame}
-        contentFit='contain'
+        contentFit="contain"
         style={{
-          width: '100%',
+          width: "100%",
           height: 640,
-          alignSelf: 'stretch',
+          alignSelf: "stretch",
         }}
       />
 
@@ -39,15 +39,15 @@ export const Step3 = () => {
           left: 0,
           right: 0,
           zIndex: 1000,
-          alignItems: 'center',
-          width: '100%',
+          alignItems: "center",
+          width: "100%",
         }}
       >
         <Image
           source={topNav}
-          contentFit='contain'
+          contentFit="contain"
           style={{
-            width: '95%',
+            width: "95%",
             height: 60,
             marginBottom: 8,
           }}
@@ -56,13 +56,13 @@ export const Step3 = () => {
           style={{
             paddingStart: 32,
             paddingEnd: 32,
-            overflow: 'hidden',
-            width: '100%',
+            overflow: "hidden",
+            width: "100%",
             marginTop: 8,
             gap: 16,
           }}
         >
-          <Title4>{t('Leaderboard')}</Title4>
+          <Title4>{t("Leaderboard")}</Title4>
           {renderTopThree()}
         </View>
       </View>

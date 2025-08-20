@@ -1,20 +1,20 @@
-import { ImageBackground, StyleSheet, View } from 'react-native';
+import { ImageBackground, StyleSheet, View } from "react-native";
 
-import tile from '@/assets/images/app-pngs/tile.png';
-import WhiteGreenArrow from '@/assets/images/app-svgs/white-green-arrow.svg';
-import WhiteRedArrow from '@/assets/images/app-svgs/white-red-arrow.svg';
-import { PressableOpacity } from '@/components';
-import { Theme } from '@/types/styled';
+import tile from "@/assets/images/app-pngs/tile.png";
+import WhiteGreenArrow from "@/assets/images/app-svgs/white-green-arrow.svg";
+import WhiteRedArrow from "@/assets/images/app-svgs/white-red-arrow.svg";
+import { PressableOpacity } from "@/components";
+import { Theme } from "@/types/styled";
 
-import { LinearGradient } from 'expo-linear-gradient';
-import styled, { useTheme } from 'styled-components/native';
+import { LinearGradient } from "expo-linear-gradient";
+import styled, { useTheme } from "styled-components/native";
 
 const arrowButtonShared = {
-  display: 'flex',
+  display: "flex",
   width: ({ $size }: { $size?: number }) => `${$size || 44}px`,
   height: ({ $size }: { $size?: number }) => `${$size || 44}px`,
-  justifyContent: 'center',
-  alignItems: 'center',
+  justifyContent: "center",
+  alignItems: "center",
 };
 
 const ShortArrowContainer = styled.View`
@@ -123,13 +123,13 @@ export const ShortButton = ({ onPress, title, subtitle }: ShortButtonProps) => {
         },
       ]}
     >
-      <View style={{ flex: 1, borderRadius: 16, overflow: 'hidden' }}>
+      <View style={{ flex: 1, borderRadius: 16, overflow: "hidden" }}>
         {/* Background image as bottom layer */}
         <ImageBackground
           source={tile}
           style={StyleSheet.absoluteFillObject}
           imageStyle={{ opacity: 0.1, borderRadius: 16 }}
-          resizeMode='cover'
+          resizeMode="cover"
         />
         {/* Gradient overlay */}
         <LinearGradient
@@ -142,7 +142,7 @@ export const ShortButton = ({ onPress, title, subtitle }: ShortButtonProps) => {
           ]}
         />
         {/* Content above all backgrounds */}
-        <ContentContainer style={{ position: 'relative', flex: 1 }}>
+        <ContentContainer style={{ position: "relative", flex: 1 }}>
           <ShortArrow />
           <Title>{title}</Title>
           <Subtitle color={theme.colors.lossLight}>{subtitle}</Subtitle>
@@ -173,17 +173,17 @@ export const LongButton = ({ onPress, title, subtitle }: LongButtonProps) => {
           shadowOpacity: 0.35,
           shadowRadius: 12,
           borderRadius: 16,
-          overflow: 'hidden',
+          overflow: "hidden",
         },
       ]}
     >
-      <View style={{ flex: 1, borderRadius: 16, overflow: 'hidden' }}>
+      <View style={{ flex: 1, borderRadius: 16, overflow: "hidden" }}>
         {/* Background image as bottom layer */}
         <ImageBackground
           source={tile}
           style={StyleSheet.absoluteFillObject}
           imageStyle={{ opacity: 0.1, borderRadius: 16 }}
-          resizeMode='cover'
+          resizeMode="cover"
         />
         {/* Gradient overlay */}
         <LinearGradient
@@ -196,7 +196,7 @@ export const LongButton = ({ onPress, title, subtitle }: LongButtonProps) => {
           ]}
         />
         {/* Content above all backgrounds */}
-        <ContentContainer style={{ position: 'relative', flex: 1 }}>
+        <ContentContainer style={{ position: "relative", flex: 1 }}>
           <LongArrow />
           <Title>{title}</Title>
           <Subtitle color={theme.colors.profitLight}>{subtitle}</Subtitle>
