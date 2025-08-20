@@ -21,11 +21,13 @@ export const SliderCard = ({
   amount,
   loginScreen,
   setLeverage,
+  disableAutoTimer = () => {},
 }: {
   leverage: number;
   amount: number;
   loginScreen?: boolean;
   setLeverage?: (leverage: number) => void;
+  disableAutoTimer?: () => void;
 }) => {
   const { t } = useTranslation();
   const {
@@ -91,7 +93,10 @@ export const SliderCard = ({
           <BodySEmphasized>{t('Leverage')}</BodySEmphasized>
           {(leverage >= 100 || isMaxLeverageOn) && (
             <Switch
-              onPress={() => setIsMaxLeverageOn(!isMaxLeverageOn)}
+              onPress={() => {
+                setIsMaxLeverageOn(!isMaxLeverageOn);
+                disableAutoTimer();
+              }}
               isOn={isMaxLeverageOn}
               icon={
                 <PulsatingContainer>

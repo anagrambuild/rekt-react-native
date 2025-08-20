@@ -10,13 +10,25 @@ import { SliderCard } from '../TradeScreen/SliderCard';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 
-export const Step2 = () => {
+export const Step2 = ({
+  disableAutoTimer,
+}: {
+  disableAutoTimer: () => void;
+}) => {
   const [leverage, setLeverage] = useState(100);
   const [amount, setAmount] = useState(10);
+  const isInitialRender = useRef(true);
+  const isUserInteraction = useRef(false);
 
   // Haptic feedback on leverage increase
   const prevLeverageRef = useRef(leverage);
   useEffect(() => {
+    if (isInitialRender.current) {
+      isInitialRender.current = false;
+      prevLeverageRef.current = leverage;
+      return;
+    }
+
     if (leverage > prevLeverageRef.current) {
       if (leverage > 100) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -28,6 +40,15 @@ export const Step2 = () => {
     }
     prevLeverageRef.current = leverage;
   }, [leverage]);
+
+  // Mark that user has interacted after initial render
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      isUserInteraction.current = true;
+    }, 100); // Small delay to ensure initial render is complete
+
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <Column
@@ -80,12 +101,26 @@ export const Step2 = () => {
             gap: 16,
           }}
         >
-          <AmountCard amount={amount} setAmount={setAmount} />
+          <AmountCard
+            amount={amount}
+            setAmount={(amount) => {
+              setAmount(amount);
+              if (isUserInteraction.current) {
+                disableAutoTimer();
+              }
+            }}
+          />
           <SliderCard
             leverage={leverage}
             amount={amount}
             loginScreen
-            setLeverage={setLeverage}
+            setLeverage={(leverage) => {
+              setLeverage(leverage);
+              if (isUserInteraction.current) {
+                disableAutoTimer();
+              }
+            }}
+            disableAutoTimer={disableAutoTimer}
           />
         </View>
       </View>
