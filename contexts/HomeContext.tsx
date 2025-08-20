@@ -111,7 +111,7 @@ export const useHomeContext = () => {
 export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
   const { t } = useTranslation();
   const { usdcBalance } = useWallet();
-  const { profileId } = useProfileContext();
+  const { userId } = useProfileContext();
   const { connection } = useSolana();
   const [selectedToken, setSelectedToken] = useState<string>('sol');
   const [selectedTimeframe, setSelectedTimeframe] = useState<string>('1m');
@@ -146,13 +146,13 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Refresh balance
   const refreshBalance = async () => {
-    if (!profileId) return;
+    if (!userId) return;
 
     setIsLoadingBalance(true);
     setBalanceError(null);
 
     try {
-      const balanceData = await getTradingBalance(profileId);
+      const balanceData = await getTradingBalance(userId);
       setBalance(balanceData);
     } catch (error) {
       console.error('Error refreshing balance:', error);
@@ -166,13 +166,13 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Refresh positions
   const refreshPositions = async () => {
-    if (!profileId) return;
+    if (!userId) return;
 
     setIsLoadingPositions(true);
     setPositionsError(null);
 
     try {
-      const positions = await getOpenPositions(profileId);
+      const positions = await getOpenPositions(userId);
       setOpenPositions(positions);
     } catch (error) {
       // console.error('Error refreshing positions:', error);
@@ -186,13 +186,13 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Refresh history
   const refreshHistory = async () => {
-    if (!profileId) return;
+    if (!userId) return;
 
     setIsLoadingHistory(true);
     setHistoryError(null);
 
     try {
-      const history = await getTradingHistory(profileId);
+      const history = await getTradingHistory(userId);
       setTradingHistory(history);
     } catch (error) {
       // console.error('Error refreshing history:', error);
@@ -216,7 +216,7 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
     amount: number,
     leverage: number
   ): Promise<boolean> => {
-    if (!profileId) {
+    if (!userId) {
       Toast.show({
         text1: t('Error'),
         text2: t('Profile not found. Please try again.'),
@@ -348,7 +348,7 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Close a position using Swig trading flow
   const closePosition = async (positionId: string): Promise<boolean> => {
-    if (!profileId) {
+    if (!userId) {
       Toast.show({
         text1: t('Error'),
         text2: t('Profile not found. Please try again.'),
@@ -412,7 +412,7 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Load initial data when profile ID is available
   useEffect(() => {
-    if (profileId) {
+    if (userId) {
       refreshAll();
 
       // Set up interval to refresh positions every 10 seconds for live PnL
@@ -420,7 +420,7 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
       return () => clearInterval(interval);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profileId]);
+  }, [userId]);
 
   // Fetch token prices on component mount
   useEffect(() => {

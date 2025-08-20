@@ -5,7 +5,7 @@ import {
   closeTradingPosition,
   getOpenPositions,
   getTradingHistory,
-  getUserByProfileId,
+  getUserByUserId,
   OpenPositionRequest,
   openTradingPosition,
   Position,
@@ -81,7 +81,7 @@ export class TradingService {
         };
       }
 
-      const profileId = currentUser.id;
+      const userId = currentUser.id;
       const walletAddress = currentUser.user_metadata?.wallet_address;
       if (!walletAddress) {
         return {
@@ -100,7 +100,7 @@ export class TradingService {
       // Step 1: Request position opening from backend
       console.log('📡 Requesting position opening from backend...');
       const openRequest: OpenPositionRequest = {
-        userId: profileId,
+        userId: userId,
         asset: params.asset,
         direction: params.direction,
         amount: params.amount,
@@ -313,7 +313,7 @@ export class TradingService {
       }
 
       // Get user profile to get the profile ID
-      const userProfile = await getUserByProfileId(currentUser.id);
+      const userProfile = await getUserByUserId(currentUser.id);
       if (!userProfile) {
         return {
           success: false,
@@ -321,7 +321,7 @@ export class TradingService {
         };
       }
 
-      const profileId = userProfile.id;
+      const userId = userProfile.id;
       const walletAddress = userProfile.swigWalletAddress;
 
       if (!walletAddress) {
@@ -336,7 +336,7 @@ export class TradingService {
       // Request position closing from backend
       console.log('📡 Requesting position close from backend...');
       const closeRequest: ClosePositionRequest = {
-        userId: profileId,
+        userId: userId,
         positionId: positionId,
       };
 

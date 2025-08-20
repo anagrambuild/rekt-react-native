@@ -328,13 +328,11 @@ export const checkUsernameAvailabilityPublic = async (
   }
 };
 
-export const getUserByProfileId = async (
-  profileId: string
-): Promise<User | null> => {
+export const getUserByUserId = async (userId: string): Promise<User | null> => {
   try {
     // Use the authenticated API client instead of raw fetch
     const result = await apiClient.get<UserApiResponse>(
-      `/api/users/profile/${profileId}`
+      `/api/users/profile/${userId}`
     );
 
     // Map backend response to frontend User interface

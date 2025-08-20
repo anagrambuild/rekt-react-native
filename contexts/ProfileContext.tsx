@@ -46,7 +46,7 @@ interface ProfileContextType {
   handleCardPayment: () => void;
   handleWithdraw: () => void;
   handleHistory: () => void;
-  profileId: string | null;
+  userId: string | null;
   isUserLoading: boolean;
   withdrawalAddress: string;
   setWithdrawalAddress: (address: string) => void;
@@ -78,7 +78,7 @@ export const ProfileContext = createContext<ProfileContextType>({
   handleCardPayment: () => {},
   handleWithdraw: () => {},
   handleHistory: () => {},
-  profileId: null,
+  userId: null,
   isUserLoading: false,
   withdrawalAddress: '',
   setWithdrawalAddress: () => {},
@@ -116,7 +116,7 @@ export const ProfileProvider = ({
   const [isOnOffRampModalVisible, setIsOnOffRampModalVisible] = useState(false);
 
   // State for profile ID and user data
-  const [profileId, setProfileId] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [withdrawalAddress, setWithdrawalAddress] = useState('');
   const [withdrawalAmount, setWithdrawalAmount] = useState('');
   const [acknowledgeValidAddress, setAcknowledgeValidAddress] = useState(false);
@@ -125,9 +125,9 @@ export const ProfileProvider = ({
   // Set profile ID from userProfile when it changes
   useEffect(() => {
     if (userProfile?.id) {
-      setProfileId(userProfile.id);
+      setUserId(userProfile.id);
     } else {
-      setProfileId(null);
+      setUserId(null);
     }
   }, [userProfile?.id]);
 
@@ -144,11 +144,11 @@ export const ProfileProvider = ({
   }, [userProfile?.profileImage]);
 
   // Reset internal state when userProfile becomes null (on logout)
-  // OR update profileId when userProfile changes
+  // OR update userId when userProfile changes
   useEffect(() => {
     if (!userProfile) {
       // User logged out - reset everything
-      setProfileId(null);
+      setUserId(null);
       setUserImage('');
       setView('trades');
       setIsEditProfileModalVisible(false);
@@ -241,7 +241,7 @@ export const ProfileProvider = ({
         handleCardPayment,
         handleWithdraw,
         handleHistory,
-        profileId,
+        userId,
         isUserLoading,
         withdrawalAddress,
         setWithdrawalAddress,
