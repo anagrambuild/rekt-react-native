@@ -400,60 +400,6 @@ export const createUser = async (
   }
 };
 
-export const updateUser = async (
-  userId: string,
-  userData: UpdateUserRequest
-): Promise<User> => {
-  try {
-    // Use the authenticated API client instead of raw fetch
-    const result = await apiClient.put<ApiResponse<UserApiResponse>>(
-      `/api/users/${userId}`,
-      userData
-    );
-
-    // Map backend response to frontend User interface
-    return {
-      id: result.data!.user.id,
-      username: result.data!.user.username,
-      email: result.data!.user.email,
-      profileImage: result.data!.user.avatar_url,
-      swigWalletAddress: result.data!.user.swig_wallet_address,
-      createdAt: result.data!.user.joined_at || new Date().toISOString(),
-      updatedAt: result.data!.user.updated_at || new Date().toISOString(),
-    };
-  } catch (error) {
-    console.error('Error updating user:', error);
-    throw error;
-  }
-};
-
-export const updateUserSwigWalletAddress = async (
-  userId: string,
-  swigWalletAddress: string
-): Promise<User> => {
-  try {
-    // Use the authenticated API client instead of raw fetch
-    const result = await apiClient.put<ApiResponse<UserApiResponse>>(
-      `/api/users/${userId}/swig-wallet`,
-      { swig_wallet_address: swigWalletAddress }
-    );
-
-    // Map backend response to frontend User interface
-    return {
-      id: result.data!.user.id,
-      username: result.data!.user.username,
-      email: result.data!.user.email,
-      profileImage: result.data!.user.avatar_url,
-      swigWalletAddress: result.data!.user.swig_wallet_address,
-      createdAt: result.data!.user.joined_at || new Date().toISOString(),
-      updatedAt: result.data!.user.updated_at || new Date().toISOString(),
-    };
-  } catch (error) {
-    console.error('Error updating user Swig wallet address:', error);
-    throw error;
-  }
-};
-
 // File upload types
 interface FileObject {
   uri: string;
@@ -498,7 +444,6 @@ export const uploadAvatar = async (
     }
 
     // For FormData uploads, we need to use fetch directly
-    // Use the same base URL that apiClient uses
     const response = await fetch(
       `${apiClient.getBaseURL()}/api/upload/avatar`,
       {
@@ -533,8 +478,110 @@ export const uploadAvatar = async (
   }
 };
 
-// Trading API Functions
+// Delete avatar from storage
+export const deleteAvatar = async (avatarUrl: string): Promise<void> => {
+  try {
+    // Extract filename from URL for deletion
+    // URL format is typically: https://domain.com/storage/v1/object/public/avatars/filename.webp
+    const urlParts = avatarUrl.split('/');
+    const filename = urlParts[urlParts.length - 1];
 
+    // Validate that we have a proper filename before making the request
+    if (!filename || filename === avatarUrl) {
+      console.warn('Could not extract filename from avatar URL:', avatarUrl);
+      return;
+    }
+
+    // Backend expects UUID.webp format, validate before making request
+    const filenameRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.webp$/i;
+    if (!filenameRegex.test(filename)) {
+      console.warn(
+        'Filename does not match expected format (UUID.webp):',
+        filename
+      );
+      return;
+    }
+
+    // Use the authenticated API client instead of raw fetch
+    await apiClient.delete(`/api/upload/avatar/${filename}`);
+    console.log('✅ Successfully deleted old avatar:', filename);
+  } catch (error) {
+    console.warn('Error deleting old avatar:', error);
+    // Don't throw error - we don't want to fail profile update if old image deletion fails
+  }
+};
+
+// Update user profile using the correct backend endpoint
+export const updateUserProfile = async (
+  userId: string,
+  userData: { username?: string; email?: string; avatar_url?: string }
+): Promise<User> => {
+  try {
+    // Use the authenticated API client instead of raw fetch
+    const result = await apiClient.put<ApiResponse<UserApiResponse>>(
+      `/api/users/profile/${userId}`,
+      userData
+    );
+
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to update user profile');
+    }
+
+    // Map backend response to frontend User interface
+    return {
+      id: result.data!.user.id,
+      username: result.data!.user.username,
+      email: result.data!.user.email,
+      profileImage: result.data!.user.avatar_url,
+      swigWalletAddress: result.data!.user.swig_wallet_address,
+      createdAt: result.data!.user.joined_at || new Date().toISOString(),
+      updatedAt: result.data!.user.updated_at || new Date().toISOString(),
+    };
+  } catch (error) {
+    console.error('Error updating user profile:', error);
+    throw error;
+  }
+};
+
+// Swig Wallet Balance Types and Functions
+export interface SwigWalletBalanceResponse {
+  balance: number;
+  formatted: string;
+  source: string;
+  status: string;
+  tokenAccount?: string;
+  error?: string;
+}
+
+// Get USDC balance from Swig wallet address
+export const getSwigWalletBalance = async (
+  swigWalletAddress: string
+): Promise<SwigWalletBalanceResponse> => {
+  try {
+    // Use the authenticated API client instead of raw fetch
+    const result = await apiClient.get<ApiResponse<SwigWalletBalanceResponse>>(
+      `/api/wallet/balance/${swigWalletAddress}`
+    );
+
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to get Swig wallet balance');
+    }
+    return result.data!;
+  } catch (error) {
+    console.error('Error getting Swig wallet balance:', error);
+    // Return zero balance on error to match backend behavior
+    return {
+      balance: 0,
+      formatted: '$0.00',
+      source: 'swig_wallet',
+      status: 'error',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+};
+
+// Trading API Functions
 export interface TradingBalance {
   usdc: number;
   availableMargin: number;
@@ -781,109 +828,5 @@ export const getTradingHistory = async (
   } catch (error) {
     // console.error('Error getting trading history:', error);
     throw error;
-  }
-};
-
-// Update user profile using the correct backend endpoint
-export const updateUserProfile = async (
-  userId: string,
-  userData: { username?: string; email?: string; avatar_url?: string }
-): Promise<User> => {
-  try {
-    // Use the authenticated API client instead of raw fetch
-    const result = await apiClient.put<ApiResponse<UserApiResponse>>(
-      `/api/users/profile/${userId}`,
-      userData
-    );
-
-    if (!result.success) {
-      throw new Error(result.error || 'Failed to update user profile');
-    }
-
-    // Map backend response to frontend User interface
-    return {
-      id: result.data!.user.id,
-      username: result.data!.user.username,
-      email: result.data!.user.email,
-      profileImage: result.data!.user.avatar_url,
-      swigWalletAddress: result.data!.user.swig_wallet_address,
-      createdAt: result.data!.user.joined_at || new Date().toISOString(),
-      updatedAt: result.data!.user.updated_at || new Date().toISOString(),
-    };
-  } catch (error) {
-    console.error('Error updating user profile:', error);
-    throw error;
-  }
-};
-
-// Swig Wallet Balance Types and Functions
-
-export interface SwigWalletBalanceResponse {
-  balance: number;
-  formatted: string;
-  source: string;
-  status: string;
-  tokenAccount?: string;
-  error?: string;
-}
-
-// Get USDC balance from Swig wallet address
-export const getSwigWalletBalance = async (
-  swigWalletAddress: string
-): Promise<SwigWalletBalanceResponse> => {
-  try {
-    // Use the authenticated API client instead of raw fetch
-    const result = await apiClient.get<ApiResponse<SwigWalletBalanceResponse>>(
-      `/api/wallet/balance/${swigWalletAddress}`
-    );
-
-    if (!result.success) {
-      throw new Error(result.error || 'Failed to get Swig wallet balance');
-    }
-    return result.data!;
-  } catch (error) {
-    console.error('Error getting Swig wallet balance:', error);
-    // Return zero balance on error to match backend behavior
-    return {
-      balance: 0,
-      formatted: '$0.00',
-      source: 'swig_wallet',
-      status: 'error',
-      error: error instanceof Error ? error.message : 'Unknown error',
-    };
-  }
-};
-
-// Delete avatar from storage
-export const deleteAvatar = async (avatarUrl: string): Promise<void> => {
-  try {
-    // Extract filename from URL for deletion
-    // URL format is typically: https://domain.com/storage/v1/object/public/avatars/filename.webp
-    const urlParts = avatarUrl.split('/');
-    const filename = urlParts[urlParts.length - 1];
-
-    // Validate that we have a proper filename before making the request
-    if (!filename || filename === avatarUrl) {
-      console.warn('Could not extract filename from avatar URL:', avatarUrl);
-      return;
-    }
-
-    // Backend expects UUID.webp format, validate before making request
-    const filenameRegex =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.webp$/i;
-    if (!filenameRegex.test(filename)) {
-      console.warn(
-        'Filename does not match expected format (UUID.webp):',
-        filename
-      );
-      return;
-    }
-
-    // Use the authenticated API client instead of raw fetch
-    await apiClient.delete(`/api/upload/avatar/${filename}`);
-    console.log('✅ Successfully deleted old avatar:', filename);
-  } catch (error) {
-    console.warn('Error deleting old avatar:', error);
-    // Don't throw error - we don't want to fail profile update if old image deletion fails
   }
 };
