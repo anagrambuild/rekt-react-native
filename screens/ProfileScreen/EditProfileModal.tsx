@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Image, Keyboard } from 'react-native';
+import { useCallback, useEffect, useState } from "react";
+import { ActivityIndicator, Alert, Image, Keyboard } from "react-native";
 
 import {
   BodyMSecondary,
@@ -14,21 +14,21 @@ import {
   SecondaryButton,
   StyledInput,
   Title4,
-} from '@/components';
-import { useAppContext, useProfileContext } from '@/contexts';
-import { useImagePicker } from '@/hooks';
+} from "@/components";
+import { useAppContext, useProfileContext } from "@/contexts";
+import { useImagePicker } from "@/hooks";
 import {
-  checkUsernameAvailability,
+  checkUsernameAvailabilityPublic as checkUsernameAvailability,
   deleteAvatar,
   updateUserProfile,
   uploadAvatar,
-} from '@/utils/backendApi';
+} from "@/utils/backendApi";
 
-import MaterialIcon from '@expo/vector-icons/MaterialIcons';
+import MaterialIcon from "@expo/vector-icons/MaterialIcons";
 
-import { useTranslation } from 'react-i18next';
-import styled, { DefaultTheme, useTheme } from 'styled-components/native';
-import { Toast } from 'toastify-react-native';
+import { useTranslation } from "react-i18next";
+import styled, { DefaultTheme, useTheme } from "styled-components/native";
+import { Toast } from "toastify-react-native";
 
 export const EditProfileModal = ({
   visible,
@@ -46,7 +46,7 @@ export const EditProfileModal = ({
   const [username, setUsername] = useState(userData.username);
   const [newImageUri, setNewImageUri] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [usernameError, setUsernameError] = useState('');
+  const [usernameError, setUsernameError] = useState("");
   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(
     null
@@ -68,14 +68,14 @@ export const EditProfileModal = ({
       // Check username format and length first
       if (!/^[a-zA-Z0-9_]+$/.test(usernameToCheck)) {
         setUsernameError(
-          t('Username can only contain letters, numbers, and underscores')
+          t("Username can only contain letters, numbers, and underscores")
         );
         setUsernameAvailable(false);
         return;
       }
 
       if (usernameToCheck.length < 3 || usernameToCheck.length > 20) {
-        setUsernameError(t('Username must be between 3-20 characters'));
+        setUsernameError(t("Username must be between 3-20 characters"));
         setUsernameAvailable(false);
         return;
       }
@@ -86,12 +86,12 @@ export const EditProfileModal = ({
         setUsernameAvailable(result.available);
 
         if (!result.available) {
-          setUsernameError(t('Username is already taken'));
+          setUsernameError(t("Username is already taken"));
         } else {
-          setUsernameError('');
+          setUsernameError("");
         }
       } catch (error) {
-        console.error('Username check failed:', error);
+        console.error("Username check failed:", error);
         setUsernameAvailable(null);
       } finally {
         setIsCheckingUsername(false);
@@ -113,7 +113,7 @@ export const EditProfileModal = ({
 
   const handleUsernameChange = (text: string) => {
     setUsername(text);
-    if (usernameError) setUsernameError('');
+    if (usernameError) setUsernameError("");
     // Reset username validation state when user types
     setUsernameAvailable(null);
   };
@@ -121,9 +121,9 @@ export const EditProfileModal = ({
   const handleSave = async () => {
     if (!profileId) {
       Toast.show({
-        text1: t('Error'),
-        text2: t('Profile ID not found'),
-        type: 'error',
+        text1: t("Error"),
+        text2: t("Profile ID not found"),
+        type: "error",
       });
       return;
     }
@@ -131,18 +131,18 @@ export const EditProfileModal = ({
     // Validate username if changed
     if (username !== userData.username) {
       if (!username.trim()) {
-        setUsernameError(t('Username is required'));
+        setUsernameError(t("Username is required"));
         return;
       }
 
       if (username.length < 3 || username.length > 20) {
-        setUsernameError(t('Username must be between 3-20 characters'));
+        setUsernameError(t("Username must be between 3-20 characters"));
         return;
       }
 
       if (!/^[a-zA-Z0-9_]+$/.test(username)) {
         setUsernameError(
-          t('Username can only contain letters, numbers, and underscores')
+          t("Username can only contain letters, numbers, and underscores")
         );
         return;
       }
@@ -151,15 +151,15 @@ export const EditProfileModal = ({
       try {
         const usernameCheck = await checkUsernameAvailability(username);
         if (!usernameCheck.available) {
-          setUsernameError(t('Username is already taken'));
+          setUsernameError(t("Username is already taken"));
           return;
         }
       } catch (error) {
-        console.error('Username check failed:', error);
+        console.error("Username check failed:", error);
         Toast.show({
-          text1: t('Error'),
-          text2: t('Failed to verify username availability. Please try again.'),
-          type: 'error',
+          text1: t("Error"),
+          text2: t("Failed to verify username availability. Please try again."),
+          type: "error",
         });
         return;
       }
@@ -181,46 +181,46 @@ export const EditProfileModal = ({
           if (
             avatarUrl &&
             userData.imgSrc &&
-            typeof userData.imgSrc === 'string' &&
-            userData.imgSrc.startsWith('http')
+            typeof userData.imgSrc === "string" &&
+            userData.imgSrc.startsWith("http")
           ) {
             // Don't await this - we don't want to fail the profile update if deletion fails
             deleteAvatar(userData.imgSrc).catch((error) => {
               console.warn(
-                'Failed to delete old avatar, but continuing:',
+                "Failed to delete old avatar, but continuing:",
                 error
               );
             });
           }
         } catch (avatarError) {
-          console.warn('Avatar upload failed:', avatarError);
+          console.warn("Avatar upload failed:", avatarError);
           Toast.show({
-            text1: t('Warning'),
+            text1: t("Warning"),
             text2: t(
-              'Failed to upload new profile picture, but other changes were saved.'
+              "Failed to upload new profile picture, but other changes were saved."
             ),
-            type: 'error',
+            type: "error",
           });
         }
       }
 
       // Handle image removal (set avatar to empty)
-      if (newImageUri === '') {
+      if (newImageUri === "") {
         // Delete old avatar if it exists
         if (
           userData.imgSrc &&
-          typeof userData.imgSrc === 'string' &&
-          userData.imgSrc.startsWith('http')
+          typeof userData.imgSrc === "string" &&
+          userData.imgSrc.startsWith("http")
         ) {
           // Don't await this - we don't want to fail the profile update if deletion fails
           deleteAvatar(userData.imgSrc).catch((error) => {
             console.warn(
-              'Failed to delete old avatar during removal, but continuing:',
+              "Failed to delete old avatar during removal, but continuing:",
               error
             );
           });
         }
-        avatarUrl = ''; // Set to empty string to remove avatar
+        avatarUrl = ""; // Set to empty string to remove avatar
       }
 
       // Update profile with new data
@@ -242,20 +242,20 @@ export const EditProfileModal = ({
         setUserProfile(updatedUser);
 
         Toast.show({
-          text1: t('Success'),
-          text2: t('Profile updated successfully'),
-          type: 'success',
+          text1: t("Success"),
+          text2: t("Profile updated successfully"),
+          type: "success",
         });
       }
 
       onSave?.();
       onRequestClose();
     } catch (error) {
-      console.error('Profile update failed:', error);
+      console.error("Profile update failed:", error);
       Toast.show({
-        text1: t('Error'),
-        text2: t('Failed to update profile. Please try again.'),
-        type: 'error',
+        text1: t("Error"),
+        text2: t("Failed to update profile. Please try again."),
+        type: "error",
       });
     } finally {
       setIsSubmitting(false);
@@ -265,15 +265,15 @@ export const EditProfileModal = ({
   const handleClose = () => {
     setUsername(userData.username);
     setNewImageUri(null);
-    setUsernameError('');
+    setUsernameError("");
     setUsernameAvailable(null);
     onRequestClose();
   };
 
   const handleImageUploadModal = () => {
-    Alert.alert(t('Upload'), '', [
+    Alert.alert(t("Upload"), "", [
       {
-        text: t('Take photo'),
+        text: t("Take photo"),
         onPress: async () => {
           const result = await takePhoto();
           if (result) {
@@ -282,7 +282,7 @@ export const EditProfileModal = ({
         },
       },
       {
-        text: t('Choose from library'),
+        text: t("Choose from library"),
         onPress: async () => {
           const result = await pickFromLibrary();
           if (result) {
@@ -290,60 +290,60 @@ export const EditProfileModal = ({
           }
         },
       },
-      { text: t('Cancel'), style: 'cancel' },
+      { text: t("Cancel"), style: "cancel" },
     ]);
   };
 
   const handleImageRemoval = async () => {
-    setNewImageUri(''); // Set to empty string to indicate removal
+    setNewImageUri(""); // Set to empty string to indicate removal
   };
 
   // Determine which image to show
   const currentImageSrc =
     newImageUri !== null
-      ? newImageUri === ''
+      ? newImageUri === ""
         ? null
         : newImageUri // empty string means removed
       : userData.imgSrc;
 
   const hasImage =
-    currentImageSrc && currentImageSrc !== '' && currentImageSrc !== null;
+    currentImageSrc && currentImageSrc !== "" && currentImageSrc !== null;
 
   return (
     <Modal visible={visible} onRequestClose={handleClose}>
-      <Column $gap={24} $alignItems='flex-start'>
-        <Row $gap={12} $justifyContent='flex-start'>
+      <Column $gap={24} $alignItems="flex-start">
+        <Row $gap={12} $justifyContent="flex-start">
           <MaterialIcon
-            name='edit'
+            name="edit"
             size={18}
             color={theme.colors.textPrimary}
           />
-          <Title4>{t('Edit profile')}</Title4>
+          <Title4>{t("Edit profile")}</Title4>
         </Row>
         <Column $gap={4}>
           <Card $padding={16}>
-            <Row $width='auto' $alignItems='flex-start'>
+            <Row $width="auto" $alignItems="flex-start">
               <Column
                 $gap={4}
-                $width='auto'
-                $alignItems='flex-start'
-                $justifyContent='flex-start'
+                $width="auto"
+                $alignItems="flex-start"
+                $justifyContent="flex-start"
               >
-                <BodyS>{t('Profile picture')}</BodyS>
-                <BodyMSecondary>{t('Max. size 5MB')}</BodyMSecondary>
+                <BodyS>{t("Profile picture")}</BodyS>
+                <BodyMSecondary>{t("Max. size 5MB")}</BodyMSecondary>
                 <Gap height={12} />
                 {hasImage ? (
                   <ModalIconButton
                     onPress={handleImageRemoval}
                     icon={
                       <MaterialIcon
-                        name='delete-outline'
+                        name="delete-outline"
                         size={16}
                         color={theme.colors.onSecondary}
                       />
                     }
                   >
-                    {t('Remove')}
+                    {t("Remove")}
                   </ModalIconButton>
                 ) : (
                   <ModalIconButton
@@ -351,30 +351,30 @@ export const EditProfileModal = ({
                     disabled={isLoading}
                     icon={
                       <MaterialIcon
-                        name='upload'
+                        name="upload"
                         size={16}
                         color={theme.colors.onSecondary}
                       />
                     }
                   >
-                    {isLoading ? '...' : t('Upload')}
+                    {isLoading ? "..." : t("Upload")}
                   </ModalIconButton>
                 )}
               </Column>
               <Image
                 source={
                   hasImage
-                    ? typeof currentImageSrc === 'string'
+                    ? typeof currentImageSrc === "string"
                       ? { uri: currentImageSrc }
                       : currentImageSrc
-                    : require('@/assets/images/app-pngs/avatar.png')
+                    : require("@/assets/images/app-pngs/avatar.png")
                 }
                 style={{
                   width: 64,
                   height: 64,
                   borderRadius: 32,
                 }}
-                resizeMode='cover'
+                resizeMode="cover"
               />
             </Row>
           </Card>
@@ -382,27 +382,27 @@ export const EditProfileModal = ({
           <Card $padding={16}>
             <Column
               $gap={4}
-              $width='auto'
-              $alignItems='flex-start'
-              $justifyContent='flex-start'
+              $width="auto"
+              $alignItems="flex-start"
+              $justifyContent="flex-start"
             >
-              <BodyS>{t('Username')}</BodyS>
+              <BodyS>{t("Username")}</BodyS>
               <BodyMSecondary>
-                {t('Only letters & numbers allowed')}
+                {t("Only letters & numbers allowed")}
               </BodyMSecondary>
-              <Row $gap={8} $alignItems='center'>
+              <Row $gap={8} $alignItems="center">
                 <StyledInputContainer>
                   <StyleAt>@</StyleAt>
                   <StyledInput
                     value={username}
                     onChangeText={handleUsernameChange}
-                    placeholder={t('Enter your username')}
-                    returnKeyType='done'
+                    placeholder={t("Enter your username")}
+                    returnKeyType="done"
                     onSubmitEditing={() => Keyboard.dismiss()}
                   />
                 </StyledInputContainer>
                 {isCheckingUsername && (
-                  <ActivityIndicator size='small' color={theme.colors.tint} />
+                  <ActivityIndicator size="small" color={theme.colors.tint} />
                 )}
                 {!isCheckingUsername &&
                   usernameAvailable === true &&
@@ -423,10 +423,10 @@ export const EditProfileModal = ({
             disabled={!!usernameError || isSubmitting}
             loading={isSubmitting}
           >
-            {t('Save changes')}
+            {t("Save changes")}
           </PrimaryButton>
           <SecondaryButton onPress={handleClose} disabled={isSubmitting}>
-            {t('Cancel')}
+            {t("Cancel")}
           </SecondaryButton>
         </Column>
       </Column>
@@ -450,7 +450,7 @@ const StyleAt = styled.Text`
 const ErrorText = styled.Text`
   color: ${({ theme }: { theme: DefaultTheme }) => theme.colors.loss};
   font-size: 12px;
-  font-family: 'Geist';
+  font-family: "Geist";
   margin-left: 4px;
 `;
 
