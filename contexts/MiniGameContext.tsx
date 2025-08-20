@@ -255,7 +255,7 @@ export const MiniGameProvider = ({
 
     const currentGame = getCurrentTokenGame();
     const existingPrediction = getCurrentPrediction();
-    console.log('existingPrediction', existingPrediction);
+
     if (existingPrediction) {
       // Increase bet on same prediction
       increaseBet();
