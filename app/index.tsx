@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Easing } from 'react-native';
+import { Animated, Easing, Platform } from 'react-native';
 
 import RektLogo from '@/assets/images/rekt-logo.svg';
 import { midFireUrl } from '@/assets/videos';
@@ -33,7 +33,7 @@ const Index = () => {
     connected,
     showWalletModal,
     setShowWalletModal,
-    // connect,
+    connect,
   } = useWallet();
   const { t } = useTranslation();
   const [isCheckingConnection, setIsCheckingConnection] = useState(true);
@@ -243,4 +243,5 @@ const AnimatedButtonsContainer = styled(Animated.View)`
   width: 100%;
   bottom: 32px;
   z-index: 100;
+  padding: 0 12px;
 `;
