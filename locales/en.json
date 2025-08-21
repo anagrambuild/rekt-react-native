@@ -256,5 +256,9 @@
   "REKT V2.0.12": "REKT V2.0.12",
   "COPYRIGHT © 2025": "COPYRIGHT © 2025",
   "Yes, Delete account": "Yes, Delete account",
-  "This action cannot be undone. All your data will be permanently deleted.": "This action cannot be undone. All your data will be permanently deleted."
+  "This action cannot be undone. All your data will be permanently deleted.": "This action cannot be undone. All your data will be permanently deleted.",
+  "Turn off earning power?": "Turn off earning power?",
+  "You'll stop earning yield on your balance. You can always turn this back on later from your settings.": "You'll stop earning yield on your balance. You can always turn this back on later from your settings.",
+  "Turn off earning": "Turn off earning",
+  "Keep earning": "Keep earning"
 }

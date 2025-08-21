@@ -2,8 +2,8 @@ UI
 
 Big items
 
-- app icon
-- carousell on sign up screen
+- web3 auth working on front end/ password with username if web3 auth doesn't work
+- look into passkeys
 
 polishing (mismatches from designs)
 

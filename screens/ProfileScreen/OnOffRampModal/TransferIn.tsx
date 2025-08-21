@@ -14,7 +14,6 @@ import {
   PrimaryButton,
   Row,
   SecondaryButton,
-  TertiaryButton,
 } from "@/components";
 import { useAppContext } from "@/contexts";
 import { useProfileContext } from "@/contexts/ProfileContext";
@@ -72,7 +71,7 @@ export const TransferIn = ({
   };
 
   const onContactSupport = () => {
-    Linking.openURL("mailto:timknapp12@gmail.com");
+    Linking.openURL("mailto:");
   };
 
   return (
@@ -136,7 +135,16 @@ export const TransferIn = ({
 
           {/* Deposit Options Section */}
           <Column $gap={8}>
-            <PrimaryButton onPress={() => setIsTransferred(true)}>
+            <PrimaryButton
+              onPress={() => setIsTransferred(true)}
+              icon={
+                <MaterialIcon
+                  name="check-circle"
+                  size={24}
+                  color={theme.colors.background}
+                />
+              }
+            >
               {t("I have transferred")}
             </PrimaryButton>
             <SecondaryButton>{t("Close")}</SecondaryButton>
@@ -157,12 +165,21 @@ export const TransferIn = ({
               "It can take up to a couple minutes to process. Contact support if you run into any issues."
             )}
           </BodyMSecondary>
-          <SecondaryButton onPress={onContactSupport}>
+          <PrimaryButton onPress={() => setIsOnOffRampModalVisible(false)}>
+            {t("Done")}
+          </PrimaryButton>
+          <SecondaryButton
+            onPress={onContactSupport}
+            icon={
+              <MaterialIcon
+                name="support-agent"
+                size={24}
+                color={theme.colors.textPrimary}
+              />
+            }
+          >
             {t("Contact Support")}
           </SecondaryButton>
-          <TertiaryButton onPress={() => setIsOnOffRampModalVisible(false)}>
-            {t("Done")}
-          </TertiaryButton>
         </>
       )}
     </Column>

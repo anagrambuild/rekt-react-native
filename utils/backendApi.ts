@@ -40,27 +40,6 @@ export interface TradingBalanceApiResponse {
   walletAddress: string;
 }
 
-export interface PositionApiResponse {
-  id: string;
-  asset: string;
-  direction: "long" | "short";
-  status: string;
-  size: number;
-  entryPrice: number;
-  exitPrice: number | null;
-  currentPrice: number;
-  pnl: number;
-  pnlPercentage: number;
-  leverage: number;
-  liquidationPrice: number;
-  marginUsed: number;
-  openedAt: string;
-  closedAt: string | null;
-  duration: number;
-  fees: number;
-  points: number;
-}
-
 export interface SwigWalletBalanceApiResponse {
   balance: number;
   formatted: string;
@@ -130,8 +109,8 @@ export const fetchTokenPrices = async (
             token === "sol"
               ? "Solana"
               : token === "eth"
-                ? "Ethereum"
-                : "Bitcoin",
+              ? "Ethereum"
+              : "Bitcoin",
           current_price: marketData.price,
           price_change_24h: marketData.change24h || 0,
           price_change_percentage_24h: marketData.change24h || 0,
@@ -613,12 +592,12 @@ export interface Position {
   asset: string;
   direction: "long" | "short";
   status: string;
-  size: number;
+  size: number; // buying power (poisiton_size in supabase)
   entryPrice: number;
   exitPrice: number | null;
   currentPrice: number;
-  pnl: number;
-  pnlPercentage: number;
+  pnl: number; // usdc value
+  pnlPercentage: number; // percent up or down
   leverage: number;
   liquidationPrice: number;
   marginUsed: number;
@@ -631,23 +610,7 @@ export interface Position {
 
 export interface OpenPositionResponse {
   success: boolean;
-  data?: {
-    positionId?: string;
-    transactionData?: TransactionData;
-    needsInitialization?: boolean;
-    initializationRequired?: boolean;
-    initializationInstructions?: TransactionData;
-    // Legacy fields for direct position creation
-    asset?: string;
-    direction?: "long" | "short";
-    amount?: number;
-    leverage?: number;
-    entryPrice?: number;
-    positionSize?: number;
-    marginUsed?: number;
-    status?: string;
-    openedAt?: string;
-  };
+  data?: Position;
   message: string;
 }
 
@@ -781,6 +744,7 @@ export const closeTradingPosition = async (
   }
 };
 
+// Pulled from backend but probably not needed
 // Submit signed transaction to blockchain
 export const submitSignedTransaction = async (
   request: SubmitTransactionRequest

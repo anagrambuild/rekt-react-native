@@ -7,6 +7,7 @@ import {
   BodyMSecondary,
   Card,
   Column,
+  PressableOpacity,
   Row,
 } from "@/components";
 
@@ -22,6 +23,16 @@ interface EarningsCardProps {
   handleEarningAmountLayout: () => void;
   earningAmountRef: React.RefObject<View | null>;
   earningAmountTextRef: React.RefObject<View | null>;
+  setView?: (
+    view:
+      | "balance"
+      | "transfer"
+      | "withdraw"
+      | "withdrawal address"
+      | "withdrawal success"
+      | "confirm breeze"
+      | "cancel breeze"
+  ) => void;
 }
 
 export const EarningsCard = ({
@@ -29,10 +40,17 @@ export const EarningsCard = ({
   handleEarningAmountLayout,
   earningAmountRef,
   earningAmountTextRef,
+  setView,
 }: EarningsCardProps) => {
   const { t } = useTranslation();
   const theme = useTheme();
   const [earnings, setEarnings] = useState(0.0000002);
+
+  const handlePress = () => {
+    if (setView) {
+      setView("cancel breeze");
+    }
+  };
 
   // Increment earnings every 2 seconds
   useEffect(() => {
@@ -51,41 +69,43 @@ export const EarningsCard = ({
       ref={earningAmountRef}
       onLayout={handleEarningAmountLayout}
     >
-      <Row $gap={16} $alignItems="center" $width="auto">
-        <Row $gap={12} $alignItems="center" $width="auto" style={{ flex: 1 }}>
-          <CoinContainer>
-            <Image
-              source={coinDarkIcon}
-              style={{
-                width: 32,
-                height: 32,
-              }}
-            />
-          </CoinContainer>
-
-          {/* Text content */}
-          <Column $gap={4} $alignItems="flex-start">
-            <BodyMEmphasized>{t("Earnings so far")}</BodyMEmphasized>
-            <Row $alignItems="center" $justifyContent="flex-start">
-              <BodyMSecondary>${earnings.toFixed(7)}</BodyMSecondary>
-              <View
-                ref={earningAmountTextRef}
-                onLayout={handleEarningAmountLayout}
-                style={{ width: 8, height: 1 }}
+      <PressableOpacity onPress={handlePress}>
+        <Row $gap={16} $alignItems="center" $width="auto">
+          <Row $gap={12} $alignItems="center" $width="auto" style={{ flex: 1 }}>
+            <CoinContainer>
+              <Image
+                source={coinDarkIcon}
+                style={{
+                  width: 32,
+                  height: 32,
+                }}
               />
-              {/* Floating USDC Icon Animation - starts near the $ amount text */}
-              <FloatingUsdcIcon size={16} targetPosition={targetPosition} />
-            </Row>
-          </Column>
-        </Row>
+            </CoinContainer>
 
-        {/* Right arrow */}
-        <MaterialIcon
-          name="chevron-right"
-          size={24}
-          color={theme.colors.textPrimary}
-        />
-      </Row>
+            {/* Text content */}
+            <Column $gap={4} $alignItems="flex-start">
+              <BodyMEmphasized>{t("Earnings so far")}</BodyMEmphasized>
+              <Row $alignItems="center" $justifyContent="flex-start">
+                <BodyMSecondary>${earnings.toFixed(7)}</BodyMSecondary>
+                <View
+                  ref={earningAmountTextRef}
+                  onLayout={handleEarningAmountLayout}
+                  style={{ width: 8, height: 1 }}
+                />
+                {/* Floating USDC Icon Animation - starts near the $ amount text */}
+                <FloatingUsdcIcon size={16} targetPosition={targetPosition} />
+              </Row>
+            </Column>
+          </Row>
+
+          {/* Right arrow */}
+          <MaterialIcon
+            name="chevron-right"
+            size={24}
+            color={theme.colors.textPrimary}
+          />
+        </Row>
+      </PressableOpacity>
     </EarningsCardContainer>
   );
 };
