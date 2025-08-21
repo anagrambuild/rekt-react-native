@@ -146,12 +146,20 @@ const StyledTertiaryButton = styled(PressableOpacity)<{
   }) => (disabled || loading ? 0.8 : 1)};
 `;
 
-export const TertiaryButton = ({ loading, ...props }: ButtonProps) => (
+export const TertiaryButton = ({
+  icon,
+  children,
+  loading,
+  ...props
+}: ButtonProps) => (
   <StyledTertiaryButton {...props} loading={loading}>
     {loading ? (
       <SecondaryActivityIndicator />
     ) : (
-      <SecondaryButtonText>{props.children}</SecondaryButtonText>
+      <>
+        {icon}
+        <SecondaryButtonText>{children}</SecondaryButtonText>
+      </>
     )}
   </StyledTertiaryButton>
 );
