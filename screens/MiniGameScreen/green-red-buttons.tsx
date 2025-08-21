@@ -48,9 +48,9 @@ export const ShortArrow = ({ size }: { size?: number }) => {
       $size={size}
       style={{
         shadowColor: theme.colors.gradientRed,
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 1.0,
-        shadowRadius: 20,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.35,
+        shadowRadius: 12,
         elevation: 15,
       }}
     >
@@ -74,9 +74,9 @@ export const LongArrow = ({ size }: { size?: number }) => {
       $size={size}
       style={{
         shadowColor: theme.colors.gradientGreen,
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 1.0,
-        shadowRadius: 20,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.35,
+        shadowRadius: 12,
         elevation: 15,
       }}
     >
@@ -97,6 +97,7 @@ const LargeButtonContainer = styled(PressableOpacity)`
   border-width: 1px;
   flex: 1;
   border-radius: 16px;
+  overflow: hidden;
   min-height: 160px;
   margin: 8px;
 `;
