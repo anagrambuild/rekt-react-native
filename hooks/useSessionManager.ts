@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Alert } from 'react-native';
+import { useCallback, useEffect, useState } from "react";
+import { Alert } from "react-native";
 
-import { supabase } from '@/utils/supabase';
-import { getCurrentUser } from '@/utils/supabaseApi';
+import { supabase } from "@/utils/supabase";
+import { getCurrentUser } from "@/utils/supabaseApi";
 
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from "react-i18next";
 
 export const useSessionManager = () => {
   const { t } = useTranslation();
@@ -18,7 +18,7 @@ export const useSessionManager = () => {
       const user = await getCurrentUser();
       setIsAuthenticated(!!user);
     } catch (error) {
-      console.error('Error checking authentication:', error);
+      console.error("Error checking authentication:", error);
       setIsAuthenticated(false);
     } finally {
       setIsLoading(false);
@@ -31,8 +31,8 @@ export const useSessionManager = () => {
       await supabase.auth.signOut();
       setIsAuthenticated(false);
     } catch (error) {
-      console.error('Error during logout:', error);
-      Alert.alert(t('Error'), t('Failed to log out. Please try again.'));
+      console.error("Error during logout:", error);
+      Alert.alert(t("Error"), t("Failed to log out. Please try again."));
     }
   }, [t]);
 

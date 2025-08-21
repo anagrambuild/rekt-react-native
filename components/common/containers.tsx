@@ -1,6 +1,6 @@
-import { Platform, ScrollView, StyleProp, ViewStyle } from 'react-native';
+import { Platform, ScrollView, StyleProp, ViewStyle } from "react-native";
 
-import styled, { DefaultTheme } from 'styled-components/native';
+import styled, { DefaultTheme } from "styled-components/native";
 
 // Screen Container
 interface StyledAreaViewProps {
@@ -8,7 +8,7 @@ interface StyledAreaViewProps {
 }
 
 const screenPadding = 20;
-const paddingTop = Platform.OS === 'ios' ? 30 : 20;
+const paddingTop = Platform.OS === "ios" ? 30 : 20;
 
 const StyledAreaView = styled.View<StyledAreaViewProps>`
   flex: 1;
@@ -31,8 +31,8 @@ const StyledScrollView = styled(ScrollView)<{
 
 export const ScreenContainer = ({
   children,
-  alignItems = 'center',
-  justifyContent = 'space-between',
+  alignItems = "center",
+  justifyContent = "space-between",
   contentContainerStyle,
   style,
   noPadding = false,
@@ -56,7 +56,7 @@ export const ScreenContainer = ({
         contentContainerStyle={{
           justifyContent: justifyContent,
           alignItems: alignItems,
-          minHeight: '90%',
+          minHeight: "90%",
           ...(contentContainerStyle as any),
         }}
       >
@@ -89,12 +89,12 @@ interface ColumnProps {
 
 export const Column = styled.View<ColumnProps>`
   flex-direction: column;
-  width: ${({ $width }: ColumnProps) => $width || '100%'};
-  height: ${({ $height }: ColumnProps) => $height || 'auto'};
+  width: ${({ $width }: ColumnProps) => $width || "100%"};
+  height: ${({ $height }: ColumnProps) => $height || "auto"};
   gap: ${({ $gap }: ColumnProps) => $gap || 0}px;
-  align-items: ${({ $alignItems }: ColumnProps) => $alignItems || 'center'};
+  align-items: ${({ $alignItems }: ColumnProps) => $alignItems || "center"};
   justify-content: ${({ $justifyContent }: ColumnProps) =>
-    $justifyContent || 'center'};
+    $justifyContent || "center"};
   padding: ${({ $padding }: ColumnProps) => $padding || 0}px;
   ${({ style }: ColumnProps) => style}
 `;
@@ -112,11 +112,11 @@ interface RowProps {
 
 export const Row = styled.View<RowProps>`
   flex-direction: row;
-  width: ${({ $width }: RowProps) => $width || '100%'};
+  width: ${({ $width }: RowProps) => $width || "100%"};
   gap: ${({ $gap }: RowProps) => $gap || 0}px;
-  align-items: ${({ $alignItems }: RowProps) => $alignItems || 'center'};
+  align-items: ${({ $alignItems }: RowProps) => $alignItems || "center"};
   justify-content: ${({ $justifyContent }: RowProps) =>
-    $justifyContent || 'space-between'};
+    $justifyContent || "space-between"};
   padding: ${({ $padding }: RowProps) => $padding || 0}px;
   ${({ style }: RowProps) => style}
 `;
@@ -125,16 +125,16 @@ export const Row = styled.View<RowProps>`
 export const ScrollRow = ({
   children,
   $gap = 0,
-  $alignItems = 'center' as const,
+  $alignItems = "center" as const,
   $padding = 0,
   style,
-  $width = '100%',
+  $width = "100%",
   $contentContainerStyle,
   ...props
 }: {
   children: React.ReactNode;
   $gap?: number;
-  $alignItems?: 'flex-start' | 'flex-end' | 'center';
+  $alignItems?: "flex-start" | "flex-end" | "center";
   $padding?: number;
   style?: StyleProp<ViewStyle>;
   $width?: number | string;
@@ -148,7 +148,7 @@ export const ScrollRow = ({
       style={[{ width: $width as any, padding: $padding }, style]}
       contentContainerStyle={[
         {
-          flexDirection: 'row',
+          flexDirection: "row",
           gap: $gap,
           alignItems: $alignItems,
           padding: $padding,

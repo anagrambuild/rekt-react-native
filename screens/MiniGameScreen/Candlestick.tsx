@@ -1,12 +1,12 @@
-import React from 'react';
+import React from "react";
 
-import questionCandle from '@/assets/images/app-pngs/question-candle.png';
-import { Column } from '@/components/common/containers';
-import { CandleData } from '@/utils/miniGameData';
+import questionCandle from "@/assets/images/app-pngs/question-candle.png";
+import { Column } from "@/components/common/containers";
+import { CandleData } from "@/utils/miniGameData";
 
-import { Image } from 'expo-image';
-import Svg, { Line, Rect } from 'react-native-svg';
-import { useTheme } from 'styled-components/native';
+import { Image } from "expo-image";
+import Svg, { Line, Rect } from "react-native-svg";
+import { useTheme } from "styled-components/native";
 
 interface CandlestickProps {
   data: CandleData;
@@ -63,16 +63,16 @@ export const Candlestick: React.FC<CandlestickProps> = ({
   const candleColor = isBullish ? theme.colors.profit : theme.colors.loss;
   const wickColor = isBullish ? theme.colors.profit : theme.colors.loss;
 
-  if (data.result === 'pending') {
+  if (data.result === "pending") {
     return (
       <Column
         style={{
           height: viewHeight,
           width,
           // backgroundColor: 'red',
-          alignItems: 'center',
-          justifyContent: 'center',
-          position: 'absolute',
+          alignItems: "center",
+          justifyContent: "center",
+          position: "absolute",
           right: 0,
           top: 0,
         }}

@@ -1,7 +1,7 @@
-import { Platform, View } from 'react-native';
+import { Platform, View } from "react-native";
 
-import iphoneFrame from '@/assets/images/app-pngs/iphone-frame.png';
-import topNav from '@/assets/images/app-pngs/top-nav.png';
+import iphoneFrame from "@/assets/images/app-pngs/iphone-frame.png";
+import topNav from "@/assets/images/app-pngs/top-nav.png";
 import {
   AppleGooglePayButton,
   BodyMEmphasized,
@@ -12,18 +12,18 @@ import {
   Row,
   ScrollRow,
   Title4,
-} from '@/components';
+} from "@/components";
 
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
-import { Image } from 'expo-image';
-import { useTranslation } from 'react-i18next';
-import styled, { DefaultTheme, useTheme } from 'styled-components/native';
+import { Image } from "expo-image";
+import { useTranslation } from "react-i18next";
+import styled, { DefaultTheme, useTheme } from "styled-components/native";
 
-const googleText = 'Instant and secure, backed by Google Pay';
-const appleText = 'Instant and secure, backed by Apple Pay';
+const googleText = "Instant and secure, backed by Google Pay";
+const appleText = "Instant and secure, backed by Apple Pay";
 
-const isAndroid = Platform.OS === 'android';
+const isAndroid = Platform.OS === "android";
 
 export const Step4 = () => {
   const { t } = useTranslation();
@@ -31,21 +31,21 @@ export const Step4 = () => {
   return (
     <Column
       $padding={0}
-      $alignItems='center'
+      $alignItems="center"
       style={{
-        justifyContent: 'flex-start',
-        position: 'relative',
-        overflow: 'hidden',
+        justifyContent: "flex-start",
+        position: "relative",
+        overflow: "hidden",
       }}
     >
       {/* iPhone Frame as background wrapper */}
       <Image
         source={iphoneFrame}
-        contentFit='contain'
+        contentFit="contain"
         style={{
-          width: '100%',
+          width: "100%",
           height: 640,
-          alignSelf: 'stretch',
+          alignSelf: "stretch",
         }}
       />
 
@@ -56,15 +56,15 @@ export const Step4 = () => {
           left: 0,
           right: 0,
           zIndex: 1000,
-          alignItems: 'center',
-          width: '100%',
+          alignItems: "center",
+          width: "100%",
         }}
       >
         <Image
           source={topNav}
-          contentFit='contain'
+          contentFit="contain"
           style={{
-            width: '95%',
+            width: "95%",
             height: 60,
           }}
         />
@@ -72,43 +72,43 @@ export const Step4 = () => {
           style={{
             paddingStart: 32,
             paddingEnd: 32,
-            overflow: 'hidden',
-            width: '100%',
+            overflow: "hidden",
+            width: "100%",
             marginTop: 16,
             gap: 16,
           }}
         >
-          <Row $justifyContent='flex-start' $alignItems='center' $gap={8}>
+          <Row $justifyContent="flex-start" $alignItems="center" $gap={8}>
             <MaterialIcons
-              name='chevron-left'
+              name="chevron-left"
               size={24}
               color={theme.colors.textPrimary}
             />
-            <Title4>{t('Deposit')}</Title4>
+            <Title4>{t("Deposit")}</Title4>
           </Row>
           <Gap height={8} />
           <Column $gap={16}>
-            <BodyMEmphasized>{t('Enter amount')}</BodyMEmphasized>
+            <BodyMEmphasized>{t("Enter amount")}</BodyMEmphasized>
             <AmountInput
-              value={'200.00'}
+              value={"200.00"}
               onChangeText={() => {}}
               disabled
               editable={false}
             />
             <Gap height={8} />
-            <ScrollRow $gap={8} keyboardShouldPersistTaps='always'>
-              <PresetButton value={'$10'} onPress={() => {}} />
-              <PresetButton value={'$50'} onPress={() => {}} />
-              <PresetButton value={'$100'} onPress={() => {}} />
-              <PresetButton value={'$200'} onPress={() => {}} />
-              <PresetButton value={'$500'} onPress={() => {}} />
-              <PresetButton value={'$1000'} onPress={() => {}} />
+            <ScrollRow $gap={8} keyboardShouldPersistTaps="always">
+              <PresetButton value={"$10"} onPress={() => {}} />
+              <PresetButton value={"$50"} onPress={() => {}} />
+              <PresetButton value={"$100"} onPress={() => {}} />
+              <PresetButton value={"$200"} onPress={() => {}} />
+              <PresetButton value={"$500"} onPress={() => {}} />
+              <PresetButton value={"$1000"} onPress={() => {}} />
             </ScrollRow>
             <Gap height={8} />
             <AppleGooglePayButton />
-            <Row $gap={4} $justifyContent='center'>
+            <Row $gap={4} $justifyContent="center">
               <MaterialIcons
-                name='lock'
+                name="lock"
                 size={16}
                 color={theme.colors.textSecondary}
               />
@@ -126,7 +126,7 @@ export const Step4 = () => {
 
 const AmountInput = styled.TextInput`
   color: ${({ theme }: { theme: DefaultTheme }) => theme.colors.textPrimary};
-  font-family: 'Unbounded';
+  font-family: "Unbounded";
   font-size: 40px;
   font-weight: 500;
 `;

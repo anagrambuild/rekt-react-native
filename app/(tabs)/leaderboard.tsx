@@ -1,4 +1,4 @@
-import { LeaderboardScreen } from '@/screens';
+import { LeaderboardScreen } from "@/screens";
 
 const Leaderboard = () => {
   return <LeaderboardScreen />;

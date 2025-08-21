@@ -1,6 +1,6 @@
-import { BodySEmphasized } from '../texts';
-import { PressableOpacity } from './PressableOpacity';
-import styled from 'styled-components/native';
+import { BodySEmphasized } from "../texts";
+import { PressableOpacity } from "./PressableOpacity";
+import styled from "styled-components/native";
 
 const StyledButton = styled(PressableOpacity)<{ disabled?: boolean }>`
   flex-direction: row;
@@ -9,7 +9,7 @@ const StyledButton = styled(PressableOpacity)<{ disabled?: boolean }>`
   gap: 6px;
   background-color: ${(props: any) =>
     props.disabled
-      ? props.theme.colors.secondary + '80'
+      ? props.theme.colors.secondary + "80"
       : props.theme.colors.secondary};
   padding: 6px 12px;
   border-radius: 100px;

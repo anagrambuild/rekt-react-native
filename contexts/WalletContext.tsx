@@ -7,17 +7,17 @@ import {
   useEffect,
   useRef,
   useState,
-} from 'react';
-import { Alert, Linking, Platform } from 'react-native';
+} from "react";
+import { Alert, Linking, Platform } from "react-native";
 
-import { getSwigWalletBalance } from '@/utils/backendApi';
+import { getSwigWalletBalance } from "@/utils/backendApi";
 
-import { PublicKey } from '@solana/web3.js';
+import { PublicKey } from "@solana/web3.js";
 
-import { Buffer } from 'buffer';
-import Constants from 'expo-constants';
-import { useTranslation } from 'react-i18next';
-import * as nacl from 'tweetnacl';
+import { Buffer } from "buffer";
+import Constants from "expo-constants";
+import { useTranslation } from "react-i18next";
+import * as nacl from "tweetnacl";
 
 // Persistent wallet state outside React lifecycle
 let persistentWalletState = {
@@ -28,18 +28,18 @@ let persistentWalletState = {
 };
 
 // Use require for bs58 to avoid PRNG issues
-const bs58 = require('bs58');
+const bs58 = require("bs58");
 
 // Only import wallet adapter for Android
-const isAndroid = Platform.OS === 'android';
+const isAndroid = Platform.OS === "android";
 let transact: any = null;
 
 if (isAndroid) {
   try {
-    const protocol = require('@solana-mobile/mobile-wallet-adapter-protocol-web3js');
+    const protocol = require("@solana-mobile/mobile-wallet-adapter-protocol-web3js");
     transact = protocol.transact;
   } catch (error) {
-    console.error('Failed to import mobile wallet adapter:', error);
+    console.error("Failed to import mobile wallet adapter:", error);
   }
 }
 
@@ -86,7 +86,7 @@ const WalletContext = createContext<WalletContextState>({
 export const useWallet = () => {
   const context = useContext(WalletContext);
   if (!context) {
-    throw new Error('useWallet must be used within a WalletProvider');
+    throw new Error("useWallet must be used within a WalletProvider");
   }
   return context;
 };
@@ -131,7 +131,7 @@ export const WalletProvider = ({
     try {
       return nacl.box.keyPair();
     } catch (error) {
-      console.error('Failed to generate keypair:', error);
+      console.error("Failed to generate keypair:", error);
       // Return a dummy keypair, will be regenerated on next app restart
       return { publicKey: new Uint8Array(32), secretKey: new Uint8Array(32) };
     }
@@ -149,7 +149,7 @@ export const WalletProvider = ({
   );
 
   const solanaNetwork =
-    Constants.expoConfig?.extra?.solanaNetwork || 'solana:devnet';
+    Constants.expoConfig?.extra?.solanaNetwork || "solana:devnet";
 
   const connectAndroid = useCallback(async () => {
     if (!isAndroid || !transact) {
@@ -157,16 +157,16 @@ export const WalletProvider = ({
     }
 
     try {
-      const cluster = solanaNetwork.includes('mainnet')
-        ? 'mainnet-beta'
-        : 'devnet';
+      const cluster = solanaNetwork.includes("mainnet")
+        ? "mainnet-beta"
+        : "devnet";
       const result = await transact(async (wallet: any) => {
         const authResult = await wallet.authorize({
           cluster: cluster,
           identity: {
-            name: 'Rekt',
-            uri: 'https://rekt.app',
-            icon: 'favicon.ico',
+            name: "Rekt",
+            uri: "https://rekt.app",
+            icon: "favicon.ico",
           },
         });
         return authResult;
@@ -175,7 +175,7 @@ export const WalletProvider = ({
       if (result.accounts.length > 0) {
         // Convert base64 address to PublicKey
         const base64Address = result.accounts[0].address;
-        const addressBytes = Buffer.from(base64Address, 'base64');
+        const addressBytes = Buffer.from(base64Address, "base64");
         const pubKey = new PublicKey(addressBytes);
 
         // Update persistent state first
@@ -188,14 +188,14 @@ export const WalletProvider = ({
 
           // Wallet connected successfully - no auth needed
           const publicKeyString = pubKey.toBase58();
-          console.log('✅ Android wallet connected:', publicKeyString);
+          console.log("✅ Android wallet connected:", publicKeyString);
         }
         return true;
       }
       return false;
     } catch (error) {
-      console.error('Android wallet connection failed:', error);
-      Alert.alert(t('Connection Failed'), t('Failed to connect to wallet'));
+      console.error("Android wallet connection failed:", error);
+      Alert.alert(t("Connection Failed"), t("Failed to connect to wallet"));
       return false;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -207,34 +207,34 @@ export const WalletProvider = ({
     if (!isAndroid) return;
 
     const handleAndroidUrl = (url: string) => {
-      console.log('🔗 Android URL received:', url);
+      console.log("🔗 Android URL received:", url);
       // Android MWA doesn't use URL schemes for transaction responses
       // MWA handles everything internally, so we just handle errors here
-      if (url.includes('errorCode')) {
+      if (url.includes("errorCode")) {
         try {
           const urlObj = new URL(url);
-          const errorCode = urlObj.searchParams.get('errorCode');
-          const errorMessage = urlObj.searchParams.get('errorMessage');
-          console.error('Android MWA error:', errorCode, errorMessage);
+          const errorCode = urlObj.searchParams.get("errorCode");
+          const errorMessage = urlObj.searchParams.get("errorMessage");
+          console.error("Android MWA error:", errorCode, errorMessage);
           Alert.alert(
-            t('Connection Failed'),
-            errorMessage || t('Unknown wallet error')
+            t("Connection Failed"),
+            errorMessage || t("Unknown wallet error")
           );
         } catch (error) {
-          console.error('Failed to parse Android error response:', error);
+          console.error("Failed to parse Android error response:", error);
         }
       }
     };
 
     // Handle initial URL if app was opened via deep link
-    Linking.getInitialURL().then((url) => {
+    Linking.getInitialURL().then(url => {
       if (url) {
         handleAndroidUrl(url);
       }
     });
 
     // Listen for URL changes while app is running
-    const subscription = Linking.addEventListener('url', (event) => {
+    const subscription = Linking.addEventListener("url", event => {
       handleAndroidUrl(event.url);
     });
 
@@ -248,25 +248,25 @@ export const WalletProvider = ({
     if (isAndroid) return; // Only run on iOS
 
     const handleiOSUrl = async (url: string) => {
-      console.log('🔗 iOS URL received:', url);
+      console.log("🔗 iOS URL received:", url);
 
       // Handle wallet connection response from Phantom
       if (
-        url.includes('rektreactnative://') &&
-        url.includes('phantom_encryption_public_key')
+        url.includes("rektreactnative://") &&
+        url.includes("phantom_encryption_public_key")
       ) {
         try {
-          console.log('🔐 Processing wallet connection response from Phantom');
+          console.log("🔐 Processing wallet connection response from Phantom");
 
           const urlObj = new URL(url);
           const phantomPublicKey = urlObj.searchParams.get(
-            'phantom_encryption_public_key'
+            "phantom_encryption_public_key"
           );
-          const data = urlObj.searchParams.get('data');
-          const nonce = urlObj.searchParams.get('nonce');
+          const data = urlObj.searchParams.get("data");
+          const nonce = urlObj.searchParams.get("nonce");
 
           if (phantomPublicKey && data && nonce) {
-            console.log('📡 Decrypting wallet connection response...');
+            console.log("📡 Decrypting wallet connection response...");
 
             // Create shared secret and decrypt response
             const keyPair = getDappKeyPair();
@@ -283,12 +283,12 @@ export const WalletProvider = ({
 
             if (decryptedData) {
               const connectData = JSON.parse(
-                Buffer.from(decryptedData).toString('utf8')
+                Buffer.from(decryptedData).toString("utf8")
               );
-              console.log('🔓 Decrypted wallet data:', connectData);
+              console.log("🔓 Decrypted wallet data:", connectData);
 
               if (connectData.public_key && connectData.session) {
-                console.log('🔗 Processing wallet connection...');
+                console.log("🔗 Processing wallet connection...");
 
                 // Set wallet state
                 setSharedSecret(sharedSecretDapp);
@@ -300,48 +300,48 @@ export const WalletProvider = ({
 
                 // Wallet connected successfully - no auth needed
                 const publicKeyString = connectData.public_key;
-                console.log('✅ iOS wallet connected:', publicKeyString);
+                console.log("✅ iOS wallet connected:", publicKeyString);
               }
             }
           }
         } catch (error) {
           console.error(
-            '❌ Failed to process wallet connection response:',
+            "❌ Failed to process wallet connection response:",
             error
           );
           Alert.alert(
-            t('Connection Failed'),
-            'Failed to process wallet response'
+            t("Connection Failed"),
+            "Failed to process wallet response"
           );
         }
         return;
       }
 
       // Handle error responses
-      if (url.includes('errorCode')) {
+      if (url.includes("errorCode")) {
         try {
           const urlObj = new URL(url);
-          const errorCode = urlObj.searchParams.get('errorCode');
-          const errorMessage = urlObj.searchParams.get('errorMessage');
-          console.error('iOS Phantom error:', errorCode, errorMessage);
+          const errorCode = urlObj.searchParams.get("errorCode");
+          const errorMessage = urlObj.searchParams.get("errorMessage");
+          console.error("iOS Phantom error:", errorCode, errorMessage);
 
           Alert.alert(
-            t('Connection Failed'),
-            errorMessage || t('Unknown wallet error')
+            t("Connection Failed"),
+            errorMessage || t("Unknown wallet error")
           );
         } catch (error) {
-          console.error('Failed to parse iOS error response:', error);
+          console.error("Failed to parse iOS error response:", error);
         }
         return;
       }
     };
 
     // Handle initial URL and listen for changes
-    Linking.getInitialURL().then((url) => {
+    Linking.getInitialURL().then(url => {
       if (url) handleiOSUrl(url);
     });
 
-    const subscription = Linking.addEventListener('url', (event) => {
+    const subscription = Linking.addEventListener("url", event => {
       handleiOSUrl(event.url);
     });
 
@@ -363,13 +363,13 @@ export const WalletProvider = ({
         } else {
           setConnecting(false);
         }
-      } else if (Platform.OS === 'ios') {
+      } else if (Platform.OS === "ios") {
         // For iOS, show the wallet selection modal or handle as needed
         setShowWalletModal(true);
         setConnecting(false); // Reset connecting state, modal will handle it
       }
     } catch (error) {
-      console.error('Wallet connection error:', error);
+      console.error("Wallet connection error:", error);
       setConnecting(false);
     }
   }, [connecting, connected, connectAndroid]);
@@ -400,14 +400,14 @@ export const WalletProvider = ({
 
       const balanceResult = await getSwigWalletBalance(swigWalletAddress);
 
-      if (balanceResult.status === 'success') {
+      if (balanceResult.status === "success") {
         setUsdcBalance(balanceResult.balance);
       } else {
-        console.warn('Failed to get USDC balance:', balanceResult.error);
+        console.warn("Failed to get USDC balance:", balanceResult.error);
         setUsdcBalance(0);
       }
     } catch (error) {
-      console.error('Error refreshing USDC balance:', error);
+      console.error("Error refreshing USDC balance:", error);
       setUsdcBalance(0);
     } finally {
       setIsLoadingBalance(false);

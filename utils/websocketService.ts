@@ -1,7 +1,7 @@
-import Constants from 'expo-constants';
+import Constants from "expo-constants";
 
 export interface WebSocketMessage {
-  type: 'subscribe' | 'unsubscribe' | 'price_update' | 'set_wallet';
+  type: "subscribe" | "unsubscribe" | "price_update" | "set_wallet";
   channel?: string;
   symbol?: string;
   walletAddress?: string;
@@ -27,8 +27,8 @@ export class WebSocketService {
     // Use WebSocket URL from config, convert HTTP to WebSocket protocol
     const apiUrl = Constants.expoConfig?.extra?.apiUrl;
     const wsUrl = apiUrl
-      .replace('https://', 'wss://')
-      .replace('http://', 'ws://');
+      .replace("https://", "wss://")
+      .replace("http://", "ws://");
     this.url = url || wsUrl;
   }
 
@@ -38,27 +38,27 @@ export class WebSocketService {
         this.ws = new WebSocket(this.url);
 
         this.ws.onopen = () => {
-          console.log('WebSocket connected');
+          console.log("WebSocket connected");
           this.reconnectAttempts = 0;
           resolve();
         };
 
-        this.ws.onmessage = (event) => {
+        this.ws.onmessage = event => {
           try {
             const message = JSON.parse(event.data);
             this.handleMessage(message);
           } catch (error) {
-            console.error('Failed to parse WebSocket message:', error);
+            console.error("Failed to parse WebSocket message:", error);
           }
         };
 
         this.ws.onclose = () => {
-          console.log('WebSocket disconnected');
+          console.log("WebSocket disconnected");
           this.attemptReconnect();
         };
 
-        this.ws.onerror = (error) => {
-          console.error('WebSocket error:', error);
+        this.ws.onerror = error => {
+          console.error("WebSocket error:", error);
           reject(error);
         };
       } catch (error) {
@@ -68,10 +68,10 @@ export class WebSocketService {
   }
 
   private handleMessage(message: any) {
-    if (message.type === 'price_update') {
-      const listeners = this.listeners.get('price_update');
+    if (message.type === "price_update") {
+      const listeners = this.listeners.get("price_update");
       if (listeners) {
-        listeners.forEach((callback) => callback(message.data));
+        listeners.forEach(callback => callback(message.data));
       }
     }
   }
@@ -92,7 +92,7 @@ export class WebSocketService {
   subscribe(channel: string, symbol: string) {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       const message: WebSocketMessage = {
-        type: 'subscribe',
+        type: "subscribe",
         channel,
         symbol,
       };
@@ -103,7 +103,7 @@ export class WebSocketService {
   unsubscribe(channel: string, symbol: string) {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       const message: WebSocketMessage = {
-        type: 'unsubscribe',
+        type: "unsubscribe",
         channel,
         symbol,
       };
@@ -114,7 +114,7 @@ export class WebSocketService {
   setWallet(walletAddress: string) {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       const message: WebSocketMessage = {
-        type: 'set_wallet',
+        type: "set_wallet",
         walletAddress,
       };
       this.ws.send(JSON.stringify(message));
@@ -122,14 +122,14 @@ export class WebSocketService {
   }
 
   onPriceUpdate(callback: (data: PriceUpdate) => void) {
-    if (!this.listeners.has('price_update')) {
-      this.listeners.set('price_update', new Set());
+    if (!this.listeners.has("price_update")) {
+      this.listeners.set("price_update", new Set());
     }
-    this.listeners.get('price_update')!.add(callback);
+    this.listeners.get("price_update")!.add(callback);
 
     // Return unsubscribe function
     return () => {
-      const listeners = this.listeners.get('price_update');
+      const listeners = this.listeners.get("price_update");
       if (listeners) {
         listeners.delete(callback);
       }

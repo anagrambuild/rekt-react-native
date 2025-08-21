@@ -1,21 +1,21 @@
-import { ImageBackground, StyleSheet, View } from 'react-native';
+import { ImageBackground, StyleSheet, View } from "react-native";
 
-import tile from '@/assets/images/app-pngs/tile.png';
-import GreenCandle from '@/assets/images/app-svgs/green-candle.svg';
-import RedCandle from '@/assets/images/app-svgs/red-candle.svg';
-import { PressableOpacity } from '@/components';
-import { Theme } from '@/types/styled';
+import tile from "@/assets/images/app-pngs/tile.png";
+import GreenCandle from "@/assets/images/app-svgs/green-candle.svg";
+import RedCandle from "@/assets/images/app-svgs/red-candle.svg";
+import { PressableOpacity } from "@/components";
+import { Theme } from "@/types/styled";
 
-import * as Haptics from 'expo-haptics';
-import { LinearGradient } from 'expo-linear-gradient';
-import styled, { useTheme } from 'styled-components/native';
+import * as Haptics from "expo-haptics";
+import { LinearGradient } from "expo-linear-gradient";
+import styled, { useTheme } from "styled-components/native";
 
 const arrowButtonShared = {
-  display: 'flex',
+  display: "flex",
   width: ({ $size }: { $size?: number }) => `${$size || 44}px`,
   height: ({ $size }: { $size?: number }) => `${$size || 44}px`,
-  justifyContent: 'center',
-  alignItems: 'center',
+  justifyContent: "center",
+  alignItems: "center",
 };
 
 const ShortArrowContainer = styled.View`
@@ -48,9 +48,9 @@ export const ShortArrow = ({ size }: { size?: number }) => {
       $size={size}
       style={{
         shadowColor: theme.colors.gradientRed,
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 1.0,
-        shadowRadius: 20,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.35,
+        shadowRadius: 12,
         elevation: 15,
       }}
     >
@@ -74,9 +74,9 @@ export const LongArrow = ({ size }: { size?: number }) => {
       $size={size}
       style={{
         shadowColor: theme.colors.gradientGreen,
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 1.0,
-        shadowRadius: 20,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.35,
+        shadowRadius: 12,
         elevation: 15,
       }}
     >
@@ -97,6 +97,7 @@ const LargeButtonContainer = styled(PressableOpacity)`
   border-width: 1px;
   flex: 1;
   border-radius: 16px;
+  overflow: hidden;
   min-height: 160px;
   margin: 8px;
 `;
@@ -148,13 +149,13 @@ export const ShortButton = ({
       disabled={disabled}
       style={{ borderColor: theme.colors.borderLoss }}
     >
-      <View style={{ flex: 1, borderRadius: 16, overflow: 'hidden' }}>
+      <View style={{ flex: 1, borderRadius: 16, overflow: "hidden" }}>
         {/* Background image as bottom layer */}
         <ImageBackground
           source={tile}
           style={StyleSheet.absoluteFillObject}
           imageStyle={{ opacity: 0.1, borderRadius: 16 }}
-          resizeMode='cover'
+          resizeMode="cover"
         />
         {/* Gradient overlay */}
         <LinearGradient
@@ -169,7 +170,7 @@ export const ShortButton = ({
         {/* Content above all backgrounds */}
         <ContentContainer
           $disabled={disabled}
-          style={{ position: 'relative', flex: 1 }}
+          style={{ position: "relative", flex: 1 }}
         >
           <ShortArrow />
           <Title>{title}</Title>
@@ -208,13 +209,13 @@ export const LongButton = ({
       disabled={disabled}
       style={{ borderColor: theme.colors.borderProfit }}
     >
-      <View style={{ flex: 1, borderRadius: 16, overflow: 'hidden' }}>
+      <View style={{ flex: 1, borderRadius: 16, overflow: "hidden" }}>
         {/* Background image as bottom layer */}
         <ImageBackground
           source={tile}
           style={StyleSheet.absoluteFillObject}
           imageStyle={{ opacity: 0.1, borderRadius: 16 }}
-          resizeMode='cover'
+          resizeMode="cover"
         />
         {/* Gradient overlay */}
         <LinearGradient
@@ -229,7 +230,7 @@ export const LongButton = ({
         {/* Content above all backgrounds */}
         <ContentContainer
           $disabled={disabled}
-          style={{ position: 'relative', flex: 1 }}
+          style={{ position: "relative", flex: 1 }}
         >
           <LongArrow />
           <Title>{title}</Title>

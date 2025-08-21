@@ -1,28 +1,28 @@
-import { useState } from 'react';
-import { Dimensions, Pressable } from 'react-native';
+import { useState } from "react";
+import { Dimensions, Pressable } from "react-native";
 
-import rektBomb from '@/assets/images/app-pngs/rekt-bomb.png';
-import FlagIcon from '@/assets/images/app-svgs/flag.svg';
+import rektBomb from "@/assets/images/app-pngs/rekt-bomb.png";
+import FlagIcon from "@/assets/images/app-svgs/flag.svg";
 import {
   BodyXSEmphasized,
   BodyXSMonoEmphasized,
   PulsatingContainer,
-} from '@/components';
-import { Trade, useHomeContext } from '@/contexts';
+} from "@/components";
+import { Trade, useHomeContext } from "@/contexts";
 import {
   calculatePriceChange,
   getCurrentPriceFromHistorical,
   SupportedTimeframe,
   SupportedToken,
   useHistoricalDataQuery,
-} from '@/utils';
+} from "@/utils";
 
-import { EmojiContainer } from './EmojiContainer';
-import { FloatingEmoji } from './FloatingEmoji';
-import { Image } from 'expo-image';
-import { useTranslation } from 'react-i18next';
-import { LineChart } from 'react-native-gifted-charts';
-import styled, { DefaultTheme, useTheme } from 'styled-components/native';
+import { EmojiContainer } from "./EmojiContainer";
+import { FloatingEmoji } from "./FloatingEmoji";
+import { Image } from "expo-image";
+import { useTranslation } from "react-i18next";
+import { LineChart } from "react-native-gifted-charts";
+import styled, { DefaultTheme, useTheme } from "styled-components/native";
 
 // TODO - overflow hidden problems - rule lines go too far right and top is cut off
 
@@ -60,13 +60,13 @@ export const PriceChart = ({
   // Handler to add a new floating emoji
   const handleEmojiReaction = (emoji: string) => {
     const id = Math.random().toString(36).substring(2, 9);
-    setReactions((prev) => [...prev, { id, emoji }]);
+    setReactions(prev => [...prev, { id, emoji }]);
     setIsAnimating(true);
   };
 
   // Use dummy data if provided, otherwise use real data or fallback to loading state
   const data = dummyData || historicalData || [];
-  const chartWidth = Dimensions.get('window').width * 0.9 - 8;
+  const chartWidth = Dimensions.get("window").width * 0.9 - 8;
 
   const dataValues = data.map((item: { value: number }) => item.value);
 
@@ -79,8 +79,8 @@ export const PriceChart = ({
   const { changePercent } = calculatePriceChange(data);
 
   // Find current position for this token to get real PnL
-  const currentPosition = openPositions.find((position) => {
-    const tokenMap = { sol: 'SOL-PERP', eth: 'ETH-PERP', btc: 'BTC-PERP' };
+  const currentPosition = openPositions.find(position => {
+    const tokenMap = { sol: "SOL-PERP", eth: "ETH-PERP", btc: "BTC-PERP" };
     return position.asset === tokenMap[selectedToken as keyof typeof tokenMap];
   });
 
@@ -96,7 +96,7 @@ export const PriceChart = ({
     currentPrice, // Current market price
     ...(entryPrice > 0 ? [entryPrice] : []), // Entry price if exists
     ...(liquidationPrice ? [liquidationPrice] : []), // Liquidation price if exists
-  ].filter((price) => price > 0); // Remove any zero/invalid prices
+  ].filter(price => price > 0); // Remove any zero/invalid prices
 
   const actualMinValue = Math.min(...importantPrices);
   const actualMaxValue = Math.max(...importantPrices);
@@ -123,16 +123,16 @@ export const PriceChart = ({
   const entryPriceLineTop = entryPrice ? calculateLinePosition(entryPrice) : 0;
 
   // Only show profit/loss styling when there's an actual open position or open trade
-  const hasOpenTrade = (trade && trade.status === 'open') || currentPosition;
+  const hasOpenTrade = (trade && trade.status === "open") || currentPosition;
 
   // Determine if position is in profit or loss
   const isProfit = hasOpenTrade
     ? currentPosition
       ? currentPosition.pnl >= 0
-      : trade && trade.status === 'open'
-      ? (trade.side === 'long' && currentPrice > trade.entryPrice) ||
-        (trade.side === 'short' && currentPrice < trade.entryPrice)
-      : null
+      : trade && trade.status === "open"
+        ? (trade.side === "long" && currentPrice > trade.entryPrice) ||
+          (trade.side === "short" && currentPrice < trade.entryPrice)
+        : null
     : null;
 
   // Set chart color - only apply profit/loss colors when there's an open trade/position
@@ -158,12 +158,12 @@ export const PriceChart = ({
         <ChartContainer
           style={{
             height: chartHeight,
-            justifyContent: 'center',
-            alignItems: 'center',
+            justifyContent: "center",
+            alignItems: "center",
           }}
         >
           <BodyXSEmphasized style={{ color: theme.colors.textSecondary }}>
-            {t('Loading chart data...')}
+            {t("Loading chart data...")}
           </BodyXSEmphasized>
         </ChartContainer>
       </Wrapper>
@@ -177,12 +177,12 @@ export const PriceChart = ({
         <ChartContainer
           style={{
             height: chartHeight,
-            justifyContent: 'center',
-            alignItems: 'center',
+            justifyContent: "center",
+            alignItems: "center",
           }}
         >
           <BodyXSEmphasized style={{ color: theme.colors.textSecondary }}>
-            {t('Failed to load chart data')}
+            {t("Failed to load chart data")}
           </BodyXSEmphasized>
         </ChartContainer>
       </Wrapper>
@@ -204,11 +204,11 @@ export const PriceChart = ({
           startOpacity={0.2}
           endOpacity={0.01}
           hideDataPoints
-          yAxisColor='transparent'
-          xAxisColor='transparent'
+          yAxisColor="transparent"
+          xAxisColor="transparent"
           rulesColor={theme.colors.secondary}
           noOfSections={4}
-          backgroundColor='transparent'
+          backgroundColor="transparent"
           initialSpacing={0}
           yAxisOffset={paddedMinValue}
           width={chartWidth}
@@ -222,16 +222,16 @@ export const PriceChart = ({
 
         {/* Custom y-axis labels (now pressable as a group) */}
         <Pressable
-          onPress={() => setShowPercent((prev) => !prev)}
+          onPress={() => setShowPercent(prev => !prev)}
           style={{
-            position: 'absolute',
+            position: "absolute",
             top: 0,
             right: 0,
             width: 80,
             height: chartHeight,
           }}
-          accessibilityRole='button'
-          accessibilityLabel='Toggle price/percentage'
+          accessibilityRole="button"
+          accessibilityLabel="Toggle price/percentage"
         >
           {Array.from({ length: 5 }, (_, i) => {
             const value = paddedMinValue + (actualValueRange * i) / 4;
@@ -248,7 +248,7 @@ export const PriceChart = ({
                 <BodyXSMonoEmphasized
                   style={{ color: theme.colors.textSecondary }}
                 >
-                  ${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                  ${value.toLocaleString("en-US", { maximumFractionDigits: 0 })}
                 </BodyXSMonoEmphasized>
               </YAxisLabel>
             );
@@ -269,11 +269,11 @@ export const PriceChart = ({
                   ? `+${currentPosition.pnlPercentage.toFixed(2)}%`
                   : `${currentPosition.pnlPercentage.toFixed(2)}%`
                 : showPercent && !currentPosition
-                ? `${changePercent.toFixed(2)}%`
-                : `$${currentPrice.toLocaleString('en-US', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}`}
+                  ? `${changePercent.toFixed(2)}%`
+                  : `$${currentPrice.toLocaleString("en-US", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}`}
             </CurrentPriceText>
           </CurrentPriceBubble>
         </CurrentPriceLabel>
@@ -291,7 +291,7 @@ export const PriceChart = ({
                 <FlagIcon />
                 <EntryPriceText style={{ color: theme.colors.textPrimary }}>
                   $
-                  {entryPrice.toLocaleString('en-US', {
+                  {entryPrice.toLocaleString("en-US", {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
                   })}
@@ -312,7 +312,7 @@ export const PriceChart = ({
             >
               <PulsatingContainer
                 duration={1000}
-                style={{ position: 'absolute', top: -14, left: 0, zIndex: 20 }}
+                style={{ position: "absolute", top: -14, left: 0, zIndex: 20 }}
               >
                 <Image source={rektBomb} style={{ width: 30, height: 30 }} />
               </PulsatingContainer>
@@ -327,7 +327,7 @@ export const PriceChart = ({
             >
               <LiquidationText style={{ color: theme.colors.textPrimary }}>
                 $
-                {liquidationPrice.toLocaleString('en-US', {
+                {liquidationPrice.toLocaleString("en-US", {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })}
@@ -335,7 +335,7 @@ export const PriceChart = ({
             </LiquidationLabel>
           </>
         )}
-        {trade && trade.status === 'open' && (
+        {trade && trade.status === "open" && (
           <EmojiContainer
             onEmojiPress={handleEmojiReaction}
             isAnimating={isAnimating}
@@ -348,7 +348,7 @@ export const PriceChart = ({
             emoji={emoji}
             chartHeight={chartHeight}
             onDone={() => {
-              setReactions((prev) => prev.filter((r) => r.id !== id));
+              setReactions(prev => prev.filter(r => r.id !== id));
               setIsAnimating(false);
             }}
           />
@@ -400,14 +400,14 @@ const CurrentPriceBubble = styled.View<{ $isProfit: boolean | null }>`
     $isProfit === true
       ? theme.colors.profit
       : $isProfit === false
-      ? theme.colors.loss
-      : theme.colors.tint};
+        ? theme.colors.loss
+        : theme.colors.tint};
 `;
 
 const CurrentPriceText = styled.Text`
   font-size: 11px;
   font-weight: 600;
-  font-family: 'Geist Mono';
+  font-family: "Geist Mono";
 `;
 
 // Entry Price Styles
@@ -432,7 +432,7 @@ const EntryPriceBubble = styled.View`
 const EntryPriceText = styled.Text`
   font-size: 11px;
   font-weight: 500;
-  font-family: 'Geist Mono';
+  font-family: "Geist Mono";
 `;
 
 // Liquidation Styles (existing)
@@ -470,5 +470,5 @@ const LiquidationLabel = styled.View`
 const LiquidationText = styled.Text`
   font-size: 12px;
   font-weight: 500;
-  font-family: 'Geist Mono';
+  font-family: "Geist Mono";
 `;

@@ -1,6 +1,6 @@
-import { BodyMSecondary } from '../texts';
-import { PressableOpacity } from './PressableOpacity';
-import styled, { DefaultTheme, useTheme } from 'styled-components/native';
+import { BodyMSecondary } from "../texts";
+import { PressableOpacity } from "./PressableOpacity";
+import styled, { DefaultTheme, useTheme } from "styled-components/native";
 
 interface SegmentControlProps {
   Svg: React.ComponentType<any>;
@@ -37,7 +37,7 @@ const SegmentButton = styled(PressableOpacity)<{
   }: {
     selected: boolean;
     theme: DefaultTheme;
-  }) => (selected ? theme.colors.activeSegment : 'transparent')};
+  }) => (selected ? theme.colors.activeSegment : "transparent")};
 `;
 
 const SegmentLabel = styled(BodyMSecondary)<{

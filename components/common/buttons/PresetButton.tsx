@@ -1,6 +1,6 @@
-import { Body1Secondary } from '../texts';
-import { PressableOpacity } from './PressableOpacity';
-import styled from 'styled-components/native';
+import { Body1Secondary } from "../texts";
+import { PressableOpacity } from "./PressableOpacity";
+import styled from "styled-components/native";
 
 export const PresetButton = ({
   value,

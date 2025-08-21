@@ -1,105 +1,29 @@
 import { useEffect, useState } from "react";
 import { Platform } from "react-native";
 
-import { useHomeContext } from "@/contexts/HomeContext";
-
 import Slider from "@react-native-community/slider";
 
 import { LinearGradient } from "expo-linear-gradient";
 import styled, { useTheme } from "styled-components/native";
 
-// could not get the image to work on dev build
-// const sliderHandle = require('../assets/images/app-pngs/slider-handle.png');
-
-export const HorizontalSlider = ({
-  setLeverage: setLoginLeverageProp,
-  leverage: propLeverage,
+export const Step2HorizontalSlider = ({
+  setLeverage,
+  leverage,
+  isMaxLeverageOn,
 }: {
-  setLeverage?: (leverage: number) => void;
-  leverage?: number;
+  setLeverage: (leverage: number) => void;
+  leverage: number;
+  isMaxLeverageOn: boolean;
 }) => {
-  const {
-    selectedToken,
-    solTrade,
-    setSolTrade,
-    ethTrade,
-    setEthTrade,
-    btcTrade,
-    setBtcTrade,
-  } = useHomeContext();
-
-  // Get current trade state based on selected token
-  const getCurrentTrade = () => {
-    switch (selectedToken) {
-      case "sol":
-        return solTrade;
-      case "eth":
-        return ethTrade;
-      case "btc":
-        return btcTrade;
-      default:
-        return solTrade;
-    }
-  };
-
-  const currentTrade = getCurrentTrade();
-  const isMaxLeverageOn = currentTrade?.isMaxLeverageOn || false;
-
   // Map slider value (0-steps) to leverage (1-max)
   const getLeverageFromSlider = (sliderValue: number) =>
     sliderValue === 0 ? 1 : sliderValue;
   const getSliderFromLeverage = (leverage: number) =>
     leverage === 1 ? 0 : leverage;
 
-  const leverage =
-    selectedToken === "sol"
-      ? solTrade?.leverage ?? 1
-      : selectedToken === "eth"
-      ? ethTrade?.leverage ?? 1
-      : btcTrade?.leverage ?? 1;
-
-  const setLeverage = (sliderValue: number) => {
+  const handleLeverageChange = (sliderValue: number) => {
     const newLeverage = getLeverageFromSlider(sliderValue);
-    if (selectedToken === "sol") {
-      setSolTrade(
-        solTrade
-          ? { ...solTrade, leverage: newLeverage }
-          : {
-              side: "short",
-              entryPrice: 0,
-              amount: 10,
-              leverage: newLeverage,
-              status: "draft",
-              isMaxLeverageOn: false,
-            }
-      );
-    } else if (selectedToken === "eth") {
-      setEthTrade(
-        ethTrade
-          ? { ...ethTrade, leverage: newLeverage }
-          : {
-              side: "short",
-              entryPrice: 0,
-              amount: 10,
-              leverage: newLeverage,
-              status: "draft",
-              isMaxLeverageOn: false,
-            }
-      );
-    } else {
-      setBtcTrade(
-        btcTrade
-          ? { ...btcTrade, leverage: newLeverage }
-          : {
-              side: "short",
-              entryPrice: 0,
-              amount: 10,
-              leverage: newLeverage,
-              status: "draft",
-              isMaxLeverageOn: false,
-            }
-      );
-    }
+    setLeverage(newLeverage);
   };
 
   const [trackWidth, setTrackWidth] = useState(0);
@@ -121,13 +45,12 @@ export const HorizontalSlider = ({
   useEffect(() => {
     // If leverage is below 1, force to 1
     if (leverage < 1) {
-      setLeverage(0);
+      setLeverage(1);
     }
     if (leverage > 100 && !isMaxLeverageOn) {
       setLeverage(100);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [leverage, isMaxLeverageOn]);
+  }, [leverage, isMaxLeverageOn, setLeverage]);
 
   // Value reset hack: after layout, set to min, then back to real value
   // this is to get the handle to show in the right place after switching between tokens once leverage is beyond 100
@@ -135,7 +58,7 @@ export const HorizontalSlider = ({
   useEffect(() => {
     if (Platform.OS === "ios") {
       if (trackWidth > 0) {
-        setLeverage(min);
+        setLeverage(1);
         setTimeout(() => {
           setLeverage(leverage);
         }, 30);
@@ -145,7 +68,7 @@ export const HorizontalSlider = ({
   }, [trackWidth]);
 
   return (
-    <OuterContainer key={selectedToken + "-" + isMaxLeverageOn}>
+    <OuterContainer key={"step2-" + isMaxLeverageOn}>
       {/* Track Background */}
       <TrackBackground
         backgroundColor={theme.colors.card}
@@ -175,15 +98,14 @@ export const HorizontalSlider = ({
         </TicksRow>
         {/* Slider */}
         <StyledSlider
-          key={selectedToken + "-" + isMaxLeverageOn}
+          key={"step2-" + isMaxLeverageOn}
           minimumValue={min}
           maximumValue={max}
           step={10}
           value={sliderValue}
-          onValueChange={setLeverage}
+          onValueChange={handleLeverageChange}
           minimumTrackTintColor="transparent"
           maximumTrackTintColor="transparent"
-          // thumbImage={sliderHandle}
           thumbTintColor={theme.colors.text}
         />
       </TrackBackground>

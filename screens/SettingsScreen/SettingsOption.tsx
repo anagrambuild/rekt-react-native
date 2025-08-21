@@ -1,11 +1,11 @@
-import React from 'react';
+import React from "react";
 
-import { BodyS, PressableOpacity, Row } from '@/components';
+import { BodyS, PressableOpacity, Row } from "@/components";
 
-import MaterialIcon from '@expo/vector-icons/MaterialIcons';
+import MaterialIcon from "@expo/vector-icons/MaterialIcons";
 
-import { useTranslation } from 'react-i18next';
-import { useTheme } from 'styled-components/native';
+import { useTranslation } from "react-i18next";
+import { useTheme } from "styled-components/native";
 
 export interface SettingsOptionProps {
   icon: keyof typeof MaterialIcon.glyphMap;
@@ -26,8 +26,8 @@ export const SettingsOption: React.FC<SettingsOptionProps> = ({
   const { t } = useTranslation();
   return (
     <PressableOpacity onPress={onPress}>
-      <Row $justifyContent='space-between'>
-        <Row $gap={12} $padding={4} $justifyContent='flex-start'>
+      <Row $justifyContent="space-between">
+        <Row $gap={12} $padding={4} $justifyContent="flex-start">
           <MaterialIcon
             name={icon}
             size={24}
@@ -38,7 +38,7 @@ export const SettingsOption: React.FC<SettingsOptionProps> = ({
           </BodyS>
         </Row>
         <MaterialIcon
-          name='chevron-right'
+          name="chevron-right"
           size={20}
           color={theme.colors.textSecondary}
         />

@@ -1,4 +1,4 @@
-import { DarkTheme } from '@react-navigation/native';
+import { DarkTheme } from "@react-navigation/native";
 
 import {
   accentPurple,
@@ -44,7 +44,7 @@ import {
   tabActive,
   timerPurple,
   white,
-} from './app-colors';
+} from "./app-colors";
 
 export const darkTheme = {
   ...DarkTheme,

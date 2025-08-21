@@ -4,7 +4,7 @@ export interface CandleData {
   low: number;
   close: number;
   timestamp: number;
-  result: 'green' | 'red' | 'pending' | 'decision' | null;
+  result: "green" | "red" | "pending" | "decision" | null;
 }
 
 // Utility function to generate dummy OHLC data
@@ -36,7 +36,7 @@ export const generateDummyCandleData = (
       low: Math.round(low * 100) / 100,
       close: Math.round(close * 100) / 100,
       timestamp: Date.now() - (count - i) * 60000, // 1 minute intervals
-      result: i === count - 1 ? 'pending' : close > open ? 'green' : 'red',
+      result: i === count - 1 ? "pending" : close > open ? "green" : "red",
     });
 
     basePrice = close;

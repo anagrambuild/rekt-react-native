@@ -3,9 +3,9 @@ import {
   UseMutationOptions,
   useQuery,
   UseQueryOptions,
-} from '@tanstack/react-query';
+} from "@tanstack/react-query";
 
-import { apiClient } from './apiClient';
+import { apiClient } from "./apiClient";
 import {
   ChartDataPoint,
   ClosePositionRequest,
@@ -30,9 +30,9 @@ import {
   TokenPrice,
   TradingBalance,
   User,
-} from './backendApi';
-import { queryClient } from './queryClient';
-import { queryKeys } from './queryKeys';
+} from "./backendApi";
+import { queryClient } from "./queryClient";
+import { queryKeys } from "./queryKeys";
 
 // Generic API fetch function - now uses authenticated API client
 export const fetchApi = async <T>(
@@ -40,17 +40,17 @@ export const fetchApi = async <T>(
   options?: RequestInit
 ): Promise<T> => {
   // Use the authenticated API client for all API calls
-  if (options?.method === 'POST') {
+  if (options?.method === "POST") {
     return apiClient.post(
       endpoint,
       options.body ? JSON.parse(options.body as string) : undefined
     );
-  } else if (options?.method === 'PUT') {
+  } else if (options?.method === "PUT") {
     return apiClient.put(
       endpoint,
       options.body ? JSON.parse(options.body as string) : undefined
     );
-  } else if (options?.method === 'DELETE') {
+  } else if (options?.method === "DELETE") {
     return apiClient.delete(endpoint);
   } else {
     return apiClient.get(endpoint);
@@ -60,7 +60,7 @@ export const fetchApi = async <T>(
 // Custom hook for price queries
 export const usePriceQuery = (
   symbol: string,
-  options?: Omit<UseQueryOptions<any, Error>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<any, Error>, "queryKey" | "queryFn">
 ) => {
   return useQuery({
     queryKey: queryKeys.price(symbol),
@@ -74,7 +74,7 @@ export const usePriceQuery = (
 export const useChartDataQuery = (
   symbol: string,
   timeframe: string,
-  options?: Omit<UseQueryOptions<any, Error>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<any, Error>, "queryKey" | "queryFn">
 ) => {
   return useQuery({
     queryKey: queryKeys.chartDataBySymbol(symbol, timeframe),
@@ -87,7 +87,7 @@ export const useChartDataQuery = (
 // Custom hook for user trades
 export const useUserTradesQuery = (
   userId: string,
-  options?: Omit<UseQueryOptions<any, Error>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<any, Error>, "queryKey" | "queryFn">
 ) => {
   return useQuery({
     queryKey: queryKeys.userTrades(userId),
@@ -98,8 +98,8 @@ export const useUserTradesQuery = (
 
 // Custom hook for leaderboard
 export const useLeaderboardQuery = (
-  period: string = 'all',
-  options?: Omit<UseQueryOptions<any, Error>, 'queryKey' | 'queryFn'>
+  period: string = "all",
+  options?: Omit<UseQueryOptions<any, Error>, "queryKey" | "queryFn">
 ) => {
   return useQuery({
     queryKey: queryKeys.leaderboardByPeriod(period),
@@ -115,8 +115,8 @@ export const useTradeMutation = (
 ) => {
   return useMutation({
     mutationFn: (tradeData: any) =>
-      fetchApi('/api/trades', {
-        method: 'POST',
+      fetchApi("/api/trades", {
+        method: "POST",
         body: JSON.stringify(tradeData),
       }),
     onSuccess: () => {
@@ -154,14 +154,14 @@ export const getCachedPriceData = (symbol: string) => {
 
 // CoinGecko-specific hooks
 export const useTokenPricesQuery = (
-  tokens: SupportedToken[] = ['sol', 'eth', 'btc'],
+  tokens: SupportedToken[] = ["sol", "eth", "btc"],
   options?: Omit<
     UseQueryOptions<Partial<Record<SupportedToken, TokenPrice>>, Error>,
-    'queryKey' | 'queryFn'
+    "queryKey" | "queryFn"
   >
 ) => {
   return useQuery({
-    queryKey: ['tokenPrices', ...tokens],
+    queryKey: ["tokenPrices", ...tokens],
     queryFn: () => fetchTokenPrices(tokens),
     refetchInterval: 30000, // Refetch every 30 seconds
     staleTime: 1000 * 20, // 20 seconds stale time
@@ -171,7 +171,7 @@ export const useTokenPricesQuery = (
 
 export const useSingleTokenPriceQuery = (
   token: SupportedToken,
-  options?: Omit<UseQueryOptions<TokenPrice, Error>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<TokenPrice, Error>, "queryKey" | "queryFn">
 ) => {
   return useQuery({
     queryKey: queryKeys.price(token),
@@ -185,8 +185,8 @@ export const useSingleTokenPriceQuery = (
 // Utility to prefetch all token prices
 export const prefetchAllTokenPrices = () => {
   return queryClient.prefetchQuery({
-    queryKey: ['tokenPrices', 'sol', 'eth', 'btc'],
-    queryFn: () => fetchTokenPrices(['sol', 'eth', 'btc']),
+    queryKey: ["tokenPrices", "sol", "eth", "btc"],
+    queryFn: () => fetchTokenPrices(["sol", "eth", "btc"]),
     staleTime: 1000 * 20,
   });
 };
@@ -197,11 +197,11 @@ export const useHistoricalDataQuery = (
   timeframe: SupportedTimeframe,
   options?: Omit<
     UseQueryOptions<ChartDataPoint[], Error>,
-    'queryKey' | 'queryFn'
+    "queryKey" | "queryFn"
   >
 ) => {
   return useQuery({
-    queryKey: ['historicalData', token, timeframe],
+    queryKey: ["historicalData", token, timeframe],
     queryFn: () => fetchHistoricalData(token, timeframe),
     staleTime: 1000 * 60, // 1 minute stale time
     refetchInterval: 1000 * 60, // Refetch every minute
@@ -212,7 +212,7 @@ export const useHistoricalDataQuery = (
 // Hook to get user by profile ID
 export const useUserByProfileQuery = (
   userId: string,
-  options?: Omit<UseQueryOptions<User | null, Error>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<User | null, Error>, "queryKey" | "queryFn">
 ) => {
   return useQuery({
     queryKey: queryKeys.userProfile(userId),
@@ -247,7 +247,7 @@ export const useCreateUserMutation = (
 // Hook to get user's trading balance
 export const useTradingBalanceQuery = (
   userId: string,
-  options?: Omit<UseQueryOptions<TradingBalance, Error>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<TradingBalance, Error>, "queryKey" | "queryFn">
 ) => {
   return useQuery({
     queryKey: queryKeys.tradingBalance(userId),
@@ -262,7 +262,7 @@ export const useTradingBalanceQuery = (
 // Hook to get user's open positions
 export const useOpenPositionsQuery = (
   userId: string,
-  options?: Omit<UseQueryOptions<Position[], Error>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<Position[], Error>, "queryKey" | "queryFn">
 ) => {
   return useQuery({
     queryKey: queryKeys.openPositions(userId),
@@ -277,9 +277,9 @@ export const useOpenPositionsQuery = (
 // Hook to get user's trading history
 export const useTradingHistoryQuery = (
   userId: string,
-  status?: 'open' | 'closed',
+  status?: "open" | "closed",
   limit: number = 50,
-  options?: Omit<UseQueryOptions<Position[], Error>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<Position[], Error>, "queryKey" | "queryFn">
 ) => {
   return useQuery({
     queryKey: queryKeys.tradingHistory(userId, status, limit),
@@ -298,9 +298,9 @@ export const useOpenPositionMutation = (
     mutationFn: openTradingPosition,
     onSuccess: () => {
       // Invalidate position queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ['trading', 'positions'] });
-      queryClient.invalidateQueries({ queryKey: ['trading', 'history'] });
-      queryClient.invalidateQueries({ queryKey: ['trading', 'balance'] });
+      queryClient.invalidateQueries({ queryKey: ["trading", "positions"] });
+      queryClient.invalidateQueries({ queryKey: ["trading", "history"] });
+      queryClient.invalidateQueries({ queryKey: ["trading", "balance"] });
     },
     ...options,
   });
@@ -314,9 +314,9 @@ export const useClosePositionMutation = (
     mutationFn: closeTradingPosition,
     onSuccess: () => {
       // Invalidate position queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ['trading', 'positions'] });
-      queryClient.invalidateQueries({ queryKey: ['trading', 'history'] });
-      queryClient.invalidateQueries({ queryKey: ['trading', 'balance'] });
+      queryClient.invalidateQueries({ queryKey: ["trading", "positions"] });
+      queryClient.invalidateQueries({ queryKey: ["trading", "history"] });
+      queryClient.invalidateQueries({ queryKey: ["trading", "balance"] });
     },
     ...options,
   });
@@ -330,9 +330,9 @@ export const useSubmitTransactionMutation = (
     mutationFn: submitSignedTransaction,
     onSuccess: () => {
       // Invalidate position queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ['trading', 'positions'] });
-      queryClient.invalidateQueries({ queryKey: ['trading', 'history'] });
-      queryClient.invalidateQueries({ queryKey: ['trading', 'balance'] });
+      queryClient.invalidateQueries({ queryKey: ["trading", "positions"] });
+      queryClient.invalidateQueries({ queryKey: ["trading", "history"] });
+      queryClient.invalidateQueries({ queryKey: ["trading", "balance"] });
     },
     ...options,
   });

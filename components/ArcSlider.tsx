@@ -1,7 +1,7 @@
-import React, { useRef, useState } from 'react';
-import { PanResponder, StyleSheet, Text, View } from 'react-native';
+import React, { useRef, useState } from "react";
+import { PanResponder, StyleSheet, Text, View } from "react-native";
 
-import Svg, { Circle, Path } from 'react-native-svg';
+import Svg, { Circle, Path } from "react-native-svg";
 
 const ARC_RADIUS = 120;
 const STROKE_WIDTH = 18;
@@ -38,12 +38,12 @@ function describeArc(
 ) {
   const start = polarToCartesian(x, y, radius, endAngle);
   const end = polarToCartesian(x, y, radius, startAngle);
-  const arcSweep = endAngle - startAngle <= 180 ? '0' : '1';
+  const arcSweep = endAngle - startAngle <= 180 ? "0" : "1";
   const d = [
-    'M',
+    "M",
     start.x,
     start.y,
-    'A',
+    "A",
     radius,
     radius,
     0,
@@ -51,7 +51,7 @@ function describeArc(
     0,
     end.x,
     end.y,
-  ].join(' ');
+  ].join(" ");
   return d;
 }
 
@@ -122,9 +122,9 @@ export const ArcSlider = ({
             startAngle,
             endAngle
           )}
-          stroke='#222'
+          stroke="#222"
           strokeWidth={STROKE_WIDTH}
-          fill='none'
+          fill="none"
         />
         {/* Arc fill */}
         <Path
@@ -135,21 +135,21 @@ export const ArcSlider = ({
             startAngle,
             thumbAngle
           )}
-          stroke='#FF6A3D'
+          stroke="#FF6A3D"
           strokeWidth={STROKE_WIDTH}
-          fill='none'
+          fill="none"
         />
         {/* Thumb */}
         <Circle
           cx={thumbPos.x}
           cy={thumbPos.y}
           r={22}
-          fill='#fff'
-          stroke='#FF6A3D'
+          fill="#fff"
+          stroke="#FF6A3D"
           strokeWidth={4}
         />
       </Svg>
-      <View style={styles.valueContainer} pointerEvents='none'>
+      <View style={styles.valueContainer} pointerEvents="none">
         <Text style={styles.valueText}>{value}x</Text>
       </View>
     </View>
@@ -158,22 +158,22 @@ export const ArcSlider = ({
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     width: ARC_CENTER * 2,
     height: ARC_CENTER * 2,
-    position: 'relative',
+    position: "relative",
   },
   valueContainer: {
-    position: 'absolute',
+    position: "absolute",
     top: ARC_CENTER - 40,
     left: ARC_CENTER - 30,
     width: 60,
-    alignItems: 'center',
+    alignItems: "center",
   },
   valueText: {
     fontSize: 32,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontWeight: "bold",
+    color: "#fff",
   },
 });

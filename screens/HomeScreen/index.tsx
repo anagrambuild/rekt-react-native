@@ -1,6 +1,6 @@
-import { useHomeContext } from '@/contexts';
+import { useHomeContext } from "@/contexts";
 
-import { usePreventRemove } from '@react-navigation/native';
+import { usePreventRemove } from "@react-navigation/native";
 
 import {
   Column,
@@ -9,14 +9,14 @@ import {
   Row,
   ScreenContainer,
   Title4,
-} from '../../components';
-import { AnimatedBannerRow } from './AnimatedBannerRow';
-import { LiveTradeView } from './LiveTradeView';
-import { LongButton, ShortButton } from './long-short-buttons';
-import { perpSocials } from './mockData';
-import { PriceChartCard } from './PriceChartCard';
-import { useRouter } from 'expo-router';
-import { useTranslation } from 'react-i18next';
+} from "../../components";
+import { AnimatedBannerRow } from "./AnimatedBannerRow";
+import { LiveTradeView } from "./LiveTradeView";
+import { LongButton, ShortButton } from "./long-short-buttons";
+import { perpSocials } from "./mockData";
+import { PriceChartCard } from "./PriceChartCard";
+import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 
 export const HomeScreen = () => {
   const { t } = useTranslation();
@@ -36,21 +36,21 @@ export const HomeScreen = () => {
 
   // Get current trade and setter for selected token
   const trade =
-    selectedToken === 'sol'
+    selectedToken === "sol"
       ? solTrade
-      : selectedToken === 'eth'
-      ? ethTrade
-      : btcTrade;
+      : selectedToken === "eth"
+        ? ethTrade
+        : btcTrade;
 
   const setTrade =
-    selectedToken === 'sol'
+    selectedToken === "sol"
       ? setSolTrade
-      : selectedToken === 'eth'
-      ? setEthTrade
-      : setBtcTrade;
+      : selectedToken === "eth"
+        ? setEthTrade
+        : setBtcTrade;
 
   // Set trade side, creating a draft trade if none exists
-  const setTradeSide = (side: 'long' | 'short') => {
+  const setTradeSide = (side: "long" | "short") => {
     if (trade) {
       setTrade({ ...trade, side });
     } else {
@@ -60,19 +60,19 @@ export const HomeScreen = () => {
         entryPrice: 0,
         amount: 10,
         leverage: 1,
-        status: 'draft',
+        status: "draft",
         isMaxLeverageOn: false,
       });
     }
   };
 
   // Check for active trades - either from local state or actual open positions
-  const currentPosition = openPositions.find((position) => {
-    const tokenMap = { sol: 'SOL-PERP', eth: 'ETH-PERP', btc: 'BTC-PERP' };
+  const currentPosition = openPositions.find(position => {
+    const tokenMap = { sol: "SOL-PERP", eth: "ETH-PERP", btc: "BTC-PERP" };
     return position.asset === tokenMap[selectedToken as keyof typeof tokenMap];
   });
 
-  const isActiveTrade = (trade && trade.status === 'open') || !!currentPosition;
+  const isActiveTrade = (trade && trade.status === "open") || !!currentPosition;
 
   return (
     <ScreenContainer>
@@ -89,18 +89,18 @@ export const HomeScreen = () => {
       <Column $gap={16}>
         {!isActiveTrade && (
           <Row style={{ paddingStart: 16 }}>
-            <Title4>{t('Ride the market')}</Title4>
+            <Title4>{t("Ride the market")}</Title4>
           </Row>
         )}
         {isActiveTrade ? (
           <LiveTradeView
             trade={
               trade || {
-                side: currentPosition?.direction || 'long',
+                side: currentPosition?.direction || "long",
                 entryPrice: currentPosition?.entryPrice || 0,
                 amount: currentPosition?.marginUsed || 0,
                 leverage: currentPosition?.leverage || 1,
-                status: 'open',
+                status: "open",
                 pnl: currentPosition?.pnl || 0,
                 timestamp: currentPosition?.openedAt
                   ? new Date(currentPosition.openedAt).getTime()
@@ -112,19 +112,19 @@ export const HomeScreen = () => {
           <Row $padding={0}>
             <ShortButton
               onPress={() => {
-                setTradeSide('short');
-                router.push('/trade');
+                setTradeSide("short");
+                router.push("/trade");
               }}
-              title={t('Short')}
-              subtitle={t('Price will go down')}
+              title={t("Short")}
+              subtitle={t("Price will go down")}
             />
             <LongButton
               onPress={() => {
-                setTradeSide('long');
-                router.push('/trade');
+                setTradeSide("long");
+                router.push("/trade");
               }}
-              title={t('Long')}
-              subtitle={t('Price will go up')}
+              title={t("Long")}
+              subtitle={t("Price will go up")}
             />
           </Row>
         )}

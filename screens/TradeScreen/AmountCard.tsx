@@ -1,18 +1,18 @@
-import UsdcIcon from '@/assets/images/app-svgs/usdc.svg';
+import UsdcIcon from "@/assets/images/app-svgs/usdc.svg";
 import {
   Body1Secondary,
   BodyM,
   Card,
   IconButton,
   PressableOpacity,
-} from '@/components';
-import { Row } from '@/components/common/containers';
+} from "@/components";
+import { Row } from "@/components/common/containers";
 
-import MaterialIcon from '@expo/vector-icons/MaterialIcons';
+import MaterialIcon from "@expo/vector-icons/MaterialIcons";
 
-import * as Haptics from 'expo-haptics';
-import { useTranslation } from 'react-i18next';
-import { useTheme } from 'styled-components/native';
+import * as Haptics from "expo-haptics";
+import { useTranslation } from "react-i18next";
+import { useTheme } from "styled-components/native";
 
 export const AmountCard = ({
   setAmountModalVisible = () => {},
@@ -30,19 +30,19 @@ export const AmountCard = ({
     <Card $padding={8}>
       <Row $gap={8}>
         <PressableOpacity onPress={() => setAmountModalVisible(true)}>
-          <Row $gap={8} $width='auto'>
+          <Row $gap={8} $width="auto">
             <UsdcIcon />
-            <Body1Secondary>{t('Amount')}</Body1Secondary>
+            <Body1Secondary>{t("Amount")}</Body1Secondary>
             <MaterialIcon
-              name='edit'
+              name="edit"
               size={16}
               color={theme.colors.textSecondary}
             />
           </Row>
         </PressableOpacity>
-        <Row $gap={12} $width='auto'>
+        <Row $gap={12} $width="auto">
           <IconButton
-            name='remove'
+            name="remove"
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               setAmount(Math.max(10, amount - 1));
@@ -50,7 +50,7 @@ export const AmountCard = ({
           />
           <BodyM>{`$${amount}`}</BodyM>
           <IconButton
-            name='add'
+            name="add"
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
               setAmount(Math.max(amount + 1));

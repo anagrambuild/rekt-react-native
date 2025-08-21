@@ -1,4 +1,4 @@
-import { Connection, PublicKey } from '@solana/web3.js';
+import { Connection, PublicKey } from "@solana/web3.js";
 
 export interface SwigSigningResult {
   success: boolean;
@@ -26,14 +26,14 @@ export const signTransactionWithSwig = async (
   userPublicKey: PublicKey
 ): Promise<SwigSigningResult> => {
   try {
-    console.log('🔐 Starting Swig transaction signing...');
-    console.log('Transaction description:', transactionData.description);
+    console.log("🔐 Starting Swig transaction signing...");
+    console.log("Transaction description:", transactionData.description);
 
     // Get user's Swig wallet address from user profile
     // Note: This should come from the userProfile prop, not Supabase metadata
     // For now, we'll need to pass it in or get it from the profile context
     throw new Error(
-      'Swig wallet address must be provided from user profile - not implemented yet'
+      "Swig wallet address must be provided from user profile - not implemented yet"
     );
 
     // TODO: Implement proper Swig signing logic
@@ -98,10 +98,10 @@ export const signTransactionWithSwig = async (
     //   signedTransaction: signedTransactionBase64,
     // };
   } catch (error) {
-    console.error('❌ Swig transaction signing failed:', error);
+    console.error("❌ Swig transaction signing failed:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown signing error',
+      error: error instanceof Error ? error.message : "Unknown signing error",
     };
   }
 };
@@ -117,7 +117,7 @@ export const validateSwigWalletSetup = async (
     // Get Swig address from user profile
     // Note: This should come from the userProfile prop, not Supabase metadata
     throw new Error(
-      'Swig wallet address must be provided from user profile - not implemented yet'
+      "Swig wallet address must be provided from user profile - not implemented yet"
     );
 
     // TODO: Implement proper validation logic
@@ -126,11 +126,11 @@ export const validateSwigWalletSetup = async (
     // Check if Swig account exists and user has a role
     // ... rest of validation logic
   } catch (error) {
-    console.error('❌ Swig wallet validation failed:', error);
+    console.error("❌ Swig wallet validation failed:", error);
     return {
       isValid: false,
       error:
-        error instanceof Error ? error.message : 'Unknown validation error',
+        error instanceof Error ? error.message : "Unknown validation error",
     };
   }
 };
@@ -146,7 +146,7 @@ export const getUserSwigAddress = (userProfile: any): PublicKey | null => {
     }
     return new PublicKey(userProfile.swigWalletAddress);
   } catch (error) {
-    console.error('Error getting user Swig address:', error);
+    console.error("Error getting user Swig address:", error);
     return null;
   }
 };

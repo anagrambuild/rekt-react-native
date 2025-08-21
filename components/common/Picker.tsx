@@ -1,12 +1,12 @@
-import { useState } from 'react';
-import { FlatList } from 'react-native';
+import { useState } from "react";
+import { FlatList } from "react-native";
 
-import MaterialIcon from '@expo/vector-icons/MaterialIcons';
+import MaterialIcon from "@expo/vector-icons/MaterialIcons";
 
-import { PressableOpacity } from './buttons';
-import { Modal } from './Modal';
-import { BodyM } from './texts';
-import styled, { DefaultTheme, useTheme } from 'styled-components/native';
+import { PressableOpacity } from "./buttons";
+import { Modal } from "./Modal";
+import { BodyM } from "./texts";
+import styled, { DefaultTheme, useTheme } from "styled-components/native";
 
 interface PickerOption<T> {
   label: string;
@@ -26,16 +26,14 @@ export function Picker<T>({
 }: PickerProps<T>) {
   const [visible, setVisible] = useState(false);
   const theme = useTheme();
-  const selectedLabel = options.find(
-    (opt) => opt.value === selectedValue
-  )?.label;
+  const selectedLabel = options.find(opt => opt.value === selectedValue)?.label;
 
   return (
     <>
       <Trigger onPress={() => setVisible(true)}>
-        <BodyM>{selectedLabel || ''}</BodyM>
+        <BodyM>{selectedLabel || ""}</BodyM>
         <MaterialIcon
-          name='keyboard-arrow-down'
+          name="keyboard-arrow-down"
           size={20}
           color={theme.colors.textSecondary}
           style={{ marginLeft: 4 }}

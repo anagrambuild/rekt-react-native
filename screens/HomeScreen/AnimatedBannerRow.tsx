@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, View } from 'react-native';
+import { useEffect, useRef, useState } from "react";
+import { Animated, Easing, View } from "react-native";
 
-import { PerpSocialChip } from './PerpSocialChip';
-import styled from 'styled-components/native';
+import { PerpSocialChip } from "./PerpSocialChip";
+import styled from "styled-components/native";
 
 // Animated banner row for perpSocials
 export const AnimatedBannerRow = ({ items }: { items: any[] }) => {
@@ -37,7 +37,7 @@ export const AnimatedBannerRow = ({ items }: { items: any[] }) => {
     <BannerRowContainer>
       <Animated.View
         style={{
-          flexDirection: 'row',
+          flexDirection: "row",
           gap: itemGap,
           transform: [{ translateX: scrollAnim }],
         }}
@@ -45,7 +45,7 @@ export const AnimatedBannerRow = ({ items }: { items: any[] }) => {
       >
         {allItems.map((perpSocial, i) => (
           <PerpSocialChip
-            key={i + '-' + perpSocial.id}
+            key={i + "-" + perpSocial.id}
             imgSrc={perpSocial.imgSrc}
             position={perpSocial.position}
             meta={perpSocial.meta}

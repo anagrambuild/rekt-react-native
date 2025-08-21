@@ -1,5 +1,5 @@
-import { apiClient } from './apiClient';
-import { supabase } from './supabase';
+import { apiClient } from "./apiClient";
+import { supabase } from "./supabase";
 
 // API Response Interfaces
 export interface ApiResponse<T> {
@@ -43,7 +43,7 @@ export interface TradingBalanceApiResponse {
 export interface PositionApiResponse {
   id: string;
   asset: string;
-  direction: 'long' | 'short';
+  direction: "long" | "short";
   status: string;
   size: number;
   entryPrice: number;
@@ -98,42 +98,40 @@ export interface BackendMarketResponse {
 }
 
 export const SUPPORTED_TOKENS = {
-  sol: 'solana',
-  eth: 'ethereum',
-  btc: 'bitcoin',
+  sol: "solana",
+  eth: "ethereum",
+  btc: "bitcoin",
 } as const;
 
 export type SupportedToken = keyof typeof SUPPORTED_TOKENS;
 
 export const fetchTokenPrices = async (
-  tokens: SupportedToken[] = ['sol', 'eth', 'btc']
+  tokens: SupportedToken[] = ["sol", "eth", "btc"]
 ): Promise<Partial<Record<SupportedToken, TokenPrice>>> => {
   try {
     // Use the authenticated API client instead of raw fetch
-    const data: BackendMarketResponse = await apiClient.get('/api/markets');
+    const data: BackendMarketResponse = await apiClient.get("/api/markets");
 
     if (!data.success || !data.data) {
-      throw new Error('Invalid response format from backend');
+      throw new Error("Invalid response format from backend");
     }
 
     const result: Partial<Record<SupportedToken, TokenPrice>> = {};
 
-    tokens.forEach((token) => {
+    tokens.forEach(token => {
       const marketKey = `${token.toUpperCase()}-PERP`;
-      const marketData = data.data.find(
-        (market) => market.symbol === marketKey
-      );
+      const marketData = data.data.find(market => market.symbol === marketKey);
 
       if (marketData) {
         result[token] = {
           id: SUPPORTED_TOKENS[token],
           symbol: token.toUpperCase(),
           name:
-            token === 'sol'
-              ? 'Solana'
-              : token === 'eth'
-              ? 'Ethereum'
-              : 'Bitcoin',
+            token === "sol"
+              ? "Solana"
+              : token === "eth"
+                ? "Ethereum"
+                : "Bitcoin",
           current_price: marketData.price,
           price_change_24h: marketData.change24h || 0,
           price_change_percentage_24h: marketData.change24h || 0,
@@ -176,17 +174,17 @@ export interface HistoricalDataResponse {
 
 // Supported timeframes for chart data
 export type SupportedTimeframe =
-  | '1m'
-  | '2m'
-  | '5m'
-  | '10m'
-  | '1h'
-  | '4h'
-  | '1d';
+  | "1m"
+  | "2m"
+  | "5m"
+  | "10m"
+  | "1h"
+  | "4h"
+  | "1d";
 
 export const fetchHistoricalData = async (
   token: SupportedToken,
-  timeframe: SupportedTimeframe = '1m'
+  timeframe: SupportedTimeframe = "1m"
 ): Promise<ChartDataPoint[]> => {
   // Generate dynamic mock historical data based on real current price from backend
   const currentPrices = await fetchTokenPrices([token]);
@@ -197,13 +195,13 @@ export const fetchHistoricalData = async (
   const now = Date.now();
   const timeframeMs =
     {
-      '1m': 60000,
-      '2m': 120000,
-      '5m': 300000,
-      '10m': 600000,
-      '1h': 3600000,
-      '4h': 14400000,
-      '1d': 86400000,
+      "1m": 60000,
+      "2m": 120000,
+      "5m": 300000,
+      "10m": 600000,
+      "1h": 3600000,
+      "4h": 14400000,
+      "1d": 86400000,
     }[timeframe] || 60000;
 
   // Create more realistic price movement with trend
@@ -303,12 +301,12 @@ export const checkUsernameAvailabilityPublic = async (
   try {
     // Use direct fetch for public endpoints that don't require authentication
     const url = `${apiClient.getBaseURL()}/api/auth/check-username`;
-    console.log('🌐 Using API URL:', url);
+    console.log("🌐 Using API URL:", url);
 
     const response = await fetch(url, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ username }),
     });
@@ -323,7 +321,7 @@ export const checkUsernameAvailabilityPublic = async (
       available: data.available,
     };
   } catch (error) {
-    console.error('❌ Username check error (public):', error);
+    console.error("❌ Username check error (public):", error);
     throw error;
   }
 };
@@ -346,7 +344,7 @@ export const getUserByUserId = async (userId: string): Promise<User | null> => {
       updatedAt: result.user.updated_at || new Date().toISOString(),
     };
   } catch (error) {
-    console.error('Error fetching user by profile ID:', error);
+    console.error("Error fetching user by profile ID:", error);
     return null;
   }
 };
@@ -358,8 +356,8 @@ export const createUser = async (
     // Map frontend data structure to new backend expected structure
     const backendUserData = {
       username: userData.username,
-      email: userData.email || '',
-      avatar_url: userData.profileImage || '',
+      email: userData.email || "",
+      avatar_url: userData.profileImage || "",
       wallet_address: userData.walletAddress,
     };
 
@@ -381,17 +379,17 @@ export const createUser = async (
       updatedAt: result.user.updated_at || new Date().toISOString(),
     };
   } catch (error) {
-    console.error('Error creating user:', error);
+    console.error("Error creating user:", error);
 
     // Provide more specific error messages
     if (error instanceof Error) {
-      if (error.name === 'AbortError') {
+      if (error.name === "AbortError") {
         throw new Error(
-          'Request timed out. Please check your internet connection and try again.'
+          "Request timed out. Please check your internet connection and try again."
         );
-      } else if (error.message.includes('Network request failed')) {
+      } else if (error.message.includes("Network request failed")) {
         throw new Error(
-          'Network error. Please check if the backend server is running and accessible.'
+          "Network error. Please check if the backend server is running and accessible."
         );
       }
     }
@@ -426,11 +424,11 @@ export const uploadAvatar = async (
     // Add the image file to FormData
     const fileObject: FileObject = {
       uri: imageUri,
-      type: 'image/jpeg', // Backend accepts JPEG, PNG, WebP, GIF
+      type: "image/jpeg", // Backend accepts JPEG, PNG, WebP, GIF
       name: fileName,
     };
 
-    formData.append('avatar', fileObject as any); // FormData requires 'as any' for React Native
+    formData.append("avatar", fileObject as any); // FormData requires 'as any' for React Native
 
     // For FormData uploads, we need to use fetch directly but with auth headers
     // Get the auth token from Supabase
@@ -440,14 +438,14 @@ export const uploadAvatar = async (
     const token = session?.access_token;
 
     if (!token) {
-      throw new Error('No authentication token available');
+      throw new Error("No authentication token available");
     }
 
     // For FormData uploads, we need to use fetch directly
     const response = await fetch(
       `${apiClient.getBaseURL()}/api/upload/avatar`,
       {
-        method: 'POST',
+        method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
           // Don't set Content-Type header - let FormData set it with boundary
@@ -468,12 +466,12 @@ export const uploadAvatar = async (
     const result: AvatarUploadResponse = await response.json();
 
     if (!result.success || !result.avatar_url) {
-      throw new Error(result.message || 'Failed to upload avatar');
+      throw new Error(result.message || "Failed to upload avatar");
     }
 
     return result.avatar_url;
   } catch (error) {
-    console.error('Error uploading avatar:', error);
+    console.error("Error uploading avatar:", error);
     throw error;
   }
 };
@@ -483,12 +481,12 @@ export const deleteAvatar = async (avatarUrl: string): Promise<void> => {
   try {
     // Extract filename from URL for deletion
     // URL format is typically: https://domain.com/storage/v1/object/public/avatars/filename.webp
-    const urlParts = avatarUrl.split('/');
+    const urlParts = avatarUrl.split("/");
     const filename = urlParts[urlParts.length - 1];
 
     // Validate that we have a proper filename before making the request
     if (!filename || filename === avatarUrl) {
-      console.warn('Could not extract filename from avatar URL:', avatarUrl);
+      console.warn("Could not extract filename from avatar URL:", avatarUrl);
       return;
     }
 
@@ -497,7 +495,7 @@ export const deleteAvatar = async (avatarUrl: string): Promise<void> => {
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.webp$/i;
     if (!filenameRegex.test(filename)) {
       console.warn(
-        'Filename does not match expected format (UUID.webp):',
+        "Filename does not match expected format (UUID.webp):",
         filename
       );
       return;
@@ -505,9 +503,9 @@ export const deleteAvatar = async (avatarUrl: string): Promise<void> => {
 
     // Use the authenticated API client instead of raw fetch
     await apiClient.delete(`/api/upload/avatar/${filename}`);
-    console.log('✅ Successfully deleted old avatar:', filename);
+    console.log("✅ Successfully deleted old avatar:", filename);
   } catch (error) {
-    console.warn('Error deleting old avatar:', error);
+    console.warn("Error deleting old avatar:", error);
     // Don't throw error - we don't want to fail profile update if old image deletion fails
   }
 };
@@ -525,7 +523,7 @@ export const updateUserProfile = async (
     );
 
     if (!result.success) {
-      throw new Error(result.error || 'Failed to update user profile');
+      throw new Error(result.error || "Failed to update user profile");
     }
 
     // Map backend response to frontend User interface
@@ -539,7 +537,7 @@ export const updateUserProfile = async (
       updatedAt: result.data!.user.updated_at || new Date().toISOString(),
     };
   } catch (error) {
-    console.error('Error updating user profile:', error);
+    console.error("Error updating user profile:", error);
     throw error;
   }
 };
@@ -565,18 +563,18 @@ export const getSwigWalletBalance = async (
     );
 
     if (!result.success) {
-      throw new Error(result.error || 'Failed to get Swig wallet balance');
+      throw new Error(result.error || "Failed to get Swig wallet balance");
     }
     return result.data!;
   } catch (error) {
-    console.error('Error getting Swig wallet balance:', error);
+    console.error("Error getting Swig wallet balance:", error);
     // Return zero balance on error to match backend behavior
     return {
       balance: 0,
-      formatted: '$0.00',
-      source: 'swig_wallet',
-      status: 'error',
-      error: error instanceof Error ? error.message : 'Unknown error',
+      formatted: "$0.00",
+      source: "swig_wallet",
+      status: "error",
+      error: error instanceof Error ? error.message : "Unknown error",
     };
   }
 };
@@ -592,8 +590,8 @@ export interface TradingBalance {
 
 export interface OpenPositionRequest {
   userId: string;
-  asset: 'SOL-PERP' | 'BTC-PERP' | 'ETH-PERP';
-  direction: 'long' | 'short';
+  asset: "SOL-PERP" | "BTC-PERP" | "ETH-PERP";
+  direction: "long" | "short";
   amount: number;
   leverage: number;
 }
@@ -613,7 +611,7 @@ export interface InitializationResponse {
 export interface Position {
   id: string;
   asset: string;
-  direction: 'long' | 'short';
+  direction: "long" | "short";
   status: string;
   size: number;
   entryPrice: number;
@@ -641,7 +639,7 @@ export interface OpenPositionResponse {
     initializationInstructions?: TransactionData;
     // Legacy fields for direct position creation
     asset?: string;
-    direction?: 'long' | 'short';
+    direction?: "long" | "short";
     amount?: number;
     leverage?: number;
     entryPrice?: number;
@@ -703,12 +701,12 @@ export const getTradingBalance = async (
     );
 
     if (!result.success) {
-      throw new Error(result.error || 'Failed to get trading balance');
+      throw new Error(result.error || "Failed to get trading balance");
     }
 
     return result.data!;
   } catch (error) {
-    console.error('Error getting trading balance:', error);
+    console.error("Error getting trading balance:", error);
     throw error;
   }
 };
@@ -732,12 +730,12 @@ export const openTradingPosition = async (
     );
 
     if (!result.success) {
-      throw new Error(result.message || 'Failed to open position');
+      throw new Error(result.message || "Failed to open position");
     }
 
     return result;
   } catch (error) {
-    console.error('Error opening trading position:', error);
+    console.error("Error opening trading position:", error);
     throw error;
   }
 };
@@ -751,7 +749,7 @@ export const getOpenPositions = async (userId: string): Promise<Position[]> => {
     );
 
     if (!result.success) {
-      throw new Error(result.error || 'Failed to get positions');
+      throw new Error(result.error || "Failed to get positions");
     }
 
     return result.data!;
@@ -773,12 +771,12 @@ export const closeTradingPosition = async (
     );
 
     if (!result.success) {
-      throw new Error(result.message || 'Failed to close position');
+      throw new Error(result.message || "Failed to close position");
     }
 
     return result;
   } catch (error) {
-    console.error('Error closing trading position:', error);
+    console.error("Error closing trading position:", error);
     throw error;
   }
 };
@@ -795,12 +793,12 @@ export const submitSignedTransaction = async (
     );
 
     if (!result.success) {
-      throw new Error(result.message || 'Failed to submit transaction');
+      throw new Error(result.message || "Failed to submit transaction");
     }
 
     return result;
   } catch (error) {
-    console.error('Error submitting signed transaction:', error);
+    console.error("Error submitting signed transaction:", error);
     throw error;
   }
 };
@@ -808,7 +806,7 @@ export const submitSignedTransaction = async (
 // Get trading history for a user
 export const getTradingHistory = async (
   userId: string,
-  status?: 'open' | 'closed',
+  status?: "open" | "closed",
   limit: number = 50
 ): Promise<Position[]> => {
   try {
@@ -821,7 +819,7 @@ export const getTradingHistory = async (
     const result = await apiClient.get<ApiResponse<Position[]>>(endpoint);
 
     if (!result.success) {
-      throw new Error(result.error || 'Failed to get trading history');
+      throw new Error(result.error || "Failed to get trading history");
     }
 
     return result.data!;

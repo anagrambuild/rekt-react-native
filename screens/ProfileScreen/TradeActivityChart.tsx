@@ -1,14 +1,14 @@
-import { Dimensions } from 'react-native';
+import { Dimensions } from "react-native";
 
-import { BodyXSMonoEmphasized } from '@/components';
-import { Trade } from '@/contexts';
+import { BodyXSMonoEmphasized } from "@/components";
+import { Trade } from "@/contexts";
 
-import { LineChart } from 'react-native-gifted-charts';
-import styled, { DefaultTheme, useTheme } from 'styled-components/native';
+import { LineChart } from "react-native-gifted-charts";
+import styled, { DefaultTheme, useTheme } from "styled-components/native";
 
 interface TradeActivityChartProps {
   trade: Trade;
-  symbol: 'btc' | 'eth' | 'sol';
+  symbol: "btc" | "eth" | "sol";
 }
 
 export const TradeActivityChart = ({
@@ -33,17 +33,19 @@ export const TradeActivityChart = ({
   };
 
   // Use entry price from trade as base price, with fallback values
-  const basePrice = trade?.entryPrice || (symbol === 'sol' ? 150 : symbol === 'eth' ? 2500 : 45000);
+  const basePrice =
+    trade?.entryPrice ||
+    (symbol === "sol" ? 150 : symbol === "eth" ? 2500 : 45000);
   const data = generateMockData(basePrice);
 
-  const chartWidth = Dimensions.get('window').width * 0.8 - 62; // Adjusted for modal
+  const chartWidth = Dimensions.get("window").width * 0.8 - 62; // Adjusted for modal
 
   const findYAxisOffset = (arr: number[]) => {
     if (!arr || arr.length === 0) return undefined;
     return Math.min(...arr);
   };
 
-  const dataValues = data.map((item) => item.value);
+  const dataValues = data.map(item => item.value);
   const yAxisOffset = findYAxisOffset(dataValues);
 
   // Calculate the position of entry price line
@@ -65,7 +67,7 @@ export const TradeActivityChart = ({
   let chartColor = theme.colors.tint;
   let fillColor = theme.colors.tint;
 
-  if (trade.status === 'closed') {
+  if (trade.status === "closed") {
     // For closed trades, we'll use a neutral color or base it on the final outcome
     chartColor = theme.colors.textSecondary;
     fillColor = theme.colors.textSecondary;
@@ -89,11 +91,11 @@ export const TradeActivityChart = ({
         startOpacity={0.15}
         endOpacity={0.01}
         hideDataPoints
-        yAxisColor='transparent'
-        xAxisColor='transparent'
-        rulesColor={theme.colors.secondary + '40'}
+        yAxisColor="transparent"
+        xAxisColor="transparent"
+        rulesColor={theme.colors.secondary + "40"}
         noOfSections={3}
-        backgroundColor='transparent'
+        backgroundColor="transparent"
         initialSpacing={0}
         yAxisOffset={yAxisOffset}
         width={chartWidth}
@@ -187,7 +189,7 @@ const EntryPriceBubble = styled.View`
 const EntryPriceText = styled.Text`
   font-size: 10px;
   font-weight: 500;
-  font-family: 'Geist Mono';
+  font-family: "Geist Mono";
 `;
 
 const EntryPriceLine = styled.View`

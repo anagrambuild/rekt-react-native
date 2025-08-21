@@ -1,5 +1,5 @@
-import PointsIcon from '@/assets/images/app-svgs/points.svg';
-import UsdcIcon from '@/assets/images/app-svgs/usdc.svg';
+import PointsIcon from "@/assets/images/app-svgs/points.svg";
+import UsdcIcon from "@/assets/images/app-svgs/usdc.svg";
 import {
   Body1,
   BodySSecondary,
@@ -8,13 +8,13 @@ import {
   Column,
   PressableOpacity,
   Row,
-} from '@/components';
-import { useHomeContext, useProfileContext, useWallet } from '@/contexts';
+} from "@/components";
+import { useHomeContext, useProfileContext, useWallet } from "@/contexts";
 
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
-import { useTranslation } from 'react-i18next';
-import styled, { DefaultTheme, useTheme } from 'styled-components/native';
+import { useTranslation } from "react-i18next";
+import styled, { DefaultTheme, useTheme } from "styled-components/native";
 
 const iconSize = 20;
 const borderRadius = 8;
@@ -39,17 +39,17 @@ export const ProfileInfoCards = () => {
   return (
     <Column $gap={6}>
       <PressableOpacity
-        style={{ width: '100%' }}
+        style={{ width: "100%" }}
         onPress={() => setIsOnOffRampModalVisible(true)}
       >
         <Card>
-          <Column $alignItems='flex-start' $padding={16} $gap={8}>
+          <Column $alignItems="flex-start" $padding={16} $gap={8}>
             <BodyXSMonoSecondary>
-              {t('Balance').toUpperCase()}
+              {t("Balance").toUpperCase()}
             </BodyXSMonoSecondary>
-            <Row $gap={6} $width='auto'>
+            <Row $gap={6} $width="auto">
               <Body1>
-                {isLoadingBalance ? '...' : (usdcBalance || 0).toLocaleString()}
+                {isLoadingBalance ? "..." : (usdcBalance || 0).toLocaleString()}
               </Body1>
               <UsdcIcon width={iconSize} height={iconSize} />
             </Row>
@@ -60,15 +60,15 @@ export const ProfileInfoCards = () => {
       <Row
         $gap={8}
         $padding={0}
-        $justifyContent='space-between'
-        $alignItems='stretch'
+        $justifyContent="space-between"
+        $alignItems="stretch"
       >
         <Card style={{ flex: 1, borderRadius }}>
-          <Column $alignItems='flex-start' $padding={16} $gap={8} $width='auto'>
+          <Column $alignItems="flex-start" $padding={16} $gap={8} $width="auto">
             <BodyXSMonoSecondary>
-              {t('24H P&L').toUpperCase()}
+              {t("24H P&L").toUpperCase()}
             </BodyXSMonoSecondary>
-            <Row $gap={6} $width='auto'>
+            <Row $gap={6} $width="auto">
               <Body1
                 style={{
                   color: isProfit ? theme.colors.profit : theme.colors.loss,
@@ -82,11 +82,11 @@ export const ProfileInfoCards = () => {
         </Card>
 
         <Card style={{ flex: 1, borderRadius }}>
-          <Column $alignItems='flex-start' $padding={16} $gap={8} $width='auto'>
+          <Column $alignItems="flex-start" $padding={16} $gap={8} $width="auto">
             <BodyXSMonoSecondary>
-              {t('Points').toUpperCase()}
+              {t("Points").toUpperCase()}
             </BodyXSMonoSecondary>
-            <Row $gap={6} $width='auto'>
+            <Row $gap={6} $width="auto">
               <Body1>{totalPoints.toLocaleString()}</Body1>
               <PointsIcon width={iconSize} height={iconSize} />
             </Row>
@@ -95,12 +95,12 @@ export const ProfileInfoCards = () => {
 
         <Card style={{ flex: 0.5, borderRadius }}>
           <PressableOpacity>
-            <Column $padding={16} $gap={8} $width='auto'>
+            <Column $padding={16} $gap={8} $width="auto">
               <BodyXSMonoSecondary>
-                {t('More').toUpperCase()}
+                {t("More").toUpperCase()}
               </BodyXSMonoSecondary>
               <MaterialIcons
-                name='chevron-right'
+                name="chevron-right"
                 size={16}
                 color={theme.colors.textSecondary}
               />
@@ -144,7 +144,7 @@ export const PnL = ({ isProfit }: { isProfit: boolean }) => {
           color: isProfit ? theme.colors.profit : theme.colors.loss,
         }}
       >
-        {isProfit ? 'P' : 'L'}
+        {isProfit ? "P" : "L"}
       </BodySSecondary>
     </PnLContainer>
   );

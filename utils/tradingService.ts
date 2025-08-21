@@ -1,4 +1,4 @@
-import { Connection, PublicKey } from '@solana/web3.js';
+import { Connection, PublicKey } from "@solana/web3.js";
 
 import {
   ClosePositionRequest,
@@ -10,13 +10,13 @@ import {
   openTradingPosition,
   Position,
   submitSignedTransaction,
-} from './backendApi';
-import { getCurrentUser } from './supabaseApi';
+} from "./backendApi";
+import { getCurrentUser } from "./supabaseApi";
 import {
   signTransactionWithSwig,
   SwigTransactionData,
   validateSwigWalletSetup,
-} from './swigTradingUtils';
+} from "./swigTradingUtils";
 
 export interface TradingFlowResult {
   success: boolean;
@@ -45,8 +45,8 @@ export interface TradingFlowResult {
 }
 
 export interface ExecuteTradeParams {
-  asset: 'SOL-PERP' | 'BTC-PERP' | 'ETH-PERP';
-  direction: 'long' | 'short';
+  asset: "SOL-PERP" | "BTC-PERP" | "ETH-PERP";
+  direction: "long" | "short";
   amount: number;
   leverage: number;
 }
@@ -70,14 +70,14 @@ export class TradingService {
    */
   async executeTrade(params: ExecuteTradeParams): Promise<TradingFlowResult> {
     try {
-      console.log('🚀 Starting trade execution:', params);
+      console.log("🚀 Starting trade execution:", params);
 
       // Get user info from Supabase
       const currentUser = await getCurrentUser();
       if (!currentUser?.id) {
         return {
           success: false,
-          error: 'User not authenticated',
+          error: "User not authenticated",
         };
       }
 
@@ -86,7 +86,7 @@ export class TradingService {
       if (!walletAddress) {
         return {
           success: false,
-          error: 'Wallet address not found in user metadata',
+          error: "Wallet address not found in user metadata",
         };
       }
 
@@ -94,11 +94,11 @@ export class TradingService {
 
       // Skip Swig validation for now - will be handled when needed
       console.log(
-        '🔍 Swig wallet setup will be validated when signing is required...'
+        "🔍 Swig wallet setup will be validated when signing is required..."
       );
 
       // Step 1: Request position opening from backend
-      console.log('📡 Requesting position opening from backend...');
+      console.log("📡 Requesting position opening from backend...");
       const openRequest: OpenPositionRequest = {
         userId: userId,
         asset: params.asset,
@@ -108,26 +108,26 @@ export class TradingService {
       };
 
       const openResponse = await openTradingPosition(openRequest);
-      console.log('📨 Backend response received:', openResponse.success);
+      console.log("📨 Backend response received:", openResponse.success);
 
       // Check if initialization is required
       if (
         openResponse.data?.needsInitialization ||
         openResponse.data?.initializationRequired
       ) {
-        console.log('⚠️ Drift account initialization required');
+        console.log("⚠️ Drift account initialization required");
 
         if (openResponse.data.initializationInstructions) {
           return {
             success: false,
             requiresInitialization: true,
             initializationData: openResponse.data.initializationInstructions,
-            error: 'Drift account initialization required',
+            error: "Drift account initialization required",
           };
         } else {
           return {
             success: false,
-            error: 'Initialization required but no instructions provided',
+            error: "Initialization required but no instructions provided",
           };
         }
       }
@@ -135,7 +135,7 @@ export class TradingService {
       // Check if we have transaction data to sign
       if (openResponse.data?.transactionData) {
         console.log(
-          '🔐 Transaction data received, signing with Swig wallet...'
+          "🔐 Transaction data received, signing with Swig wallet..."
         );
 
         // Validate Swig setup only when we need to sign
@@ -165,7 +165,7 @@ export class TradingService {
         }
 
         // Step 3: Submit the signed transaction
-        console.log('📤 Submitting signed transaction to blockchain...');
+        console.log("📤 Submitting signed transaction to blockchain...");
         const submitResult = await submitSignedTransaction({
           signedTransaction: signingResult.signedTransaction,
           walletAddress: walletAddress,
@@ -179,8 +179,8 @@ export class TradingService {
           };
         }
 
-        console.log('✅ Trade executed successfully with Swig signing!');
-        console.log('Transaction signature:', submitResult.data?.signature);
+        console.log("✅ Trade executed successfully with Swig signing!");
+        console.log("Transaction signature:", submitResult.data?.signature);
 
         return {
           success: true,
@@ -193,7 +193,7 @@ export class TradingService {
       } else if (openResponse.data?.positionId) {
         // Backend returned position data directly (old flow) - this means the trade was executed on the backend
         console.log(
-          '✅ Trade executed successfully by backend (no signing required)'
+          "✅ Trade executed successfully by backend (no signing required)"
         );
 
         return {
@@ -208,17 +208,17 @@ export class TradingService {
       } else {
         return {
           success: false,
-          error: 'No transaction data or position data received from backend',
+          error: "No transaction data or position data received from backend",
         };
       }
     } catch (error) {
-      console.error('❌ Trade execution failed:', error);
+      console.error("❌ Trade execution failed:", error);
       return {
         success: false,
         error:
           error instanceof Error
             ? error.message
-            : 'Unknown trade execution error',
+            : "Unknown trade execution error",
       };
     }
   }
@@ -230,14 +230,14 @@ export class TradingService {
     initializationData: SwigTransactionData
   ): Promise<TradingFlowResult> {
     try {
-      console.log('🔧 Starting Drift account initialization...');
+      console.log("🔧 Starting Drift account initialization...");
 
       // Get user info from Supabase
       const currentUser = await getCurrentUser();
       if (!currentUser?.user_metadata?.wallet_address) {
         return {
           success: false,
-          error: 'Wallet address not found in user metadata',
+          error: "Wallet address not found in user metadata",
         };
       }
 
@@ -246,7 +246,7 @@ export class TradingService {
       );
 
       // Sign the initialization transaction
-      console.log('🔐 Signing initialization transaction...');
+      console.log("🔐 Signing initialization transaction...");
       const signingResult = await signTransactionWithSwig(
         this.connection,
         initializationData,
@@ -261,7 +261,7 @@ export class TradingService {
       }
 
       // Submit the initialization transaction
-      console.log('📤 Submitting initialization transaction...');
+      console.log("📤 Submitting initialization transaction...");
       const submitResult = await submitSignedTransaction({
         signedTransaction: signingResult.signedTransaction,
         walletAddress: currentUser.user_metadata.wallet_address,
@@ -274,8 +274,8 @@ export class TradingService {
         };
       }
 
-      console.log('✅ Drift account initialized successfully!');
-      console.log('Transaction signature:', submitResult.data?.signature);
+      console.log("✅ Drift account initialized successfully!");
+      console.log("Transaction signature:", submitResult.data?.signature);
 
       return {
         success: true,
@@ -285,13 +285,13 @@ export class TradingService {
         },
       };
     } catch (error) {
-      console.error('❌ Drift initialization failed:', error);
+      console.error("❌ Drift initialization failed:", error);
       return {
         success: false,
         error:
           error instanceof Error
             ? error.message
-            : 'Unknown initialization error',
+            : "Unknown initialization error",
       };
     }
   }
@@ -301,14 +301,14 @@ export class TradingService {
    */
   async closePosition(positionId: string): Promise<TradingFlowResult> {
     try {
-      console.log('🔒 Starting position close:', positionId);
+      console.log("🔒 Starting position close:", positionId);
 
       // Get user info from Supabase
       const currentUser = await getCurrentUser();
       if (!currentUser?.id) {
         return {
           success: false,
-          error: 'User not authenticated',
+          error: "User not authenticated",
         };
       }
 
@@ -317,7 +317,7 @@ export class TradingService {
       if (!userProfile) {
         return {
           success: false,
-          error: 'User profile not found',
+          error: "User profile not found",
         };
       }
 
@@ -327,26 +327,26 @@ export class TradingService {
       if (!walletAddress) {
         return {
           success: false,
-          error: 'User wallet address not found',
+          error: "User wallet address not found",
         };
       }
 
       const userPublicKey = new PublicKey(walletAddress);
 
       // Request position closing from backend
-      console.log('📡 Requesting position close from backend...');
+      console.log("📡 Requesting position close from backend...");
       const closeRequest: ClosePositionRequest = {
         userId: userId,
         positionId: positionId,
       };
 
       const closeResponse = await closeTradingPosition(closeRequest);
-      console.log('📨 Close response received:', closeResponse.success);
+      console.log("📨 Close response received:", closeResponse.success);
 
       // Check if we have transaction data to sign
       if (closeResponse.data?.transactionData) {
         console.log(
-          '🔐 Transaction data received, signing close transaction...'
+          "🔐 Transaction data received, signing close transaction..."
         );
 
         // Validate Swig setup only when we need to sign
@@ -376,7 +376,7 @@ export class TradingService {
         }
 
         // Submit the close transaction
-        console.log('📤 Submitting close transaction...');
+        console.log("📤 Submitting close transaction...");
         const submitResult = await submitSignedTransaction({
           signedTransaction: signingResult.signedTransaction,
           walletAddress: walletAddress,
@@ -390,7 +390,7 @@ export class TradingService {
           };
         }
 
-        console.log('✅ Position closed successfully with Swig signing!');
+        console.log("✅ Position closed successfully with Swig signing!");
 
         return {
           success: true,
@@ -406,7 +406,7 @@ export class TradingService {
       } else if (closeResponse.data?.positionId) {
         // Backend closed position directly (legacy mode)
         console.log(
-          '✅ Position closed successfully by backend (no signing required)'
+          "✅ Position closed successfully by backend (no signing required)"
         );
 
         return {
@@ -422,17 +422,17 @@ export class TradingService {
       } else {
         return {
           success: false,
-          error: 'No transaction data or position data received for close',
+          error: "No transaction data or position data received for close",
         };
       }
     } catch (error) {
-      console.error('❌ Position close failed:', error);
+      console.error("❌ Position close failed:", error);
       return {
         success: false,
         error:
           error instanceof Error
             ? error.message
-            : 'Unknown position close error',
+            : "Unknown position close error",
       };
     }
   }
@@ -444,14 +444,14 @@ export class TradingService {
     try {
       const currentUser = await getCurrentUser();
       if (!currentUser?.id) {
-        throw new Error('User not authenticated');
+        throw new Error("User not authenticated");
       }
 
       // Use the authenticated API wrapper - no need to pass token
       const positions = await getOpenPositions(currentUser.id);
       return positions;
     } catch (error) {
-      console.error('Failed to get positions:', error);
+      console.error("Failed to get positions:", error);
       throw error;
     }
   }
@@ -459,18 +459,18 @@ export class TradingService {
   /**
    * Get user's trading history
    */
-  async getHistory(status?: 'open' | 'closed'): Promise<Position[]> {
+  async getHistory(status?: "open" | "closed"): Promise<Position[]> {
     try {
       const currentUser = await getCurrentUser();
       if (!currentUser?.id) {
-        throw new Error('User not authenticated');
+        throw new Error("User not authenticated");
       }
 
       // Use the authenticated API wrapper - no need to pass token
       const history = await getTradingHistory(currentUser.id, status, 50); // Default limit of 50
       return history;
     } catch (error) {
-      console.error('Failed to get position history:', error);
+      console.error("Failed to get position history:", error);
       throw error;
     }
   }
@@ -482,14 +482,14 @@ export class TradingService {
     try {
       const currentUser = await getCurrentUser();
       if (!currentUser?.id) {
-        throw new Error('User not authenticated');
+        throw new Error("User not authenticated");
       }
 
       // TODO: Implement position update logic
       // For now, just return the current position data
-      throw new Error('Position update not implemented yet');
+      throw new Error("Position update not implemented yet");
     } catch (error) {
-      console.error('Failed to update position:', error);
+      console.error("Failed to update position:", error);
       throw error;
     }
   }

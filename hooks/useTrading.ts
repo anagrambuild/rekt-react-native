@@ -1,15 +1,15 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from "react";
 
-import { useSolana } from '../contexts/SolanaContext';
-import { Position } from '../utils/backendApi';
-import { SwigTransactionData } from '../utils/swigTradingUtils';
+import { useSolana } from "../contexts/SolanaContext";
+import { Position } from "../utils/backendApi";
+import { SwigTransactionData } from "../utils/swigTradingUtils";
 import {
   createTradingFlowManager,
   TradingFlowCallbacks,
   TradingFlowManager,
   TradingFlowState,
-} from '../utils/tradingFlowManager';
-import { ExecuteTradeParams } from '../utils/tradingService';
+} from "../utils/tradingFlowManager";
+import { ExecuteTradeParams } from "../utils/tradingService";
 
 export interface UseTradingResult {
   // State
@@ -65,10 +65,10 @@ export const useTrading = (
   useEffect(() => {
     const callbacks: TradingFlowCallbacks = {
       onTradeStart: () => {
-        setState((prev) => ({ ...prev, isTrading: true, error: null }));
+        setState(prev => ({ ...prev, isTrading: true, error: null }));
       },
-      onTradeSuccess: (result) => {
-        setState((prev) => ({
+      onTradeSuccess: result => {
+        setState(prev => ({
           ...prev,
           isTrading: false,
           lastTradeResult: result,
@@ -79,12 +79,12 @@ export const useTrading = (
           refreshPositions();
         }
       },
-      onTradeError: (error) => {
-        setState((prev) => ({ ...prev, isTrading: false, error }));
+      onTradeError: error => {
+        setState(prev => ({ ...prev, isTrading: false, error }));
         options.onTradeError?.(error);
       },
-      onInitializationRequired: (data) => {
-        setState((prev) => ({
+      onInitializationRequired: data => {
+        setState(prev => ({
           ...prev,
           isTrading: false,
           requiresInitialization: true,
@@ -93,10 +93,10 @@ export const useTrading = (
         options.onInitializationRequired?.(data);
       },
       onInitializationStart: () => {
-        setState((prev) => ({ ...prev, isInitializing: true, error: null }));
+        setState(prev => ({ ...prev, isInitializing: true, error: null }));
       },
-      onInitializationSuccess: (result) => {
-        setState((prev) => ({
+      onInitializationSuccess: result => {
+        setState(prev => ({
           ...prev,
           isInitializing: false,
           requiresInitialization: false,
@@ -104,8 +104,8 @@ export const useTrading = (
         }));
         options.onInitializationSuccess?.(result);
       },
-      onInitializationError: (error) => {
-        setState((prev) => ({ ...prev, isInitializing: false, error }));
+      onInitializationError: error => {
+        setState(prev => ({ ...prev, isInitializing: false, error }));
         options.onInitializationError?.(error);
       },
     };
@@ -142,10 +142,10 @@ export const useTrading = (
       setPositions(userPositions);
     } catch (error) {
       // console.error('Error refreshing positions:', error);
-      setState((prev) => ({
+      setState(prev => ({
         ...prev,
         error:
-          error instanceof Error ? error.message : 'Failed to load positions',
+          error instanceof Error ? error.message : "Failed to load positions",
       }));
     } finally {
       setIsLoadingPositions(false);
@@ -156,7 +156,7 @@ export const useTrading = (
   const executeTrade = useCallback(
     async (params: ExecuteTradeParams) => {
       if (!tradingManager) {
-        throw new Error('Trading manager not initialized');
+        throw new Error("Trading manager not initialized");
       }
       await tradingManager.executeTrade(params);
     },
@@ -165,7 +165,7 @@ export const useTrading = (
 
   const initializeDriftAccount = useCallback(async () => {
     if (!tradingManager) {
-      throw new Error('Trading manager not initialized');
+      throw new Error("Trading manager not initialized");
     }
     await tradingManager.initializeDriftAccount();
   }, [tradingManager]);
@@ -173,7 +173,7 @@ export const useTrading = (
   const closePosition = useCallback(
     async (positionId: string) => {
       if (!tradingManager) {
-        throw new Error('Trading manager not initialized');
+        throw new Error("Trading manager not initialized");
       }
       await tradingManager.closePosition(positionId);
     },
@@ -181,7 +181,7 @@ export const useTrading = (
   );
 
   const clearError = useCallback(() => {
-    setState((prev) => ({ ...prev, error: null }));
+    setState(prev => ({ ...prev, error: null }));
     tradingManager?.clearError();
   }, [tradingManager]);
 
@@ -228,7 +228,7 @@ export const useTrading = (
 /**
  * Hook for getting trading history
  */
-export const useTradingHistory = (status?: 'open' | 'closed') => {
+export const useTradingHistory = (status?: "open" | "closed") => {
   const { connection } = useSolana();
   const [history, setHistory] = useState<Position[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -244,9 +244,9 @@ export const useTradingHistory = (status?: 'open' | 'closed') => {
       setHistory(tradingHistory);
     } catch (err) {
       const errorMessage =
-        err instanceof Error ? err.message : 'Failed to load trading history';
+        err instanceof Error ? err.message : "Failed to load trading history";
       setError(errorMessage);
-      console.error('Error loading trading history:', err);
+      console.error("Error loading trading history:", err);
     } finally {
       setIsLoading(false);
     }

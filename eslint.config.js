@@ -1,36 +1,36 @@
 // https://docs.expo.dev/guides/using-eslint/
-const { defineConfig } = require('eslint/config');
-const expoConfig = require('eslint-config-expo/flat');
+const { defineConfig } = require("eslint/config");
+const expoConfig = require("eslint-config-expo/flat");
 
 module.exports = defineConfig([
   expoConfig,
   {
-    ignores: ['dist/*'],
+    ignores: ["dist/*"],
     plugins: {
-      'simple-import-sort': require('eslint-plugin-simple-import-sort'),
+      "simple-import-sort": require("eslint-plugin-simple-import-sort"),
     },
     rules: {
-      'simple-import-sort/imports': [
-        'warn',
+      "simple-import-sort/imports": [
+        "warn",
         {
           groups: [
             // React and React Native first
-            ['^react$', '^react-native$'],
+            ["^react$", "^react-native$"],
             // @imports (e.g., @components, @/)
-            ['^@components', '^@/'],
+            ["^@components", "^@/"],
             // Other packages
-            ['^@?\\w'],
+            ["^@?\\w"],
             // Parent imports
-            ['^..(?!/?$)', '^../?$'],
+            ["^..(?!/?$)", "^../?$"],
             // Other relative imports
-            ['^./(?=.*/)(?!/?$)', '^.(?!/?$)', '^./?$'],
+            ["^./(?=.*/)(?!/?$)", "^.(?!/?$)", "^./?$"],
             // Style imports
-            ['^.+\\.s?css$'],
+            ["^.+\\.s?css$"],
           ],
         },
       ],
-      'simple-import-sort/exports': 'error',
-      'import/no-named-as-default': 'off',
+      "simple-import-sort/exports": "error",
+      "import/no-named-as-default": "off",
     },
   },
 ]);

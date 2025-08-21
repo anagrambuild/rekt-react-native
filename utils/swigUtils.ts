@@ -4,14 +4,14 @@ import {
   PublicKey,
   sendAndConfirmTransaction,
   Transaction,
-} from '@solana/web3.js';
+} from "@solana/web3.js";
 import {
   Actions,
   createEd25519AuthorityInfo,
   fetchSwig,
   findSwigPda,
   getCreateSwigInstruction,
-} from '@swig-wallet/classic';
+} from "@swig-wallet/classic";
 
 export interface SwigAccountResult {
   swigAddress: PublicKey;
@@ -62,15 +62,15 @@ export const createSwigAccount = async (
       userKeypair,
     ]);
 
-    console.log('✓ Swig account created at:', swigAddress.toBase58());
-    console.log('Transaction signature:', signature);
+    console.log("✓ Swig account created at:", swigAddress.toBase58());
+    console.log("Transaction signature:", signature);
 
     return {
       swigAddress,
       transactionSignature: signature,
     };
   } catch (error) {
-    console.error('Error creating Swig account:', error);
+    console.error("Error creating Swig account:", error);
     throw error;
   }
 };
@@ -91,7 +91,7 @@ export const checkSwigAccount = async (
       swig,
     };
   } catch (error) {
-    console.error('Error checking Swig account:', error);
+    console.error("Error checking Swig account:", error);
     // If fetchSwig fails, the account doesn't exist
     return {
       exists: false,
@@ -129,14 +129,14 @@ export const getOrCreateSwigAccount = async (
   const accountInfo = await checkSwigAccount(connection, swigAddress);
 
   if (accountInfo.exists) {
-    console.log('✓ Swig account already exists at:', swigAddress.toBase58());
+    console.log("✓ Swig account already exists at:", swigAddress.toBase58());
     return {
       swigAddress,
-      transactionSignature: '', // No transaction needed
+      transactionSignature: "", // No transaction needed
     };
   }
 
   // Account doesn't exist, create it
-  console.log('Creating new Swig account...');
+  console.log("Creating new Swig account...");
   return await createSwigAccount(connection, userKeypair);
 };

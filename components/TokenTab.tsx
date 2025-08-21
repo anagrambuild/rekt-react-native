@@ -1,12 +1,12 @@
-import BtcSelected from '@/assets/images/app-svgs/btc-selected.svg';
-import BtcUnselected from '@/assets/images/app-svgs/btc-unselected.svg';
-import EthSelected from '@/assets/images/app-svgs/eth-selected.svg';
-import EthUnselected from '@/assets/images/app-svgs/eth-unselected.svg';
-import SolSelected from '@/assets/images/app-svgs/sol-selected.svg';
-import SolUnselected from '@/assets/images/app-svgs/sol-unselected.svg';
+import BtcSelected from "@/assets/images/app-svgs/btc-selected.svg";
+import BtcUnselected from "@/assets/images/app-svgs/btc-unselected.svg";
+import EthSelected from "@/assets/images/app-svgs/eth-selected.svg";
+import EthUnselected from "@/assets/images/app-svgs/eth-unselected.svg";
+import SolSelected from "@/assets/images/app-svgs/sol-selected.svg";
+import SolUnselected from "@/assets/images/app-svgs/sol-unselected.svg";
 
-import { BodyS, PressableOpacity } from './common';
-import styled, { DefaultTheme } from 'styled-components/native';
+import { BodyS, PressableOpacity } from "./common";
+import styled, { DefaultTheme } from "styled-components/native";
 
 interface TabContainerProps {
   selected: boolean;
@@ -22,7 +22,7 @@ const TabContainer = styled(PressableOpacity)<TabContainerProps>`
   }: {
     selected: boolean;
     theme: DefaultTheme;
-  }) => (selected ? theme.colors.background : 'transparent')};
+  }) => (selected ? theme.colors.background : "transparent")};
   border-radius: 12px;
   padding: 16px;
   align-items: center;
@@ -33,7 +33,7 @@ const TabContainer = styled(PressableOpacity)<TabContainerProps>`
 `;
 
 type TokenTabProps = {
-  name: 'sol' | 'eth' | 'btc';
+  name: "sol" | "eth" | "btc";
   price: string;
   selected: boolean;
   onPress?: () => void;
@@ -41,9 +41,9 @@ type TokenTabProps = {
 };
 
 const tokenNameMap = {
-  sol: 'Solana',
-  eth: 'Ethereum',
-  btc: 'Bitcoin',
+  sol: "Solana",
+  eth: "Ethereum",
+  btc: "Bitcoin",
 };
 
 export const TokenTab: React.FC<TokenTabProps> = ({
@@ -53,9 +53,9 @@ export const TokenTab: React.FC<TokenTabProps> = ({
   disabled = false,
 }) => {
   let IconComponent;
-  if (name === 'sol') {
+  if (name === "sol") {
     IconComponent = selected ? SolSelected : SolUnselected;
-  } else if (name === 'eth') {
+  } else if (name === "eth") {
     IconComponent = selected ? EthSelected : EthUnselected;
   } else {
     IconComponent = selected ? BtcSelected : BtcUnselected;

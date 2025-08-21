@@ -1,11 +1,11 @@
-import { Dimensions } from 'react-native';
+import { Dimensions } from "react-native";
 
-import { BodyXSEmphasized, BodyXSMonoEmphasized } from '@/components';
-import { useMiniGameContext } from '@/contexts';
+import { BodyXSEmphasized, BodyXSMonoEmphasized } from "@/components";
+import { useMiniGameContext } from "@/contexts";
 
-import { CandlestickChart } from './CandlestickChart';
-import { useTranslation } from 'react-i18next';
-import styled, { DefaultTheme, useTheme } from 'styled-components/native';
+import { CandlestickChart } from "./CandlestickChart";
+import { useTranslation } from "react-i18next";
+import styled, { DefaultTheme, useTheme } from "styled-components/native";
 
 export const CandleChart = () => {
   const { t } = useTranslation();
@@ -16,7 +16,7 @@ export const CandleChart = () => {
   // Get candle data from MiniGameContext
   const currentGame = getCurrentTokenGame();
   const candleData = currentGame.candles;
-  const chartWidth = Dimensions.get('window').width * 0.9 - 8;
+  const chartWidth = Dimensions.get("window").width * 0.9 - 8;
 
   // Extract all price values for range calculation
   const allPrices = candleData.flatMap((candle: any) => [
@@ -59,12 +59,12 @@ export const CandleChart = () => {
         <ChartContainer
           style={{
             height: chartHeight,
-            justifyContent: 'center',
-            alignItems: 'center',
+            justifyContent: "center",
+            alignItems: "center",
           }}
         >
           <BodyXSEmphasized style={{ color: theme.colors.textSecondary }}>
-            {t('Loading chart data...')}
+            {t("Loading chart data...")}
           </BodyXSEmphasized>
         </ChartContainer>
       </Wrapper>
@@ -101,7 +101,7 @@ export const CandleChart = () => {
               <BodyXSMonoEmphasized
                 style={{ color: theme.colors.textSecondary }}
               >
-                ${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                ${value.toLocaleString("en-US", { maximumFractionDigits: 0 })}
               </BodyXSMonoEmphasized>
             </YAxisLabel>
           );
@@ -116,7 +116,7 @@ export const CandleChart = () => {
           <CurrentPriceBubble>
             <CurrentPriceText style={{ color: theme.colors.background }}>
               $
-              {currentPrice.toLocaleString('en-US', {
+              {currentPrice.toLocaleString("en-US", {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
               })}
@@ -167,5 +167,5 @@ const CurrentPriceBubble = styled.View`
 const CurrentPriceText = styled.Text`
   font-size: 11px;
   font-weight: 600;
-  font-family: 'Geist Mono';
+  font-family: "Geist Mono";
 `;

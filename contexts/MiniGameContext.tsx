@@ -1,20 +1,20 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from "react";
 
-import { CandleData, generateDummyCandleData } from '@/utils/miniGameData';
+import { CandleData, generateDummyCandleData } from "@/utils/miniGameData";
 
-export type MiniGamePrediction = 'green' | 'red' | null;
-export type SupportedToken = 'sol' | 'eth' | 'btc';
+export type MiniGamePrediction = "green" | "red" | null;
+export type SupportedToken = "sol" | "eth" | "btc";
 
 export interface PendingCandle {
   id: string;
   prediction: MiniGamePrediction;
   betAmount: number;
-  status: 'predicting' | 'decision' | 'finished';
+  status: "predicting" | "decision" | "finished";
   timeRemaining: number; // for prediction phase (50s) or decision phase (10s)
-  finalResult?: 'green' | 'red';
+  finalResult?: "green" | "red";
   isWin?: boolean;
   winAmount?: number;
-  currentColor?: 'green' | 'red'; // for decision mode flickering
+  currentColor?: "green" | "red"; // for decision mode flickering
 }
 
 export interface TokenGameState {
@@ -64,22 +64,22 @@ const createInitialTokenGame = (basePrice: number): TokenGameState => ({
 });
 
 const initialGameState: MiniGameState = {
-  selectedToken: 'sol',
+  selectedToken: "sol",
   tokenGames: {
     sol: createInitialTokenGame(170), // SOL ~$170
     eth: createInitialTokenGame(2500), // ETH ~$2500
     btc: createInitialTokenGame(65000), // BTC ~$65000
   },
   tokenPrices: {
-    sol: { current_price: 170.5, symbol: 'SOL', name: 'Solana' },
-    eth: { current_price: 2568.45, symbol: 'ETH', name: 'Ethereum' },
-    btc: { current_price: 65200, symbol: 'BTC', name: 'Bitcoin' },
+    sol: { current_price: 170.5, symbol: "SOL", name: "Solana" },
+    eth: { current_price: 2568.45, symbol: "ETH", name: "Ethereum" },
+    btc: { current_price: 65200, symbol: "BTC", name: "Bitcoin" },
   },
 };
 
 export const MiniGameContext = createContext<MiniGameContextType>({
   gameState: initialGameState,
-  selectedToken: 'sol',
+  selectedToken: "sol",
   setSelectedToken: () => {},
   getCurrentTokenGame: () => initialGameState.tokenGames.sol,
   makePrediction: () => {},
@@ -109,7 +109,7 @@ export const MiniGameProvider = ({
   };
 
   const setSelectedToken = (token: SupportedToken) => {
-    setGameState((prev) => ({
+    setGameState(prev => ({
       ...prev,
       selectedToken: token,
     }));
@@ -118,39 +118,39 @@ export const MiniGameProvider = ({
   // Main game timer - handles all pending candles across all tokens
   useEffect(() => {
     const interval = setInterval(() => {
-      setGameState((prev) => {
+      setGameState(prev => {
         const newTokenGames = { ...prev.tokenGames };
         let hasChanges = false;
 
         // Process each token's pending candles
-        Object.keys(newTokenGames).forEach((tokenKey) => {
+        Object.keys(newTokenGames).forEach(tokenKey => {
           const token = tokenKey as SupportedToken;
           const tokenGame = newTokenGames[token];
           const updatedPendingCandles = [...tokenGame.pendingCandles];
 
-          updatedPendingCandles.forEach((candle) => {
+          updatedPendingCandles.forEach(candle => {
             if (candle.timeRemaining > 0) {
               candle.timeRemaining -= 1;
               hasChanges = true;
 
               // Handle phase transitions
-              if (candle.status === 'predicting' && candle.timeRemaining <= 0) {
+              if (candle.status === "predicting" && candle.timeRemaining <= 0) {
                 // Move from prediction to decision phase
-                candle.status = 'decision';
+                candle.status = "decision";
                 candle.timeRemaining = 10; // 10 seconds for decision
-                candle.currentColor = Math.random() > 0.5 ? 'green' : 'red'; // Start with random color
+                candle.currentColor = Math.random() > 0.5 ? "green" : "red"; // Start with random color
                 hasChanges = true;
-              } else if (candle.status === 'decision') {
+              } else if (candle.status === "decision") {
                 // Flicker between colors during decision phase
                 if (candle.timeRemaining > 0) {
-                  candle.currentColor = Math.random() > 0.5 ? 'green' : 'red';
+                  candle.currentColor = Math.random() > 0.5 ? "green" : "red";
                 } else {
                   // Decision phase complete - finalize result and start new round
-                  const finalResult: 'green' | 'red' =
-                    Math.random() > 0.5 ? 'green' : 'red';
+                  const finalResult: "green" | "red" =
+                    Math.random() > 0.5 ? "green" : "red";
                   const isWin = candle.prediction === finalResult;
 
-                  candle.status = 'finished';
+                  candle.status = "finished";
                   candle.finalResult = finalResult;
                   candle.isWin = isWin;
                   candle.winAmount = isWin ? candle.betAmount * 1.8 : 0; // 1.8x payout
@@ -183,8 +183,8 @@ export const MiniGameProvider = ({
           });
 
           // Remove finished candles after 3 seconds to show result
-          const filteredCandles = updatedPendingCandles.filter((candle) => {
-            if (candle.status === 'finished') {
+          const filteredCandles = updatedPendingCandles.filter(candle => {
+            if (candle.status === "finished") {
               // Keep finished candles for 3 seconds to show result
               return candle.timeRemaining > -3;
             }
@@ -212,13 +212,13 @@ export const MiniGameProvider = ({
   const getCurrentPrediction = (): PendingCandle | null => {
     const currentGame = getCurrentTokenGame();
     return (
-      currentGame.pendingCandles.find((c) => c.status === 'predicting') || null
+      currentGame.pendingCandles.find(c => c.status === "predicting") || null
     );
   };
 
   const isInDecisionMode = (): boolean => {
     const currentGame = getCurrentTokenGame();
-    return currentGame.pendingCandles.some((c) => c.status === 'decision');
+    return currentGame.pendingCandles.some(c => c.status === "decision");
   };
 
   const canMakePrediction = (prediction: MiniGamePrediction): boolean => {
@@ -239,10 +239,10 @@ export const MiniGameProvider = ({
   const getTimeRemaining = (): number => {
     const currentGame = getCurrentTokenGame();
     const activePrediction = currentGame.pendingCandles.find(
-      (c) => c.status === 'predicting'
+      c => c.status === "predicting"
     );
     const activeDecision = currentGame.pendingCandles.find(
-      (c) => c.status === 'decision'
+      c => c.status === "decision"
     );
 
     return (
@@ -267,11 +267,11 @@ export const MiniGameProvider = ({
       id: `${Date.now()}-${Math.random()}`,
       prediction,
       betAmount: 1, // Start with $1
-      status: 'predicting',
+      status: "predicting",
       timeRemaining: 50, // 50 seconds for prediction phase
     };
 
-    setGameState((prev) => ({
+    setGameState(prev => ({
       ...prev,
       tokenGames: {
         ...prev.tokenGames,
@@ -286,18 +286,18 @@ export const MiniGameProvider = ({
   const increaseBet = () => {
     const currentGame = getCurrentTokenGame();
     const existingPrediction = currentGame.pendingCandles.find(
-      (c) => c.status === 'predicting'
+      c => c.status === "predicting"
     );
 
     if (!existingPrediction) return;
 
-    setGameState((prev) => ({
+    setGameState(prev => ({
       ...prev,
       tokenGames: {
         ...prev.tokenGames,
         [prev.selectedToken]: {
           ...currentGame,
-          pendingCandles: currentGame.pendingCandles.map((candle) =>
+          pendingCandles: currentGame.pendingCandles.map(candle =>
             candle.id === existingPrediction.id
               ? { ...candle, betAmount: candle.betAmount + 1 }
               : candle
@@ -310,7 +310,7 @@ export const MiniGameProvider = ({
   const resetGame = () => {
     const basePrices = { sol: 170, eth: 2500, btc: 65000 };
 
-    setGameState((prev) => ({
+    setGameState(prev => ({
       ...prev,
       tokenGames: {
         sol: createInitialTokenGame(basePrices.sol),
@@ -328,7 +328,7 @@ export const MiniGameProvider = ({
       basePrices[gameState.selectedToken]
     );
 
-    setGameState((prev) => ({
+    setGameState(prev => ({
       ...prev,
       tokenGames: {
         ...prev.tokenGames,
@@ -343,7 +343,7 @@ export const MiniGameProvider = ({
   // Helper function to generate a new candle with specific result
   const generateNewCandle = (
     lastCandle: CandleData,
-    forceResult?: 'green' | 'red'
+    forceResult?: "green" | "red"
   ): CandleData => {
     const basePrice = lastCandle.close;
     const volatility = basePrice * 0.02; // 2% volatility
@@ -354,7 +354,7 @@ export const MiniGameProvider = ({
     if (forceResult) {
       // Force the candle to be green or red
       const minChange = volatility * 0.1; // Minimum 0.1% change
-      if (forceResult === 'green') {
+      if (forceResult === "green") {
         close = open + minChange + Math.random() * volatility * 0.5;
       } else {
         close = open - minChange - Math.random() * volatility * 0.5;
@@ -378,7 +378,7 @@ export const MiniGameProvider = ({
       low: Math.round(low * 100) / 100,
       close: Math.round(close * 100) / 100,
       timestamp: Date.now(),
-      result: 'pending',
+      result: "pending",
     };
   };
 

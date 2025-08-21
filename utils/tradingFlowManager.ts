@@ -1,7 +1,7 @@
-import { Connection } from '@solana/web3.js';
+import { Connection } from "@solana/web3.js";
 
-import { SwigTransactionData } from './swigTradingUtils';
-import { ExecuteTradeParams, TradingService } from './tradingService';
+import { SwigTransactionData } from "./swigTradingUtils";
+import { ExecuteTradeParams, TradingService } from "./tradingService";
 
 export interface TradingFlowState {
   isTrading: boolean;
@@ -65,18 +65,18 @@ export class TradingFlowManager {
 
       this.callbacks.onTradeStart?.();
 
-      console.log('🎯 TradingFlowManager: Starting trade execution');
+      console.log("🎯 TradingFlowManager: Starting trade execution");
       const result = await this.tradingService.executeTrade(params);
 
       if (result.success) {
-        console.log('✅ TradingFlowManager: Trade completed successfully');
+        console.log("✅ TradingFlowManager: Trade completed successfully");
         this.setState({
           isTrading: false,
           lastTradeResult: result.data,
         });
         this.callbacks.onTradeSuccess?.(result.data);
       } else if (result.requiresInitialization && result.initializationData) {
-        console.log('⚠️ TradingFlowManager: Initialization required');
+        console.log("⚠️ TradingFlowManager: Initialization required");
         this.setState({
           isTrading: false,
           requiresInitialization: true,
@@ -85,18 +85,18 @@ export class TradingFlowManager {
         });
         this.callbacks.onInitializationRequired?.(result.initializationData);
       } else {
-        console.error('❌ TradingFlowManager: Trade failed:', result.error);
+        console.error("❌ TradingFlowManager: Trade failed:", result.error);
         this.setState({
           isTrading: false,
-          error: result.error || 'Unknown trade error',
+          error: result.error || "Unknown trade error",
         });
-        this.callbacks.onTradeError?.(result.error || 'Unknown trade error');
+        this.callbacks.onTradeError?.(result.error || "Unknown trade error");
       }
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
+        error instanceof Error ? error.message : "Unknown error";
       console.error(
-        '❌ TradingFlowManager: Trade execution threw error:',
+        "❌ TradingFlowManager: Trade execution threw error:",
         error
       );
       this.setState({
@@ -112,7 +112,7 @@ export class TradingFlowManager {
    */
   async initializeDriftAccount(): Promise<void> {
     if (!this.state.initializationData) {
-      const error = 'No initialization data available';
+      const error = "No initialization data available";
       this.setState({ error });
       this.callbacks.onInitializationError?.(error);
       return;
@@ -126,14 +126,14 @@ export class TradingFlowManager {
 
       this.callbacks.onInitializationStart?.();
 
-      console.log('🔧 TradingFlowManager: Starting Drift initialization');
+      console.log("🔧 TradingFlowManager: Starting Drift initialization");
       const result = await this.tradingService.initializeDriftAccount(
         this.state.initializationData
       );
 
       if (result.success) {
         console.log(
-          '✅ TradingFlowManager: Initialization completed successfully'
+          "✅ TradingFlowManager: Initialization completed successfully"
         );
         this.setState({
           isInitializing: false,
@@ -143,22 +143,22 @@ export class TradingFlowManager {
         this.callbacks.onInitializationSuccess?.(result.data);
       } else {
         console.error(
-          '❌ TradingFlowManager: Initialization failed:',
+          "❌ TradingFlowManager: Initialization failed:",
           result.error
         );
         this.setState({
           isInitializing: false,
-          error: result.error || 'Initialization failed',
+          error: result.error || "Initialization failed",
         });
         this.callbacks.onInitializationError?.(
-          result.error || 'Initialization failed'
+          result.error || "Initialization failed"
         );
       }
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : 'Unknown initialization error';
+        error instanceof Error ? error.message : "Unknown initialization error";
       console.error(
-        '❌ TradingFlowManager: Initialization threw error:',
+        "❌ TradingFlowManager: Initialization threw error:",
         error
       );
       this.setState({
@@ -179,11 +179,11 @@ export class TradingFlowManager {
         error: null,
       });
 
-      console.log('🔒 TradingFlowManager: Closing position:', positionId);
+      console.log("🔒 TradingFlowManager: Closing position:", positionId);
       const result = await this.tradingService.closePosition(positionId);
 
       if (result.success) {
-        console.log('✅ TradingFlowManager: Position closed successfully');
+        console.log("✅ TradingFlowManager: Position closed successfully");
         this.setState({
           isTrading: false,
           lastTradeResult: result.data,
@@ -191,20 +191,20 @@ export class TradingFlowManager {
         this.callbacks.onTradeSuccess?.(result.data);
       } else {
         console.error(
-          '❌ TradingFlowManager: Position close failed:',
+          "❌ TradingFlowManager: Position close failed:",
           result.error
         );
         this.setState({
           isTrading: false,
-          error: result.error || 'Position close failed',
+          error: result.error || "Position close failed",
         });
-        this.callbacks.onTradeError?.(result.error || 'Position close failed');
+        this.callbacks.onTradeError?.(result.error || "Position close failed");
       }
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : 'Unknown close error';
+        error instanceof Error ? error.message : "Unknown close error";
       console.error(
-        '❌ TradingFlowManager: Position close threw error:',
+        "❌ TradingFlowManager: Position close threw error:",
         error
       );
       this.setState({
@@ -225,7 +225,7 @@ export class TradingFlowManager {
   /**
    * Get trading history
    */
-  async getHistory(status?: 'open' | 'closed') {
+  async getHistory(status?: "open" | "closed") {
     return this.tradingService.getHistory(status);
   }
 

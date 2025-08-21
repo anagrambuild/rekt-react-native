@@ -1,4 +1,4 @@
-import skull from '@/assets/images/app-pngs/skull.png';
+import skull from "@/assets/images/app-pngs/skull.png";
 import {
   BodyM,
   BodyMSecondary,
@@ -10,24 +10,20 @@ import {
   PulsatingContainer,
   Row,
   Switch,
-} from '@/components';
-import { useHomeContext } from '@/contexts/HomeContext';
+} from "@/components";
+import { useHomeContext } from "@/contexts/HomeContext";
 
-import { Image } from 'expo-image';
-import { useTranslation } from 'react-i18next';
+import { Image } from "expo-image";
+import { useTranslation } from "react-i18next";
 
 export const SliderCard = ({
   leverage,
   amount,
-  loginScreen,
   setLeverage,
-  disableAutoTimer = () => {},
 }: {
   leverage: number;
   amount: number;
-  loginScreen?: boolean;
   setLeverage?: (leverage: number) => void;
-  disableAutoTimer?: () => void;
 }) => {
   const { t } = useTranslation();
   const {
@@ -43,11 +39,11 @@ export const SliderCard = ({
   // Get current trade state based on selected token
   const getCurrentTrade = () => {
     switch (selectedToken) {
-      case 'sol':
+      case "sol":
         return solTrade;
-      case 'eth':
+      case "eth":
         return ethTrade;
-      case 'btc':
+      case "btc":
         return btcTrade;
       default:
         return solTrade;
@@ -56,13 +52,13 @@ export const SliderCard = ({
 
   const setCurrentTrade = (trade: any) => {
     switch (selectedToken) {
-      case 'sol':
+      case "sol":
         setSolTrade(trade);
         break;
-      case 'eth':
+      case "eth":
         setEthTrade(trade);
         break;
-      case 'btc':
+      case "btc":
         setBtcTrade(trade);
         break;
       default:
@@ -77,26 +73,23 @@ export const SliderCard = ({
   const setIsMaxLeverageOn = (value: boolean) => {
     setCurrentTrade({
       ...currentTrade,
-      side: currentTrade?.side || 'short',
+      side: currentTrade?.side || "short",
       entryPrice: currentTrade?.entryPrice || 0,
       amount: currentTrade?.amount || 10,
       leverage: currentTrade?.leverage || 1,
-      status: 'draft',
+      status: "draft",
       isMaxLeverageOn: value,
     });
   };
 
   return (
     <Card $padding={16} style={{ gap: 8 }}>
-      <Column $gap={16} $alignItems='flex-start'>
+      <Column $gap={16} $alignItems="flex-start">
         <Row $padding={0} style={{ height: 30 }}>
-          <BodySEmphasized>{t('Leverage')}</BodySEmphasized>
+          <BodySEmphasized>{t("Leverage")}</BodySEmphasized>
           {(leverage >= 100 || isMaxLeverageOn) && (
             <Switch
-              onPress={() => {
-                setIsMaxLeverageOn(!isMaxLeverageOn);
-                disableAutoTimer();
-              }}
+              onPress={() => setIsMaxLeverageOn(!isMaxLeverageOn)}
               isOn={isMaxLeverageOn}
               icon={
                 <PulsatingContainer>
@@ -107,22 +100,18 @@ export const SliderCard = ({
           )}
         </Row>
         <Divider />
-        <Column $gap={8} $alignItems='flex-start'>
+        <Column $gap={8} $alignItems="flex-start">
           <Row>
             <BodyM>{leverage}x</BodyM>
             <BodyM>{`$${leverage * amount}`}</BodyM>
           </Row>
           <Row>
-            <BodyMSecondary>{t('Leverage')}</BodyMSecondary>
-            <BodyMSecondary>{t('Buying power')}</BodyMSecondary>
+            <BodyMSecondary>{t("Leverage")}</BodyMSecondary>
+            <BodyMSecondary>{t("Buying power")}</BodyMSecondary>
           </Row>
         </Column>
       </Column>
-      <HorizontalSlider
-        loginScreen={loginScreen}
-        setLeverage={setLeverage}
-        leverage={leverage}
-      />
+      <HorizontalSlider setLeverage={setLeverage} leverage={leverage} />
     </Card>
   );
 };

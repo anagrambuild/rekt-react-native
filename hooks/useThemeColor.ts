@@ -3,14 +3,14 @@
  * https://docs.expo.dev/guides/color-schemes/
  */
 
-import { useTheme } from 'styled-components/native';
+import { useTheme } from "styled-components/native";
 
 export function useThemeColor(
   props: { light?: string; dark?: string },
-  colorName: keyof ReturnType<typeof useTheme>['colors']
+  colorName: keyof ReturnType<typeof useTheme>["colors"]
 ) {
   const theme = useTheme();
-  const colorFromProps = props[theme.dark ? 'dark' : 'light'];
+  const colorFromProps = props[theme.dark ? "dark" : "light"];
 
   if (colorFromProps) {
     return colorFromProps;

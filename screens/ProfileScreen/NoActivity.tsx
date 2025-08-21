@@ -1,4 +1,4 @@
-import TradeIcon from '@/assets/images/app-svgs/trade.svg';
+import TradeIcon from "@/assets/images/app-svgs/trade.svg";
 import {
   BodyMSecondary,
   BodySEmphasized,
@@ -6,13 +6,13 @@ import {
   Column,
   PressableOpacity,
   Title5,
-} from '@/components';
+} from "@/components";
 
-import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
+import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
 
-import { router } from 'expo-router';
-import { useTranslation } from 'react-i18next';
-import styled, { DefaultTheme, useTheme } from 'styled-components/native';
+import { router } from "expo-router";
+import { useTranslation } from "react-i18next";
+import styled, { DefaultTheme, useTheme } from "styled-components/native";
 
 const tradeIconSize = 24;
 
@@ -21,26 +21,26 @@ export const NoActivity = () => {
   const theme = useTheme();
 
   const handleTrade = () => {
-    router.replace('/');
+    router.replace("/");
   };
   return (
     <Card $padding={24} style={{ flex: 1 }}>
       <Column $gap={24}>
-        <Column $gap={8} $width='80%'>
+        <Column $gap={8} $width="80%">
           <TradeIcon width={tradeIconSize} height={tradeIconSize} />
-          <Title5>{t('No trades yet')}</Title5>
-          <BodyMSecondary style={{ textAlign: 'center' }}>
+          <Title5>{t("No trades yet")}</Title5>
+          <BodyMSecondary style={{ textAlign: "center" }}>
             {t(
-              'Once you start trading, you will be able to see your activity here'
+              "Once you start trading, you will be able to see your activity here"
             )}
           </BodyMSecondary>
         </Column>
         <TradeButton onPress={handleTrade}>
           <BodySEmphasized style={{ color: theme.colors.card }}>
-            {t('Start trading')}
+            {t("Start trading")}
           </BodySEmphasized>
           <FontAwesome5
-            name='arrow-circle-right'
+            name="arrow-circle-right"
             size={16}
             color={theme.colors.card}
           />

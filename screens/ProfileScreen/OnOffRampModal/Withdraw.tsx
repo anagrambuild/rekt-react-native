@@ -1,7 +1,7 @@
-import { Keyboard, Pressable } from 'react-native';
+import { Keyboard, Pressable } from "react-native";
 
-import UsdcIcon from '@/assets/images/app-svgs/usdc.svg';
-import WalletSecondaryIcon from '@/assets/images/app-svgs/wallet-secondary.svg';
+import UsdcIcon from "@/assets/images/app-svgs/usdc.svg";
+import WalletSecondaryIcon from "@/assets/images/app-svgs/wallet-secondary.svg";
 import {
   BodyMEmphasized,
   BodyMSecondary,
@@ -14,25 +14,25 @@ import {
   PrimaryButton,
   Row,
   Title5,
-} from '@/components';
-import { useProfileContext } from '@/contexts/ProfileContext';
-import { truncateAddress } from '@/utils';
+} from "@/components";
+import { useProfileContext } from "@/contexts/ProfileContext";
+import { truncateAddress } from "@/utils";
 
-import MaterialIcon from '@expo/vector-icons/MaterialIcons';
+import MaterialIcon from "@expo/vector-icons/MaterialIcons";
 
-import { useTranslation } from 'react-i18next';
-import styled, { DefaultTheme, useTheme } from 'styled-components/native';
+import { useTranslation } from "react-i18next";
+import styled, { DefaultTheme, useTheme } from "styled-components/native";
 
 export const Withdraw = ({
   setView,
 }: {
   setView: (
     view:
-      | 'balance'
-      | 'transfer'
-      | 'withdraw'
-      | 'withdrawal address'
-      | 'withdrawal success'
+      | "balance"
+      | "transfer"
+      | "withdraw"
+      | "withdrawal address"
+      | "withdrawal success"
   ) => void;
 }) => {
   const theme = useTheme();
@@ -47,14 +47,14 @@ export const Withdraw = ({
     }
   };
 
-  const handleBack = () => setView('balance');
+  const handleBack = () => setView("balance");
 
   const handleWithdraw = () => {
     if (!withdrawalAmount || parseFloat(withdrawalAmount) === 0) {
       return;
     }
     // Handle withdrawal logic here
-    setView('withdrawal success');
+    setView("withdrawal success");
   };
 
   const isWithdrawDisabled =
@@ -69,29 +69,29 @@ export const Withdraw = ({
 
   return (
     <Pressable onPress={() => Keyboard.dismiss()}>
-      <Column $gap={16} $alignItems='center' $padding={4}>
+      <Column $gap={16} $alignItems="center" $padding={4}>
         {/* Header Section */}
-        <Row $justifyContent='flex-start' $gap={8}>
+        <Row $justifyContent="flex-start" $gap={8}>
           <IconContainer onPress={handleBack}>
             <MaterialIcon
-              name='chevron-left'
+              name="chevron-left"
               size={24}
               color={theme.colors.textSecondary}
             />
           </IconContainer>
-          <Title5>{t('Withdraw')}</Title5>
+          <Title5>{t("Withdraw")}</Title5>
         </Row>
         <Gap />
 
         {/* Amount Input Section */}
-        <Column $gap={8} $alignItems='center'>
-          <BodyMEmphasized>{t('Enter amount')}</BodyMEmphasized>
+        <Column $gap={8} $alignItems="center">
+          <BodyMEmphasized>{t("Enter amount")}</BodyMEmphasized>
           <AmountInput
             value={withdrawalAmount}
             onChangeText={handleAmountChange}
-            placeholder='0.00'
+            placeholder="0.00"
             placeholderTextColor={theme.colors.textSecondary}
-            keyboardType='numeric'
+            keyboardType="numeric"
             selectionColor={theme.colors.loss}
           />
           <BalancePill
@@ -106,29 +106,29 @@ export const Withdraw = ({
               color={theme.colors.textSecondary}
             />
             <BodyXSMonoSecondary>
-              {userData.balance.toLocaleString('en-US', {
+              {userData.balance.toLocaleString("en-US", {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
-              })}{' '}
+              })}{" "}
               USDC
             </BodyXSMonoSecondary>
           </BalancePill>
         </Column>
 
         {/* Recipient and Fee Details Section */}
-        <Card $padding={16} style={{ width: '100%' }}>
+        <Card $padding={16} style={{ width: "100%" }}>
           <Column $gap={12}>
             {/* To Field */}
             <PressableOpacity
-              onPress={() => setView('withdrawal address')}
-              style={{ width: '100%' }}
+              onPress={() => setView("withdrawal address")}
+              style={{ width: "100%" }}
             >
               <Row
-                $justifyContent='space-between'
-                $alignItems='center'
-                $width='auto'
+                $justifyContent="space-between"
+                $alignItems="center"
+                $width="auto"
               >
-                <Row $width='auto' $justifyContent='flex-start' $gap={16}>
+                <Row $width="auto" $justifyContent="flex-start" $gap={16}>
                   <WalletIconContainer>
                     <WalletSecondaryIcon
                       width={16}
@@ -136,18 +136,18 @@ export const Withdraw = ({
                       color={theme.colors.textSecondary}
                     />
                   </WalletIconContainer>
-                  <Column $gap={4} $alignItems='flex-start' $width='auto'>
-                    <BodyMEmphasized>{t('To')}</BodyMEmphasized>
+                  <Column $gap={4} $alignItems="flex-start" $width="auto">
+                    <BodyMEmphasized>{t("To")}</BodyMEmphasized>
                     <BodyMSecondary>
                       {withdrawalAddress
                         ? truncateAddress(withdrawalAddress)
-                        : t('Set wallet address')}
+                        : t("Set wallet address")}
                     </BodyMSecondary>
                   </Column>
                 </Row>
                 <WalletIconContainer>
                   <MaterialIcon
-                    name={withdrawalAddress ? 'edit' : 'chevron-right'}
+                    name={withdrawalAddress ? "edit" : "chevron-right"}
                     size={16}
                     color={theme.colors.textSecondary}
                   />
@@ -159,16 +159,16 @@ export const Withdraw = ({
 
         <Column $gap={12}>
           {/* Network Fee */}
-          <Row $justifyContent='space-between' $alignItems='center'>
-            <BodyMSecondary>{t('Network fee')}</BodyMSecondary>
+          <Row $justifyContent="space-between" $alignItems="center">
+            <BodyMSecondary>{t("Network fee")}</BodyMSecondary>
             <BodyMSecondary>${networkFee.toFixed(2)}</BodyMSecondary>
           </Row>
           <Divider />
 
           {/* You'll get */}
-          <Row $justifyContent='space-between' $alignItems='center'>
+          <Row $justifyContent="space-between" $alignItems="center">
             <BodyMSecondary>{t("You'll get")}</BodyMSecondary>
-            <Row $gap={4} $alignItems='center' $width='auto'>
+            <Row $gap={4} $alignItems="center" $width="auto">
               <BodyMSecondary>{amountToReceive.toFixed(2)}</BodyMSecondary>
               <UsdcIcon width={20} height={20} />
             </Row>
@@ -183,7 +183,7 @@ export const Withdraw = ({
             opacity: isWithdrawDisabled ? 0.5 : 1,
           }}
         >
-          {t('Withdraw')}
+          {t("Withdraw")}
         </PrimaryButton>
       </Column>
     </Pressable>
@@ -197,7 +197,7 @@ const IconContainer = styled(PressableOpacity)`
 
 const AmountInput = styled.TextInput`
   color: ${({ theme }: { theme: DefaultTheme }) => theme.colors.textPrimary};
-  font-family: 'Unbounded';
+  font-family: "Unbounded";
   font-size: 40px;
   font-weight: 500;
 `;
