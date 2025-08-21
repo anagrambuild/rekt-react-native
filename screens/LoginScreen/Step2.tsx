@@ -6,7 +6,7 @@ import topNav from "@/assets/images/app-pngs/top-nav.png";
 import { Column } from "@/components";
 
 import { AmountCard } from "../TradeScreen/AmountCard";
-import { SliderCard } from "../TradeScreen/SliderCard";
+import { Step2SliderCard } from "./Step2SliderCard";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 
@@ -110,10 +110,9 @@ export const Step2 = ({
               }
             }}
           />
-          <SliderCard
+          <Step2SliderCard
             leverage={leverage}
             amount={amount}
-            loginScreen
             setLeverage={leverage => {
               setLeverage(leverage);
               if (isUserInteraction.current) {

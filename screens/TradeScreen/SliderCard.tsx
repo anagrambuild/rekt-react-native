@@ -19,15 +19,11 @@ import { useTranslation } from "react-i18next";
 export const SliderCard = ({
   leverage,
   amount,
-  loginScreen,
   setLeverage,
-  disableAutoTimer = () => {},
 }: {
   leverage: number;
   amount: number;
-  loginScreen?: boolean;
   setLeverage?: (leverage: number) => void;
-  disableAutoTimer?: () => void;
 }) => {
   const { t } = useTranslation();
   const {
@@ -93,10 +89,7 @@ export const SliderCard = ({
           <BodySEmphasized>{t("Leverage")}</BodySEmphasized>
           {(leverage >= 100 || isMaxLeverageOn) && (
             <Switch
-              onPress={() => {
-                setIsMaxLeverageOn(!isMaxLeverageOn);
-                disableAutoTimer();
-              }}
+              onPress={() => setIsMaxLeverageOn(!isMaxLeverageOn)}
               isOn={isMaxLeverageOn}
               icon={
                 <PulsatingContainer>
@@ -118,11 +111,7 @@ export const SliderCard = ({
           </Row>
         </Column>
       </Column>
-      <HorizontalSlider
-        loginScreen={loginScreen}
-        setLeverage={setLeverage}
-        leverage={leverage}
-      />
+      <HorizontalSlider setLeverage={setLeverage} leverage={leverage} />
     </Card>
   );
 };
