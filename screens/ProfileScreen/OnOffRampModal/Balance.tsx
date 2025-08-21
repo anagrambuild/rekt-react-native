@@ -40,11 +40,13 @@ export const Balance = ({
 }: {
   setView: (
     view:
+      | "balance"
       | "transfer"
       | "withdraw"
       | "withdrawal address"
       | "withdrawal success"
       | "confirm breeze"
+      | "cancel breeze"
   ) => void;
   loginScreen?: boolean;
 }) => {
@@ -204,6 +206,7 @@ export const Balance = ({
             handleEarningAmountLayout={handleEarningAmountLayout}
             earningAmountRef={earningAmountRef}
             earningAmountTextRef={earningAmountTextRef}
+            setView={setView}
           />
         ) : (
           <Card $padding={16}>
