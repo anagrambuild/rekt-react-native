@@ -1,3 +1,4 @@
+export * from "./AmountInput";
 export * from "./buttons";
 export * from "./Card";
 export * from "./containers";

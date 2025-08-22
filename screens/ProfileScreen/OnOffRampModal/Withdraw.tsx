@@ -3,6 +3,7 @@ import { Keyboard, Pressable } from "react-native";
 import UsdcIcon from "@/assets/images/app-svgs/usdc.svg";
 import WalletSecondaryIcon from "@/assets/images/app-svgs/wallet-secondary.svg";
 import {
+  AmountInput,
   BodyMEmphasized,
   BodyMSecondary,
   BodyXSMonoSecondary,
@@ -193,13 +194,6 @@ export const Withdraw = ({
 const IconContainer = styled(PressableOpacity)`
   align-items: center;
   justify-content: center;
-`;
-
-const AmountInput = styled.TextInput`
-  color: ${({ theme }: { theme: DefaultTheme }) => theme.colors.textPrimary};
-  font-family: "Unbounded";
-  font-size: 40px;
-  font-weight: 500;
 `;
 
 const BalancePill = styled(PressableOpacity)`

@@ -3,6 +3,7 @@ import { Alert, TextInput } from "react-native";
 
 import WalletIcon from "@/assets/images/app-svgs/wallet.svg";
 import {
+  AmountInput,
   BodyMEmphasized,
   BodyS,
   PresetButton,
@@ -41,15 +42,15 @@ export const AmountModal = ({
     selectedToken === "sol"
       ? solTrade
       : selectedToken === "eth"
-        ? ethTrade
-        : btcTrade;
+      ? ethTrade
+      : btcTrade;
 
   const setTrade =
     selectedToken === "sol"
       ? setSolTrade
       : selectedToken === "eth"
-        ? setEthTrade
-        : setBtcTrade;
+      ? setEthTrade
+      : setBtcTrade;
 
   const amount = trade?.amount ?? 10;
 
@@ -79,7 +80,7 @@ export const AmountModal = ({
     <Modal visible={visible} onRequestClose={onClose}>
       <StyledSheetContainer>
         <BodyMEmphasized>{t("Enter amount")}</BodyMEmphasized>
-        <StyledInput
+        <AmountInput
           ref={inputRef}
           value={localAmount}
           onChangeText={handleAmountChange}
@@ -119,11 +120,4 @@ const StyledSheetContainer = styled.View<any>`
   background-color: ${(props: any) => props.theme.colors.onPrimary};
   padding: 12px 0px 0px 0px;
   gap: 16px;
-`;
-
-const StyledInput = styled.TextInput`
-  color: ${({ theme }: any) => theme.colors.textPrimary};
-  font-family: "Unbounded";
-  font-size: 40px;
-  font-weight: 500;
 `;

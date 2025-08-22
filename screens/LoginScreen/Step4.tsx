@@ -3,6 +3,7 @@ import { Platform, View } from "react-native";
 import iphoneFrame from "@/assets/images/app-pngs/iphone-frame.png";
 import topNav from "@/assets/images/app-pngs/top-nav.png";
 import {
+  AmountInput,
   AppleGooglePayButton,
   BodyMEmphasized,
   BodySSecondary,
@@ -18,7 +19,7 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 import { Image } from "expo-image";
 import { useTranslation } from "react-i18next";
-import styled, { DefaultTheme, useTheme } from "styled-components/native";
+import { useTheme } from "styled-components/native";
 
 const googleText = "Instant and secure, backed by Google Pay";
 const appleText = "Instant and secure, backed by Apple Pay";
@@ -123,10 +124,3 @@ export const Step4 = () => {
     </Column>
   );
 };
-
-const AmountInput = styled.TextInput`
-  color: ${({ theme }: { theme: DefaultTheme }) => theme.colors.textPrimary};
-  font-family: "Unbounded";
-  font-size: 40px;
-  font-weight: 500;
-`;
