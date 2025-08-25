@@ -42,6 +42,10 @@ interface ProfileContextType {
   handleImageRemoval: () => Promise<void>;
   isOnOffRampModalVisible: boolean;
   setIsOnOffRampModalVisible: (visible: boolean) => void;
+  showExplorer: boolean;
+  setShowExplorer: (show: boolean) => void;
+  explorerUrl: string | null;
+  setExplorerUrl: (url: string | null) => void;
   handleTransferIn: () => void;
   handleCardPayment: () => void;
   handleWithdraw: () => void;
@@ -56,6 +60,14 @@ interface ProfileContextType {
   setAcknowledgeValidAddress: (acknowledged: boolean) => void;
   acknowledgeNoReversal: boolean;
   setAcknowledgeNoReversal: (acknowledged: boolean) => void;
+  shouldRestoreOnOffRampModal: boolean;
+  setShouldRestoreOnOffRampModal: (restore: boolean) => void;
+  savedOnOffRampView: string;
+  setSavedOnOffRampView: (view: string) => void;
+  savedTransferAmount: string;
+  setSavedTransferAmount: (amount: string) => void;
+  wasInTransferFlow: boolean;
+  setWasInTransferFlow: (inFlow: boolean) => void;
 }
 
 export const ProfileContext = createContext<ProfileContextType>({
@@ -74,6 +86,10 @@ export const ProfileContext = createContext<ProfileContextType>({
   handleImageRemoval: async () => {},
   isOnOffRampModalVisible: false,
   setIsOnOffRampModalVisible: () => {},
+  showExplorer: false,
+  setShowExplorer: () => {},
+  explorerUrl: null,
+  setExplorerUrl: () => {},
   handleTransferIn: () => {},
   handleCardPayment: () => {},
   handleWithdraw: () => {},
@@ -88,6 +104,14 @@ export const ProfileContext = createContext<ProfileContextType>({
   setAcknowledgeValidAddress: () => {},
   acknowledgeNoReversal: false,
   setAcknowledgeNoReversal: () => {},
+  shouldRestoreOnOffRampModal: false,
+  setShouldRestoreOnOffRampModal: () => {},
+  savedOnOffRampView: "balance",
+  setSavedOnOffRampView: () => {},
+  savedTransferAmount: "",
+  setSavedTransferAmount: () => {},
+  wasInTransferFlow: false,
+  setWasInTransferFlow: () => {},
 });
 
 export const useProfileContext = () => {
@@ -115,12 +139,21 @@ export const ProfileProvider = ({
   );
   const [isOnOffRampModalVisible, setIsOnOffRampModalVisible] = useState(false);
 
+  // Explorer WebView state
+  const [showExplorer, setShowExplorer] = useState(false);
+  const [explorerUrl, setExplorerUrl] = useState<string | null>(null);
+
   // State for profile ID and user data
   const [userId, setUserId] = useState<string | null>(null);
   const [withdrawalAddress, setWithdrawalAddress] = useState("");
   const [withdrawalAmount, setWithdrawalAmount] = useState("");
   const [acknowledgeValidAddress, setAcknowledgeValidAddress] = useState(false);
   const [acknowledgeNoReversal, setAcknowledgeNoReversal] = useState(false);
+  const [shouldRestoreOnOffRampModal, setShouldRestoreOnOffRampModal] =
+    useState(false);
+  const [savedOnOffRampView, setSavedOnOffRampView] = useState("balance");
+  const [savedTransferAmount, setSavedTransferAmount] = useState("");
+  const [wasInTransferFlow, setWasInTransferFlow] = useState(false);
 
   // Set profile ID from userProfile when it changes
   useEffect(() => {
@@ -155,10 +188,16 @@ export const ProfileProvider = ({
       setIsTradeActivityModalVisible(false);
       setSelectedTrade(null);
       setIsOnOffRampModalVisible(false);
+      setShowExplorer(false);
+      setExplorerUrl(null);
       setWithdrawalAddress("");
       setWithdrawalAmount("");
       setAcknowledgeValidAddress(false);
       setAcknowledgeNoReversal(false);
+      setShouldRestoreOnOffRampModal(false);
+      setSavedOnOffRampView("balance");
+      setSavedTransferAmount("");
+      setWasInTransferFlow(false);
     }
     // Profile ID is now handled by the separate useEffect above
   }, [userProfile]);
@@ -237,6 +276,10 @@ export const ProfileProvider = ({
         handleImageRemoval,
         isOnOffRampModalVisible,
         setIsOnOffRampModalVisible,
+        showExplorer,
+        setShowExplorer,
+        explorerUrl,
+        setExplorerUrl,
         handleTransferIn,
         handleCardPayment,
         handleWithdraw,
@@ -251,6 +294,14 @@ export const ProfileProvider = ({
         setAcknowledgeValidAddress,
         acknowledgeNoReversal,
         setAcknowledgeNoReversal,
+        shouldRestoreOnOffRampModal,
+        setShouldRestoreOnOffRampModal,
+        savedOnOffRampView,
+        setSavedOnOffRampView,
+        savedTransferAmount,
+        setSavedTransferAmount,
+        wasInTransferFlow,
+        setWasInTransferFlow,
       }}
     >
       {children}

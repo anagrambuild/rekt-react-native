@@ -134,7 +134,7 @@ const Index = () => {
   }
 
   // const connectWallet = () => {
-  //   if (Platform.OS === 'ios') {
+  //   if (Platform.OS === "ios") {
   //     setShowWalletModal(true);
   //   } else {
   //     connect();

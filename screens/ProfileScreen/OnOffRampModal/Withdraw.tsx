@@ -3,6 +3,7 @@ import { Keyboard, Pressable } from "react-native";
 import UsdcIcon from "@/assets/images/app-svgs/usdc.svg";
 import WalletSecondaryIcon from "@/assets/images/app-svgs/wallet-secondary.svg";
 import {
+  AmountInput,
   BodyMEmphasized,
   BodyMSecondary,
   BodyXSMonoSecondary,
@@ -23,17 +24,12 @@ import MaterialIcon from "@expo/vector-icons/MaterialIcons";
 import { useTranslation } from "react-i18next";
 import styled, { DefaultTheme, useTheme } from "styled-components/native";
 
+import { OnOffRampViewType } from ".";
+
 export const Withdraw = ({
   setView,
 }: {
-  setView: (
-    view:
-      | "balance"
-      | "transfer"
-      | "withdraw"
-      | "withdrawal address"
-      | "withdrawal success"
-  ) => void;
+  setView: (view: OnOffRampViewType) => void;
 }) => {
   const theme = useTheme();
   const { t } = useTranslation();
@@ -193,13 +189,6 @@ export const Withdraw = ({
 const IconContainer = styled(PressableOpacity)`
   align-items: center;
   justify-content: center;
-`;
-
-const AmountInput = styled.TextInput`
-  color: ${({ theme }: { theme: DefaultTheme }) => theme.colors.textPrimary};
-  font-family: "Unbounded";
-  font-size: 40px;
-  font-weight: 500;
 `;
 
 const BalancePill = styled(PressableOpacity)`

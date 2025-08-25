@@ -13,7 +13,6 @@ import { Actions, createEd25519AuthorityInfo } from "@swig-wallet/classic";
 import { getCreateV1InstructionDataCodec } from "@swig-wallet/coder";
 
 import bs58 from "bs58";
-import { Buffer } from "buffer";
 import Constants from "expo-constants";
 import * as Linking from "expo-linking";
 import { toByteArray } from "react-native-quick-base64";
@@ -88,7 +87,7 @@ const createAssociatedTokenAccountInstruction = (
   mint: PublicKey
 ): TransactionInstruction => {
   // The instruction data for createAssociatedTokenAccount is empty (0 bytes)
-  const data = Buffer.alloc(0);
+  const data = global.global.Buffer.alloc(0);
 
   const keys = [
     { pubkey: payer, isSigner: true, isWritable: true },
@@ -183,7 +182,7 @@ export const createSwigAccountWithPhantom = async (
     "swigypWHEksbC64pWKwah1WTeh9JXwx8H1rJHLdbQMB"
   );
   const [swigAddress] = PublicKey.findProgramAddressSync(
-    [Buffer.from("swig"), Buffer.from(id)],
+    [global.Buffer.from("swig"), global.Buffer.from(id)],
     SWIG_PROGRAM_ID
   );
 
@@ -218,7 +217,7 @@ export const createSwigAccountWithPhantom = async (
     // Create the Swig account instruction manually with correct address
     // We need to calculate the bump seed for the PDA
     const [, bump] = PublicKey.findProgramAddressSync(
-      [Buffer.from("swig"), Buffer.from(id)],
+      [global.Buffer.from("swig"), global.Buffer.from(id)],
       SWIG_PROGRAM_ID
     );
 
@@ -253,7 +252,7 @@ export const createSwigAccountWithPhantom = async (
           isWritable: false,
         },
       ],
-      data: Buffer.from(instructionData),
+      data: global.Buffer.from(instructionData),
     });
 
     // Create transaction with Swig creation and optionally ATA creation
@@ -285,7 +284,7 @@ export const createSwigAccountWithPhantom = async (
     // Encrypt the payload
     const nonce = nacl.randomBytes(24);
     const encryptedPayload = nacl.box.after(
-      Buffer.from(JSON.stringify(payload)),
+      global.Buffer.from(JSON.stringify(payload)),
       nonce,
       sharedSecret
     );
@@ -351,8 +350,9 @@ export const createSwigAccountWithPhantom = async (
               await connection.confirmTransaction({
                 signature,
                 blockhash,
-                lastValidBlockHeight: (await connection.getLatestBlockhash())
-                  .lastValidBlockHeight,
+                lastValidBlockHeight: (
+                  await connection.getLatestBlockhash()
+                ).lastValidBlockHeight,
               });
 
               resolve({
@@ -452,7 +452,7 @@ export const createSwigAccountWithMWA = async (
       "swigypWHEksbC64pWKwah1WTeh9JXwx8H1rJHLdbQMB"
     );
     const [swigAddress] = PublicKey.findProgramAddressSync(
-      [Buffer.from("swig"), Buffer.from(id)],
+      [global.Buffer.from("swig"), global.Buffer.from(id)],
       SWIG_PROGRAM_ID
     );
 
@@ -486,7 +486,7 @@ export const createSwigAccountWithMWA = async (
     // Create the Swig account instruction manually with correct address
     // We need to calculate the bump seed for the PDA
     const [, bump] = PublicKey.findProgramAddressSync(
-      [Buffer.from("swig"), Buffer.from(id)],
+      [global.Buffer.from("swig"), global.Buffer.from(id)],
       SWIG_PROGRAM_ID
     );
 
@@ -521,7 +521,7 @@ export const createSwigAccountWithMWA = async (
           isWritable: false,
         },
       ],
-      data: Buffer.from(instructionData),
+      data: global.Buffer.from(instructionData),
     });
 
     // Prepare instructions array
