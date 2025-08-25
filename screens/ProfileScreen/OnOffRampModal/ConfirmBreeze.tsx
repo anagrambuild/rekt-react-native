@@ -20,17 +20,12 @@ import { Image } from "expo-image";
 import { useTranslation } from "react-i18next";
 import styled, { useTheme } from "styled-components/native";
 
+import { OnOffRampViewType } from ".";
+
 export const ConfirmBreeze = ({
   setView,
 }: {
-  setView: (
-    view:
-      | "balance"
-      | "transfer"
-      | "withdraw"
-      | "withdrawal address"
-      | "withdrawal success"
-  ) => void;
+  setView: (view: OnOffRampViewType) => void;
 }) => {
   const { t } = useTranslation();
   const theme = useTheme();

@@ -24,17 +24,12 @@ import MaterialIcon from "@expo/vector-icons/MaterialIcons";
 import { useTranslation } from "react-i18next";
 import styled, { DefaultTheme, useTheme } from "styled-components/native";
 
+import { OnOffRampViewType } from ".";
+
 export const Withdraw = ({
   setView,
 }: {
-  setView: (
-    view:
-      | "balance"
-      | "transfer"
-      | "withdraw"
-      | "withdrawal address"
-      | "withdrawal success"
-  ) => void;
+  setView: (view: OnOffRampViewType) => void;
 }) => {
   const theme = useTheme();
   const { t } = useTranslation();

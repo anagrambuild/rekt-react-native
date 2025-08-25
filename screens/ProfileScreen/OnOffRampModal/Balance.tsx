@@ -32,22 +32,14 @@ import { useVideoPlayer, VideoView } from "expo-video";
 import { useTranslation } from "react-i18next";
 import styled, { DefaultTheme, useTheme } from "styled-components/native";
 
+import { OnOffRampViewType } from ".";
 const videoOffset = Platform.OS === "ios" ? 38 : 30;
 
 export const Balance = ({
   setView,
   loginScreen,
 }: {
-  setView: (
-    view:
-      | "balance"
-      | "transfer"
-      | "withdraw"
-      | "withdrawal address"
-      | "withdrawal success"
-      | "confirm breeze"
-      | "cancel breeze"
-  ) => void;
+  setView: (view: OnOffRampViewType) => void;
   loginScreen?: boolean;
 }) => {
   const theme = useTheme();

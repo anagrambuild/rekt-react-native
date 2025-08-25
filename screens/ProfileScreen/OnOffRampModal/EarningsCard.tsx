@@ -18,21 +18,14 @@ import { Image } from "expo-image";
 import { useTranslation } from "react-i18next";
 import styled, { useTheme } from "styled-components/native";
 
+import { OnOffRampViewType } from ".";
+
 interface EarningsCardProps {
   targetPosition: { x: number; y: number };
   handleEarningAmountLayout: () => void;
   earningAmountRef: React.RefObject<View | null>;
   earningAmountTextRef: React.RefObject<View | null>;
-  setView?: (
-    view:
-      | "balance"
-      | "transfer"
-      | "withdraw"
-      | "withdrawal address"
-      | "withdrawal success"
-      | "confirm breeze"
-      | "cancel breeze"
-  ) => void;
+  setView?: (view: OnOffRampViewType) => void;
 }
 
 export const EarningsCard = ({
