@@ -15,7 +15,6 @@ import { createTransferService, TransferState } from "@/utils/transferService";
 
 import { PublicKey, Transaction } from "@solana/web3.js";
 
-import { useAppContext } from "./AppContext";
 import { useSolana } from "./SolanaContext";
 import bs58 from "bs58";
 import Constants from "expo-constants";
@@ -106,6 +105,7 @@ interface WalletProviderProps {
   setIsLoggedIn: (value: boolean) => void;
   setUserProfile: (profile: any) => void;
   setRequiresBiometric: (value: boolean) => void;
+  isLoggedIn: boolean;
 }
 
 export const WalletProvider = ({
@@ -113,10 +113,12 @@ export const WalletProvider = ({
   setIsLoggedIn,
   setUserProfile,
   setRequiresBiometric,
+  isLoggedIn,
 }: WalletProviderProps) => {
   const { t } = useTranslation();
   const { connection, cluster } = useSolana();
-  const { isLoggedIn } = useAppContext();
+  // Remove the useAppContext hook usage
+  // const { isLoggedIn } = useAppContext();
 
   // Initialize from persistent state
   const [connected, setConnected] = useState(persistentWalletState.connected);

@@ -109,8 +109,9 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
               setUserProfile(user);
 
               // Check if biometrics are enabled for this user
-              const biometricEnabled =
-                await AsyncStorage.getItem("biometric_enabled");
+              const biometricEnabled = await AsyncStorage.getItem(
+                "biometric_enabled"
+              );
 
               if (biometricEnabled === "true") {
                 // Check if biometrics are available on device
@@ -258,6 +259,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
             setIsLoggedIn={setIsLoggedIn}
             setUserProfile={setUserProfile}
             setRequiresBiometric={setRequiresBiometric}
+            isLoggedIn={isLoggedIn}
           >
             <ProfileProvider userProfile={userProfile}>
               <HomeProvider>
