@@ -4,6 +4,9 @@ Big items
 
 - web3 auth working on front end/ password with username if web3 auth doesn't work
 - look into passkeys
+- withdraw
+- withdraw before delete account
+- FAQs
 
 polishing (mismatches from designs)
 

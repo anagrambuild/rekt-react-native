@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Animated,
   Keyboard,
@@ -23,8 +24,10 @@ import {
   Row,
   ScrollRow,
   SecondaryButton,
+  WalletConnectionContent,
+  WebViewScreen,
 } from "@/components";
-import { useAppContext } from "@/contexts";
+import { useWallet } from "@/contexts";
 import { useProfileContext } from "@/contexts/ProfileContext";
 
 import Feather from "@expo/vector-icons/Feather";
@@ -38,24 +41,44 @@ import QRCode from "react-native-qrcode-svg";
 import styled, { DefaultTheme, useTheme } from "styled-components/native";
 import { Toast } from "toastify-react-native";
 
+import { OnOffRampViewType } from ".";
+
 export const TransferIn = ({
   setView,
 }: {
-  setView: (
-    view:
-      | "balance"
-      | "transfer"
-      | "withdraw"
-      | "withdrawal address"
-      | "withdrawal success"
-  ) => void;
+  setView: (view: OnOffRampViewType) => void;
 }) => {
-  const { userProfile } = useAppContext();
-  const { setIsOnOffRampModalVisible } = useProfileContext();
+  const {
+    setIsOnOffRampModalVisible,
+    showExplorer,
+    setShowExplorer,
+    explorerUrl,
+    setExplorerUrl,
+    shouldRestoreOnOffRampModal,
+    setShouldRestoreOnOffRampModal,
+    savedOnOffRampView,
+    setSavedOnOffRampView,
+    savedTransferAmount,
+    setSavedTransferAmount,
+    wasInTransferFlow,
+    setWasInTransferFlow,
+  } = useProfileContext();
+
+  const {
+    connected,
+    connecting,
+    transferState,
+    publicKey,
+    connectForTransfer,
+    initiateTransfer,
+    resetTransfer,
+    showWalletModal,
+    setShowWalletModal,
+  } = useWallet();
 
   const theme = useTheme();
   const { t } = useTranslation();
-  const [amount, setAmount] = useState("50.00");
+  const [amount, setAmount] = useState(savedTransferAmount || "50.00");
   const [showAddress, setShowAddress] = useState(false);
   const [showQRCode, setShowQRCode] = useState(false);
 
@@ -63,11 +86,30 @@ export const TransferIn = ({
   const addressOpacityAnim = useRef(new Animated.Value(0)).current;
   const qrCodeOpacityAnim = useRef(new Animated.Value(0)).current;
 
-  // const address = userProfile?.swigWalletAddress || t("No address found");
-  const address = "0x1234567890ndh7djdksk23";
-  const shortAddress = address.slice(0, 6) + "..." + address.slice(-4);
+  // TODO - change this to the user's address from profile
+  const address = "GuY9pCs5yhf7pmSYa41xoYTZvMfqgHHiFyjaeTF2oTXc";
+  const shortAddress =
+    address.length > 10
+      ? address.slice(0, 6) + "..." + address.slice(-4)
+      : address;
 
-  const [isTransferred, setIsTransferred] = useState(false);
+  // Save transfer amount when it changes
+  useEffect(() => {
+    setSavedTransferAmount(amount);
+  }, [amount, setSavedTransferAmount]);
+
+  // Handle transfer state restoration
+  useEffect(() => {
+    if (shouldRestoreOnOffRampModal && savedOnOffRampView === "transferIn") {
+      setShouldRestoreOnOffRampModal(false);
+      setWasInTransferFlow(true);
+    }
+  }, [
+    shouldRestoreOnOffRampModal,
+    savedOnOffRampView,
+    setShouldRestoreOnOffRampModal,
+    setWasInTransferFlow,
+  ]);
 
   // Listen for keyboard events to close QR code
   useEffect(() => {
@@ -166,8 +208,17 @@ export const TransferIn = ({
     }
   };
 
-  const handleBack = () =>
-    isTransferred ? setIsTransferred(false) : setView("balance");
+  const handleBack = () => {
+    if (
+      transferState.status === "success" ||
+      transferState.status === "failed"
+    ) {
+      resetTransfer();
+      setWasInTransferFlow(false);
+    } else {
+      setView("balance");
+    }
+  };
 
   const copyToClipboard = async () => {
     await Clipboard.setStringAsync(address);
@@ -190,6 +241,221 @@ export const TransferIn = ({
     Linking.openURL("mailto:ld@anagram.xyz");
   };
 
+  const handleDeposit = async () => {
+    const transferAmount = parseFloat(amount);
+    if (!transferAmount || transferAmount <= 0) {
+      Alert.alert(t("Invalid Amount"), t("Please enter a valid amount"));
+      return;
+    }
+
+    // Address is now hardcoded, so this validation is no longer needed
+    // if (!address) {
+    //   Alert.alert(t("No Address"), t("Please connect your wallet first"));
+    //   return;
+    // }
+
+    // Save current state for restoration
+    setSavedOnOffRampView("transferIn");
+    setSavedTransferAmount(amount);
+    setWasInTransferFlow(true);
+
+    // Handle different scenarios
+    if (Platform.OS === "android") {
+      if (connected && publicKey) {
+        // Scenario 1: Android with already connected wallet
+        await initiateTransfer(transferAmount, address);
+      } else {
+        // Scenario 2: Android without connected wallet - use MWA
+        await connectForTransfer();
+        // Transfer will be initiated after connection
+        setTimeout(() => {
+          initiateTransfer(transferAmount, address);
+        }, 1000);
+      }
+    } else {
+      // iOS scenarios
+      if (connected && publicKey) {
+        // Scenario 3: iOS with already connected wallet
+        await initiateTransfer(transferAmount, address);
+      } else {
+        // Scenario 4: iOS without connected wallet - show wallet connection
+        setShowWalletModal(true);
+      }
+    }
+  };
+
+  const handleViewOnExplorer = () => {
+    if (transferState.explorerUrl) {
+      setExplorerUrl(transferState.explorerUrl);
+      setShowExplorer(true);
+      setIsOnOffRampModalVisible(false);
+    }
+  };
+
+  // Show WebView if explorer is requested
+  if (showExplorer && explorerUrl) {
+    return (
+      <WebViewScreen
+        url={explorerUrl}
+        title={t("Transaction Explorer")}
+        onBack={() => {
+          setShowExplorer(false);
+          setExplorerUrl(null);
+        }}
+      />
+    );
+  }
+
+  // Show wallet connection modal for iOS
+  if (showWalletModal && Platform.OS === "ios") {
+    return (
+      <WalletConnectionContent
+        onRequestClose={() => {
+          setShowWalletModal(false);
+          // After wallet connection, initiate transfer if we were in transfer flow
+          if (wasInTransferFlow) {
+            setTimeout(() => {
+              const transferAmount = parseFloat(amount);
+              if (connected && publicKey && transferAmount > 0) {
+                initiateTransfer(transferAmount, address);
+              }
+            }, 1000);
+          }
+        }}
+      />
+    );
+  }
+
+  // Handle transfer states
+  if (transferState.status === "pending") {
+    return (
+      <Column $gap={16} $alignItems="center" $padding={4}>
+        <IconContainer onPress={handleBack}>
+          <MaterialIcon
+            name="chevron-left"
+            size={24}
+            color={theme.colors.textSecondary}
+          />
+        </IconContainer>
+
+        <UsdcIconContainer>
+          <UsdcIcon width={44} height={44} />
+          <AbsoluteContainer>
+            <Feather name="loader" size={16} color={theme.colors.loss} />
+          </AbsoluteContainer>
+        </UsdcIconContainer>
+
+        <BodyMEmphasized>{t("Processing transfer...")}</BodyMEmphasized>
+        <BodyMSecondary style={{ textAlign: "center" }}>
+          {t("Please confirm the transaction in your wallet.")}
+        </BodyMSecondary>
+        <SecondaryButton onPress={handleBack}>{t("Cancel")}</SecondaryButton>
+      </Column>
+    );
+  }
+
+  if (transferState.status === "success") {
+    return (
+      <Column $gap={16} $alignItems="center" $padding={4}>
+        <IconContainer onPress={handleBack}>
+          <MaterialIcon
+            name="chevron-left"
+            size={24}
+            color={theme.colors.textSecondary}
+          />
+        </IconContainer>
+
+        <UsdcIconContainer>
+          <UsdcIcon width={44} height={44} />
+          <AbsoluteContainer>
+            <MaterialIcon
+              name="check-circle"
+              size={16}
+              color={theme.colors.profit}
+            />
+          </AbsoluteContainer>
+        </UsdcIconContainer>
+
+        <BodyMEmphasized>{t("Transfer successful!")}</BodyMEmphasized>
+        <BodyMSecondary style={{ textAlign: "center" }}>
+          {t("Your USDC transfer of ${{amount}} has been completed.", {
+            amount: transferState.amount,
+          })}
+        </BodyMSecondary>
+
+        <PrimaryButton
+          onPress={handleViewOnExplorer}
+          disabled={!transferState.explorerUrl}
+          icon={
+            !transferState.explorerUrl ? (
+              <ActivityIndicator
+                size="small"
+                color={theme.colors.textSecondary}
+              />
+            ) : undefined
+          }
+        >
+          {!transferState.explorerUrl
+            ? t("Loading Explorer...")
+            : t("View on Explorer")}
+        </PrimaryButton>
+
+        <SecondaryButton onPress={() => setIsOnOffRampModalVisible(false)}>
+          {t("Done")}
+        </SecondaryButton>
+      </Column>
+    );
+  }
+
+  if (transferState.status === "failed") {
+    return (
+      <Column $gap={16} $alignItems="center" $padding={4}>
+        <IconContainer onPress={handleBack}>
+          <MaterialIcon
+            name="chevron-left"
+            size={24}
+            color={theme.colors.textSecondary}
+          />
+        </IconContainer>
+
+        <UsdcIconContainer>
+          <UsdcIcon width={44} height={44} />
+          <AbsoluteContainer>
+            <MaterialIcon name="error" size={16} color={theme.colors.loss} />
+          </AbsoluteContainer>
+        </UsdcIconContainer>
+
+        <BodyMEmphasized>{t("Transfer failed")}</BodyMEmphasized>
+        <BodyMSecondary style={{ textAlign: "center" }}>
+          {transferState.error || t("An error occurred during the transfer.")}
+        </BodyMSecondary>
+
+        <PrimaryButton
+          onPress={() => {
+            resetTransfer();
+            setWasInTransferFlow(false);
+          }}
+        >
+          {t("Try Again")}
+        </PrimaryButton>
+
+        <SecondaryButton
+          onPress={onContactSupport}
+          icon={
+            <MaterialIcon
+              name="support-agent"
+              size={24}
+              color={theme.colors.textPrimary}
+            />
+          }
+        >
+          {t("Contact Support")}
+        </SecondaryButton>
+      </Column>
+    );
+  }
+
+  // Main input form - wrapped in TouchableWithoutFeedback for keyboard dismissal
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <Column $gap={16} $alignItems="center" $padding={4}>
@@ -201,181 +467,159 @@ export const TransferIn = ({
             color={theme.colors.textSecondary}
           />
         </IconContainer>
-        {!isTransferred ? (
-          <>
-            <UsdcIconContainer>
-              <UsdcIcon width={44} height={44} />
-              <AbsoluteContainer>
-                <FontAwesome5
-                  name="arrow-circle-down"
-                  size={20}
-                  color={theme.colors.textPrimary}
-                />
-              </AbsoluteContainer>
-            </UsdcIconContainer>
-            <Column>
-              <BodyMEmphasized>
-                {t("Send USDC to this account on Solana")}
-              </BodyMEmphasized>
-              <Row $gap={0}>
-                <View style={{ width: 100 }} />
-                <BodyMSecondary>{shortAddress}</BodyMSecondary>
-                <Row $width="auto" $justifyContent="flex-end">
-                  <PressableOpacity
-                    style={{ padding: 6 }}
-                    onPress={copyToClipboard}
-                  >
-                    <Octicons
-                      name="copy"
-                      size={16}
-                      color={theme.colors.textSecondary}
-                    />
-                  </PressableOpacity>
-                  <PressableOpacity
-                    style={{ padding: 6 }}
-                    onPress={handleToggleQRCode}
-                  >
-                    <MaterialIcon
-                      name="qr-code-scanner"
-                      size={16}
-                      color={theme.colors.textSecondary}
-                    />
-                  </PressableOpacity>
-                  <PressableOpacity
-                    style={{ padding: 6 }}
-                    onPress={handleToggleAddress}
-                  >
-                    <FontAwesome5
-                      name={showAddress ? "eye-slash" : "eye"}
-                      size={16}
-                      color={theme.colors.textSecondary}
-                    />
-                  </PressableOpacity>
-                </Row>
+
+        <>
+          <UsdcIconContainer>
+            <UsdcIcon width={44} height={44} />
+            <AbsoluteContainer>
+              <FontAwesome5
+                name="arrow-circle-down"
+                size={20}
+                color={theme.colors.textPrimary}
+              />
+            </AbsoluteContainer>
+          </UsdcIconContainer>
+          <Column>
+            <BodyMEmphasized>
+              {t("Send USDC to this account on Solana")}
+            </BodyMEmphasized>
+            <Row $gap={0}>
+              <View style={{ width: 100 }} />
+              <BodyMSecondary>{shortAddress}</BodyMSecondary>
+              <Row $width="auto" $justifyContent="flex-end">
+                <PressableOpacity
+                  style={{ padding: 6 }}
+                  onPress={copyToClipboard}
+                >
+                  <Octicons
+                    name="copy"
+                    size={16}
+                    color={theme.colors.textSecondary}
+                  />
+                </PressableOpacity>
+                <PressableOpacity
+                  style={{ padding: 6 }}
+                  onPress={handleToggleQRCode}
+                >
+                  <MaterialIcon
+                    name="qr-code-scanner"
+                    size={16}
+                    color={theme.colors.textSecondary}
+                  />
+                </PressableOpacity>
+                <PressableOpacity
+                  style={{ padding: 6 }}
+                  onPress={handleToggleAddress}
+                >
+                  <FontAwesome5
+                    name={showAddress ? "eye-slash" : "eye"}
+                    size={16}
+                    color={theme.colors.textSecondary}
+                  />
+                </PressableOpacity>
               </Row>
-            </Column>
+            </Row>
+          </Column>
 
-            {/* Animated QR Code Section */}
-            {showQRCode && (
-              <Animated.View
-                style={{
-                  width: "100%",
-                  opacity: qrCodeOpacityAnim,
-                }}
-              >
-                <Column $alignItems="center" $gap={8}>
-                  <QRCodeContainer>
-                    <CloseButton onPress={handleToggleQRCode}>
-                      <MaterialIcon
-                        name="close"
-                        size={20}
-                        color={theme.colors.textSecondary}
-                      />
-                    </CloseButton>
-                    <QRCode
-                      value={address}
-                      size={200}
-                      color={theme.colors.textPrimary}
-                      backgroundColor={theme.colors.background}
-                    />
-                  </QRCodeContainer>
-                </Column>
-              </Animated.View>
-            )}
-
-            {/* Animated Address Section */}
-            {showAddress && (
-              <Animated.View
-                style={{
-                  width: "100%",
-                  opacity: addressOpacityAnim,
-                }}
-              >
-                <Column $alignItems="flex-start" $gap={0}>
-                  <BodyXSMonoSecondary>
-                    {t("Deposit address")}
-                  </BodyXSMonoSecondary>
-
-                  <AddressContainer>
-                    <BodySMonoSecondary>{address}</BodySMonoSecondary>
-                  </AddressContainer>
-                </Column>
-              </Animated.View>
-            )}
-
-            <AmountInput
-              value={amount}
-              onChangeText={setAmount}
-              placeholder="0.00"
-              placeholderTextColor={theme.colors.textSecondary}
-              keyboardType="numeric"
-              selectionColor={theme.colors.loss}
-            />
-            <ScrollRow $gap={8} keyboardShouldPersistTaps="always">
-              <PresetButton value={"$10"} onPress={() => setAmount("10.00")} />
-              <PresetButton value={"$50"} onPress={() => setAmount("50.00")} />
-              <PresetButton
-                value={"$100"}
-                onPress={() => setAmount("100.00")}
-              />
-              <PresetButton
-                value={"$200"}
-                onPress={() => setAmount("200.00")}
-              />
-              <PresetButton
-                value={"$500"}
-                onPress={() => setAmount("500.00")}
-              />
-              <PresetButton
-                value={"$1000"}
-                onPress={() => setAmount("1000.00")}
-              />
-            </ScrollRow>
-
-            {/* Deposit Options Section */}
-            <Column $gap={8}>
-              <PrimaryButton onPress={() => setIsTransferred(true)}>
-                {t("Deposit")}
-              </PrimaryButton>
-              <SecondaryButton
-                onPress={() => setIsOnOffRampModalVisible(false)}
-              >
-                {t("Cancel")}
-              </SecondaryButton>
-            </Column>
-          </>
-        ) : (
-          <>
-            <UsdcIconContainer>
-              <UsdcIcon width={44} height={44} />
-              <AbsoluteContainer>
-                <Feather name="loader" size={16} color={theme.colors.loss} />
-              </AbsoluteContainer>
-            </UsdcIconContainer>
-
-            <BodyMEmphasized>{t("Thank you for depositing.")}</BodyMEmphasized>
-            <BodyMSecondary style={{ textAlign: "center" }}>
-              {t(
-                "It can take up to a couple minutes to process. Contact support if you run into any issues."
-              )}
-            </BodyMSecondary>
-            <PrimaryButton onPress={() => setIsOnOffRampModalVisible(false)}>
-              {t("Done")}
-            </PrimaryButton>
-            <SecondaryButton
-              onPress={onContactSupport}
-              icon={
-                <MaterialIcon
-                  name="support-agent"
-                  size={24}
-                  color={theme.colors.textPrimary}
-                />
-              }
+          {/* Animated QR Code Section */}
+          {showQRCode && (
+            <Animated.View
+              style={{
+                width: "100%",
+                opacity: qrCodeOpacityAnim,
+              }}
             >
-              {t("Contact Support")}
+              <Column $alignItems="center" $gap={8}>
+                <QRCodeContainer>
+                  <CloseButton onPress={handleToggleQRCode}>
+                    <MaterialIcon
+                      name="close"
+                      size={20}
+                      color={theme.colors.textSecondary}
+                    />
+                  </CloseButton>
+                  <QRCode
+                    value={address}
+                    size={200}
+                    color={theme.colors.textPrimary}
+                    backgroundColor={theme.colors.background}
+                  />
+                </QRCodeContainer>
+              </Column>
+            </Animated.View>
+          )}
+
+          {/* Animated Address Section */}
+          {showAddress && (
+            <Animated.View
+              style={{
+                width: "100%",
+                opacity: addressOpacityAnim,
+              }}
+            >
+              <Column $alignItems="flex-start" $gap={0}>
+                <BodyXSMonoSecondary>
+                  {t("Deposit address")}
+                </BodyXSMonoSecondary>
+
+                <AddressContainer>
+                  <BodySMonoSecondary>{address}</BodySMonoSecondary>
+                </AddressContainer>
+              </Column>
+            </Animated.View>
+          )}
+
+          <AmountInput
+            value={amount}
+            onChangeText={setAmount}
+            placeholder="0.00"
+            placeholderTextColor={theme.colors.textSecondary}
+            keyboardType="numeric"
+            selectionColor={theme.colors.loss}
+          />
+          <ScrollRow $gap={8} keyboardShouldPersistTaps="always">
+            <PresetButton value={"$10"} onPress={() => setAmount("10.00")} />
+            <PresetButton value={"$50"} onPress={() => setAmount("50.00")} />
+            <PresetButton value={"$100"} onPress={() => setAmount("100.00")} />
+            <PresetButton value={"$200"} onPress={() => setAmount("200.00")} />
+            <PresetButton value={"$500"} onPress={() => setAmount("500.00")} />
+            <PresetButton
+              value={"$1000"}
+              onPress={() => setAmount("1000.00")}
+            />
+          </ScrollRow>
+
+          {/* Deposit Options Section */}
+          <Column $gap={8}>
+            {!connected && (
+              <InfoMessage>
+                <BodyMSecondary
+                  style={{
+                    textAlign: "center",
+                    color: theme.colors.textSecondary,
+                  }}
+                >
+                  {t(
+                    "You need to connect your wallet first to make a deposit."
+                  )}
+                </BodyMSecondary>
+              </InfoMessage>
+            )}
+            <PrimaryButton
+              onPress={handleDeposit}
+              disabled={connecting || !amount || parseFloat(amount) <= 0}
+            >
+              {connecting
+                ? t("Connecting...")
+                : !connected
+                ? t("Connect Wallet")
+                : t("Deposit")}
+            </PrimaryButton>
+            <SecondaryButton onPress={() => setIsOnOffRampModalVisible(false)}>
+              {t("Cancel")}
             </SecondaryButton>
-          </>
-        )}
+          </Column>
+        </>
       </Column>
     </TouchableWithoutFeedback>
   );
@@ -436,4 +680,13 @@ const CloseButton = styled(PressableOpacity)`
     theme.colors.secondary};
   border-radius: 12px;
   padding: 4px;
+`;
+
+const InfoMessage = styled.View`
+  background-color: ${({ theme }: { theme: DefaultTheme }) =>
+    theme.colors.card};
+  border-radius: 8px;
+  padding: 12px 16px;
+  border: 1px solid
+    ${({ theme }: { theme: DefaultTheme }) => theme.colors.border};
 `;

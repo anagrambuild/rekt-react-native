@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -6,8 +7,15 @@ import {
   View,
 } from "react-native";
 
-import { Column, Gap, PressableOpacity, Row, Title2 } from "@/components";
-import { useHomeContext, useProfileContext } from "@/contexts";
+import {
+  Column,
+  Gap,
+  PressableOpacity,
+  Row,
+  Title2,
+  WebViewScreen,
+} from "@/components";
+import { useHomeContext, useProfileContext, useWallet } from "@/contexts";
 import { Position } from "@/utils/backendApi";
 
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
@@ -43,9 +51,35 @@ export const ProfileScreen = () => {
     userData,
     isUserLoading,
     isOnOffRampModalVisible,
+    showExplorer,
+    setShowExplorer,
+    explorerUrl,
+    shouldRestoreOnOffRampModal,
+    setShouldRestoreOnOffRampModal,
+    setIsOnOffRampModalVisible,
+    savedOnOffRampView,
+    savedTransferAmount,
+    wasInTransferFlow,
   } = useProfileContext();
 
+  const { connected } = useWallet();
   const { tradingHistory, isLoadingHistory } = useHomeContext();
+
+  // Detect wallet connection and restore OnOffRampModal if needed
+  useEffect(() => {
+    if (connected && shouldRestoreOnOffRampModal) {
+      setIsOnOffRampModalVisible(true);
+      setShouldRestoreOnOffRampModal(false);
+    }
+  }, [
+    connected,
+    shouldRestoreOnOffRampModal,
+    setIsOnOffRampModalVisible,
+    setShouldRestoreOnOffRampModal,
+    savedOnOffRampView,
+    savedTransferAmount,
+    wasInTransferFlow,
+  ]);
 
   // Map Position to TradeActivityCard props
   const mapPositionToTradeCard = (position: Position) => {
@@ -113,6 +147,17 @@ export const ProfileScreen = () => {
   const handleLinkPress = async () => {
     Toast.success("Link pressed");
   };
+
+  // Show full-screen WebView if explorer is open
+  if (showExplorer && explorerUrl) {
+    return (
+      <WebViewScreen
+        url={explorerUrl}
+        title={t("Transaction Explorer")}
+        onBack={() => setShowExplorer(false)}
+      />
+    );
+  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>

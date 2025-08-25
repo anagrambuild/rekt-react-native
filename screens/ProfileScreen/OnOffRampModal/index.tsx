@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Modal } from "@/components";
 import { useProfileContext } from "@/contexts";
@@ -11,9 +11,22 @@ import { Withdraw } from "./Withdraw";
 import { WithdrawalAddress } from "./WithdrawalAddress";
 import { WithdrawalSuccess } from "./WithdrawalSuccess";
 
+export type OnOffRampViewType =
+  | "balance"
+  | "transfer"
+  | "withdraw"
+  | "withdrawal address"
+  | "withdrawal success"
+  | "confirm breeze"
+  | "cancel breeze";
+
 export const OnOffRampModal = () => {
-  const { isOnOffRampModalVisible, setIsOnOffRampModalVisible } =
-    useProfileContext();
+  const {
+    isOnOffRampModalVisible,
+    setIsOnOffRampModalVisible,
+    savedOnOffRampView,
+    setSavedOnOffRampView,
+  } = useProfileContext();
 
   const [view, setView] = useState<
     | "balance"
@@ -23,7 +36,12 @@ export const OnOffRampModal = () => {
     | "withdrawal success"
     | "confirm breeze"
     | "cancel breeze"
-  >("balance");
+  >(savedOnOffRampView as OnOffRampViewType);
+
+  // Save view state when it changes
+  useEffect(() => {
+    setSavedOnOffRampView(view);
+  }, [view, setSavedOnOffRampView]);
 
   const onRequestClose = () => {
     setIsOnOffRampModalVisible(false);

@@ -11,14 +11,17 @@ import {
 import { Alert, Linking, Platform } from "react-native";
 
 import { getSwigWalletBalance } from "@/utils/backendApi";
+import { createTransferService, TransferState } from "@/utils/transferService";
 
-import { PublicKey } from "@solana/web3.js";
+import { PublicKey, Transaction } from "@solana/web3.js";
 
-import { Buffer } from "buffer";
+import { useAppContext } from "./AppContext";
+import { useSolana } from "./SolanaContext";
+import bs58 from "bs58";
 import Constants from "expo-constants";
+import { router } from "expo-router";
 import { useTranslation } from "react-i18next";
 import * as nacl from "tweetnacl";
-
 // Persistent wallet state outside React lifecycle
 let persistentWalletState = {
   connected: false,
@@ -26,9 +29,6 @@ let persistentWalletState = {
   sharedSecret: null as Uint8Array | null,
   session: null as string | null,
 };
-
-// Use require for bs58 to avoid PRNG issues
-const bs58 = require("bs58");
 
 // Only import wallet adapter for Android
 const isAndroid = Platform.OS === "android";
@@ -56,11 +56,17 @@ export interface WalletContextState {
   usdcBalance: number | null;
   isLoadingBalance: boolean;
 
+  // Transfer State
+  transferState: TransferState;
+
   // Methods
   connect: () => Promise<void>;
+  connectForTransfer: () => Promise<void>; // New method for transfer-only connection
   disconnect: () => void;
   setShowWalletModal: (show: boolean) => void;
   refreshUSDCBalance: () => Promise<void>;
+  initiateTransfer: (amount: number, toAddress: string) => Promise<void>;
+  resetTransfer: () => void;
 }
 
 const WalletContext = createContext<WalletContextState>({
@@ -76,11 +82,15 @@ const WalletContext = createContext<WalletContextState>({
   session: null,
   usdcBalance: null,
   isLoadingBalance: false,
+  transferState: { status: "idle" },
 
   connect: async () => {},
+  connectForTransfer: async () => {},
   disconnect: () => {},
   setShowWalletModal: () => {},
   refreshUSDCBalance: async () => {},
+  initiateTransfer: async () => {},
+  resetTransfer: () => {},
 });
 
 export const useWallet = () => {
@@ -105,6 +115,8 @@ export const WalletProvider = ({
   setRequiresBiometric,
 }: WalletProviderProps) => {
   const { t } = useTranslation();
+  const { connection, cluster } = useSolana();
+  const { isLoggedIn } = useAppContext();
 
   // Initialize from persistent state
   const [connected, setConnected] = useState(persistentWalletState.connected);
@@ -125,6 +137,11 @@ export const WalletProvider = ({
   // USDC Balance state
   const [usdcBalance, setUsdcBalance] = useState<number | null>(null);
   const [isLoadingBalance, setIsLoadingBalance] = useState(false);
+
+  // Transfer state
+  const [transferState, setTransferState] = useState<TransferState>({
+    status: "idle",
+  });
 
   // Generate encryption keypair for Phantom communication - initialize once
   const [dappKeyPair] = useState<nacl.BoxKeyPair>(() => {
@@ -175,7 +192,7 @@ export const WalletProvider = ({
       if (result.accounts.length > 0) {
         // Convert base64 address to PublicKey
         const base64Address = result.accounts[0].address;
-        const addressBytes = Buffer.from(base64Address, "base64");
+        const addressBytes = global.Buffer.from(base64Address, "base64");
         const pubKey = new PublicKey(addressBytes);
 
         // Update persistent state first
@@ -185,10 +202,6 @@ export const WalletProvider = ({
         if (mountedRef.current) {
           setPublicKey(pubKey);
           setConnected(true);
-
-          // Wallet connected successfully - no auth needed
-          const publicKeyString = pubKey.toBase58();
-          console.log("✅ Android wallet connected:", publicKeyString);
         }
         return true;
       }
@@ -200,14 +213,12 @@ export const WalletProvider = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAndroid, transact, solanaNetwork]);
-
   // Handle incoming URL schemes (wallet responses)
   // Android URL Handler (for MWA - keep it simple)
   useEffect(() => {
     if (!isAndroid) return;
 
     const handleAndroidUrl = (url: string) => {
-      console.log("🔗 Android URL received:", url);
       // Android MWA doesn't use URL schemes for transaction responses
       // MWA handles everything internally, so we just handle errors here
       if (url.includes("errorCode")) {
@@ -248,16 +259,12 @@ export const WalletProvider = ({
     if (isAndroid) return; // Only run on iOS
 
     const handleiOSUrl = async (url: string) => {
-      console.log("🔗 iOS URL received:", url);
-
       // Handle wallet connection response from Phantom
       if (
         url.includes("rektreactnative://") &&
         url.includes("phantom_encryption_public_key")
       ) {
         try {
-          console.log("🔐 Processing wallet connection response from Phantom");
-
           const urlObj = new URL(url);
           const phantomPublicKey = urlObj.searchParams.get(
             "phantom_encryption_public_key"
@@ -266,8 +273,6 @@ export const WalletProvider = ({
           const nonce = urlObj.searchParams.get("nonce");
 
           if (phantomPublicKey && data && nonce) {
-            console.log("📡 Decrypting wallet connection response...");
-
             // Create shared secret and decrypt response
             const keyPair = getDappKeyPair();
             const sharedSecretDapp = nacl.box.before(
@@ -283,13 +288,10 @@ export const WalletProvider = ({
 
             if (decryptedData) {
               const connectData = JSON.parse(
-                Buffer.from(decryptedData).toString("utf8")
+                global.Buffer.from(decryptedData).toString("utf8")
               );
-              console.log("🔓 Decrypted wallet data:", connectData);
 
               if (connectData.public_key && connectData.session) {
-                console.log("🔗 Processing wallet connection...");
-
                 // Set wallet state
                 setSharedSecret(sharedSecretDapp);
                 setSession(connectData.session);
@@ -297,10 +299,9 @@ export const WalletProvider = ({
                 setPublicKey(pubKey);
                 setConnected(true);
                 setConnecting(false);
-
                 // Wallet connected successfully - no auth needed
-                const publicKeyString = connectData.public_key;
-                console.log("✅ iOS wallet connected:", publicKeyString);
+                // Note: Not navigating here to preserve modal context
+                // The user should already be on the profile tab with modal open
               }
             }
           }
@@ -317,6 +318,117 @@ export const WalletProvider = ({
         return;
       }
 
+      // Handle transaction signing response from Phantom
+      if (
+        url.includes("rektreactnative://") &&
+        url.includes("data") &&
+        !url.includes("phantom_encryption_public_key") // Not a connection response
+      ) {
+        try {
+          const urlObj = new URL(url);
+          const data = urlObj.searchParams.get("data");
+          const nonce = urlObj.searchParams.get("nonce");
+
+          if (data && nonce && sharedSecret) {
+            // Decrypt the response using existing shared secret
+            const decryptedData = nacl.box.open.after(
+              bs58.decode(data),
+              bs58.decode(nonce),
+              sharedSecret
+            );
+
+            if (decryptedData) {
+              const responseData = JSON.parse(
+                global.Buffer.from(decryptedData).toString("utf8")
+              );
+
+              if (responseData.signature) {
+                // Update transfer state with success
+                setTransferState({
+                  status: "success",
+                  signature: responseData.signature,
+                  explorerUrl: `https://explorer.solana.com/tx/${responseData.signature}?cluster=mainnet-beta`,
+                  amount: transferState.amount || 0,
+                });
+
+                // Navigate back to profile tab after successful transfer
+                router.push("/(tabs)/profile");
+              } else if (responseData.transaction) {
+                try {
+                  // Deserialize the signed transaction
+                  const signedTransaction = Transaction.from(
+                    bs58.decode(responseData.transaction)
+                  );
+
+                  // Send the signed transaction to the network
+                  const signature = await connection.sendRawTransaction(
+                    signedTransaction.serialize()
+                  );
+
+                  // Wait for confirmation
+                  const confirmation = await connection.confirmTransaction(
+                    {
+                      signature,
+                      blockhash: signedTransaction.recentBlockhash!,
+                      lastValidBlockHeight: (
+                        await connection.getLatestBlockhash()
+                      ).lastValidBlockHeight,
+                    },
+                    "confirmed"
+                  );
+
+                  if (confirmation.value.err) {
+                    throw new Error(
+                      `Transaction failed: ${confirmation.value.err}`
+                    );
+                  }
+
+                  // Update transfer state with success
+                  setTransferState({
+                    status: "success",
+                    signature: signature,
+                    explorerUrl: `https://explorer.solana.com/tx/${signature}?cluster=mainnet-beta`,
+                    amount: transferState.amount || 0,
+                  });
+
+                  // Navigate back to profile tab after successful transfer
+                  router.push("/(tabs)/profile");
+                } catch (txError) {
+                  console.error(
+                    "❌ Failed to process signed transaction:",
+                    txError
+                  );
+                  throw new Error(
+                    `Failed to send transaction: ${
+                      txError instanceof Error
+                        ? txError.message
+                        : "Unknown error"
+                    }`
+                  );
+                }
+              } else {
+                throw new Error("No signature or transaction in response");
+              }
+            } else {
+              throw new Error("Failed to decrypt transaction response");
+            }
+          } else {
+            throw new Error(
+              "Missing transaction response data or shared secret"
+            );
+          }
+        } catch (error) {
+          console.error("❌ Failed to process transaction response:", error);
+          setTransferState({
+            status: "failed",
+            error:
+              error instanceof Error ? error.message : "Transaction failed",
+            amount: transferState.amount || 0,
+          });
+        }
+        return;
+      }
+
       // Handle error responses
       if (url.includes("errorCode")) {
         try {
@@ -325,10 +437,29 @@ export const WalletProvider = ({
           const errorMessage = urlObj.searchParams.get("errorMessage");
           console.error("iOS Phantom error:", errorCode, errorMessage);
 
-          Alert.alert(
-            t("Connection Failed"),
-            errorMessage || t("Unknown wallet error")
-          );
+          // Check if this is a transaction error (user rejection, etc.)
+          if (
+            transferState.status === "pending" ||
+            transferState.status === "success"
+          ) {
+            // This is a transaction error, update transfer state (even if it was briefly set to success)
+            const userFriendlyMessage =
+              errorCode === "4001"
+                ? t("Transaction was cancelled by user")
+                : errorMessage || t("Transaction failed");
+
+            setTransferState({
+              status: "failed",
+              error: userFriendlyMessage,
+              amount: transferState.amount || 0,
+            });
+          } else {
+            // This is a connection error, show alert
+            Alert.alert(
+              t("Connection Failed"),
+              errorMessage || t("Unknown wallet error")
+            );
+          }
         } catch (error) {
           console.error("Failed to parse iOS error response:", error);
         }
@@ -346,7 +477,7 @@ export const WalletProvider = ({
     });
 
     return () => subscription?.remove();
-  }, [getDappKeyPair, t]);
+  }, [getDappKeyPair, t, sharedSecret, transferState, connection]);
 
   const connect = useCallback(async () => {
     if (connecting || connected) {
@@ -374,6 +505,31 @@ export const WalletProvider = ({
     }
   }, [connecting, connected, connectAndroid]);
 
+  // Transfer-only connection that doesn't trigger authentication flows
+  const connectForTransfer = useCallback(async () => {
+    if (connecting || connected) {
+      return;
+    }
+    setConnecting(true);
+    try {
+      if (isAndroid) {
+        const success = await connectAndroid();
+        if (!success) {
+          setConnecting(false);
+        } else {
+          setConnecting(false);
+        }
+      } else if (Platform.OS === "ios") {
+        // For iOS, show the wallet selection modal
+        setShowWalletModal(true);
+        setConnecting(false);
+      }
+    } catch (error) {
+      console.error("Transfer wallet connection error:", error);
+      setConnecting(false);
+    }
+  }, [connecting, connected, connectAndroid]);
+
   const disconnect = useCallback(() => {
     // Update persistent state
     persistentWalletState.connected = false;
@@ -389,7 +545,10 @@ export const WalletProvider = ({
 
   // Refresh USDC balance from Swig wallet
   const refreshUSDCBalance = useCallback(async () => {
-    if (!publicKey) return;
+    if (!publicKey || !isLoggedIn) {
+      // Skip balance check for transfer-only connections
+      return;
+    }
 
     try {
       setIsLoadingBalance(true);
@@ -407,22 +566,116 @@ export const WalletProvider = ({
         setUsdcBalance(0);
       }
     } catch (error) {
-      console.error("Error refreshing USDC balance:", error);
+      console.error("Error getting Swig wallet balance:", error);
       setUsdcBalance(0);
     } finally {
       setIsLoadingBalance(false);
     }
-  }, [publicKey]);
+  }, [publicKey, isLoggedIn]);
 
-  // Refresh USDC balance when wallet connects
+  // Refresh USDC balance when wallet connects (but not for transfer-only connections)
   useEffect(() => {
-    if (connected && publicKey) {
+    if (connected && publicKey && isLoggedIn) {
+      // Only refresh balance if user is fully authenticated
       refreshUSDCBalance();
     } else if (!connected) {
       setUsdcBalance(null);
       setIsLoadingBalance(false);
     }
-  }, [connected, publicKey, refreshUSDCBalance]);
+  }, [connected, publicKey, refreshUSDCBalance, isLoggedIn]);
+
+  // Transfer methods - assumes wallet is already connected
+  const initiateTransfer = useCallback(
+    async (amount: number, toAddress: string) => {
+      try {
+        setTransferState({
+          status: "pending",
+          amount,
+        });
+
+        const transferService = createTransferService(connection);
+
+        let result;
+        if (Platform.OS === "android") {
+          // Android MWA transfer
+          const protocol = require("@solana-mobile/mobile-wallet-adapter-protocol-web3js");
+          const transact = protocol.transact;
+
+          if (publicKey) {
+            // We have a connected wallet from main app - use it
+            result = await transferService.transferUSDCAndroid(
+              amount,
+              toAddress,
+              publicKey,
+              transact,
+              cluster
+            );
+          } else {
+            // Transfer-only flow - we'll get the publicKey during authorization
+            const placeholderKey = new PublicKey(
+              "11111111111111111111111111111111"
+            );
+            result = await transferService.transferUSDCAndroid(
+              amount,
+              toAddress,
+              placeholderKey,
+              transact,
+              cluster
+            );
+          }
+        } else {
+          // iOS Phantom transfer
+          if (connected && publicKey && sharedSecret && session) {
+            // Use existing connection (must be fully connected)
+            result = await transferService.transferUSDCiOS(
+              amount,
+              toAddress,
+              publicKey,
+              sharedSecret,
+              session,
+              getDappKeyPair()
+            );
+          } else {
+            setTransferState({
+              status: "needs_connection",
+              amount,
+            });
+            return;
+          }
+        }
+        if (result.success) {
+          setTransferState({
+            status: "success",
+            signature: result.signature,
+            explorerUrl: result.explorerUrl,
+            amount,
+          });
+        } else {
+          throw new Error(result.error || "Transfer failed");
+        }
+      } catch (error) {
+        console.error("Transfer failed:", error);
+        setTransferState({
+          status: "failed",
+          error: error instanceof Error ? error.message : "Transfer failed",
+          amount,
+        });
+      }
+    },
+    [
+      connected,
+      publicKey,
+      connection,
+      cluster,
+      sharedSecret,
+      session,
+      getDappKeyPair,
+    ]
+  );
+
+  const resetTransfer = useCallback(() => {
+    setTransferState({ status: "idle" });
+  }, []);
 
   const value: WalletContextState = {
     connected,
@@ -434,10 +687,14 @@ export const WalletProvider = ({
     session,
     usdcBalance,
     isLoadingBalance,
+    transferState,
     connect,
+    connectForTransfer,
     disconnect,
     setShowWalletModal,
     refreshUSDCBalance,
+    initiateTransfer,
+    resetTransfer,
   };
 
   return (

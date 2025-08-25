@@ -260,5 +260,21 @@
   "Turn off earning power?": "Turn off earning power?",
   "You'll stop earning yield on your balance. You can always turn this back on later from your settings.": "You'll stop earning yield on your balance. You can always turn this back on later from your settings.",
   "Turn off earning": "Turn off earning",
-  "Keep earning": "Keep earning"
+  "Keep earning": "Keep earning",
+  "Your wallet will be prompted to authorize and sign the USDC transfer": "Your wallet will be prompted to authorize and sign the USDC transfer",
+  "Send USDC": "Send USDC",
+  "Sending...": "Sending...",
+  "Processing...": "Processing...",
+  "Transfer Successful!": "Transfer Successful!",
+  "Your USDC transfer has been completed successfully.": "Your USDC transfer has been completed successfully.",
+  "View on Explorer": "View on Explorer",
+  "Transfer Failed": "Transfer Failed",
+  "An error occurred during the transfer.": "An error occurred during the transfer.",
+  "Try Again": "Try Again",
+  "Please enter a valid amount": "Please enter a valid amount",
+  "Transaction was cancelled by user": "Transaction was cancelled by user",
+  "Transaction Explorer": "Transaction Explorer",
+  "Loading Explorer...": "Loading Explorer...",
+  "Connect and Send": "Connect and Send",
+  "You need to connect your wallet first to make a deposit.": "You need to connect your wallet first to make a deposit."
 }
