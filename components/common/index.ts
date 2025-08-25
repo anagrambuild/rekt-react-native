@@ -7,3 +7,4 @@ export * from "./Modal";
 export * from "./Picker";
 export * from "./PulsatingContainer";
 export * from "./texts";
+export * from "./WebViewScreen";
