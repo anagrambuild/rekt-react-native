@@ -14,4 +14,7 @@ config.resolver.assetExts = config.resolver.assetExts.filter(
 );
 config.resolver.sourceExts = [...config.resolver.sourceExts, "svg"];
 
+// Ensure polyfills are loaded first
+config.resolver.platforms = ["native", "android", "ios"];
+
 module.exports = wrapWithReanimatedMetroConfig(config);

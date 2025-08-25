@@ -1,6 +1,6 @@
 {
   "name": "rekt-react-native",
-  "main": "expo-router/entry",
+  "main": "index.js",
   "version": "1.0.0",
   "scripts": {
     "start": "expo start",
@@ -29,6 +29,7 @@
     "@solana-mobile/mobile-wallet-adapter-protocol": "^2.2.2",
     "@solana-mobile/mobile-wallet-adapter-protocol-web3js": "^2.2.2",
     "@solana-mobile/wallet-adapter-mobile": "^2.2.2",
+    "@solana/spl-token": "^0.4.13",
     "@solana/web3.js": "^1.98.2",
     "@supabase/supabase-js": "^2.55.0",
     "@swig-wallet/classic": "^1.1.0",
