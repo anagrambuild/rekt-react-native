@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Alert, Keyboard, Platform } from "react-native";
+import { Alert, Keyboard, Platform, View } from "react-native";
 
 import UsdcIcon from "@/assets/images/app-svgs/usdc.svg";
 import WalletSecondaryIcon from "@/assets/images/app-svgs/wallet-secondary.svg";
@@ -22,6 +22,7 @@ import Octicons from "@expo/vector-icons/Octicons";
 import bs58 from "bs58";
 import * as Clipboard from "expo-clipboard";
 import { useTranslation } from "react-i18next";
+import { Pressable } from "react-native-gesture-handler";
 import styled, { DefaultTheme, useTheme } from "styled-components/native";
 import { Toast } from "toastify-react-native";
 
@@ -29,7 +30,7 @@ interface DeleteAccountModalProps {
   visible: boolean;
   onRequestClose: () => void;
   onConfirm: () => void;
-  onForceClose?: () => void; // Called when modal is closed after account deletion
+  onForceClose?: () => void;
 }
 
 type TransferStep =
@@ -49,9 +50,7 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
   const theme = useTheme();
   const { t } = useTranslation();
 
-  // Mock balance - in real app this would come from wallet context
-  const mockBalance = 0; // Set to 0 to test the skip withdraw flow
-
+  const mockBalance: number = 500;
   const [currentStep, setCurrentStep] = useState<TransferStep>(
     mockBalance === 0 ? "confirm-delete" : "transfer"
   );
@@ -62,7 +61,6 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
     try {
       const cleanAddress = address.trim();
 
-      // Basic format check first (fast)
       if (
         !cleanAddress ||
         cleanAddress.length < 32 ||
@@ -76,7 +74,6 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
         return false;
       }
 
-      // Actually decode and verify it's 32 bytes
       const decoded = bs58.decode(cleanAddress);
       return decoded.length === 32;
     } catch (error) {
@@ -88,36 +85,42 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
   const handleAddressChange = (text: string) => {
     setWalletAddress(text);
     setIsAddressValid(validateSolanaAddress(text));
-    // Dismiss error message when user starts typing
     if (currentStep === "invalid") {
       setCurrentStep("transfer");
     }
   };
-
+  // TODO - react geesture handler does not work on android
   const handlePaste = async () => {
-    const clipboardContent = await Clipboard.getStringAsync();
-    setWalletAddress(clipboardContent);
-    setIsAddressValid(validateSolanaAddress(clipboardContent));
-    // Dismiss error message when user pastes
-    if (currentStep === "invalid") {
-      setCurrentStep("transfer");
+    try {
+      const clipboardContent = await Clipboard.getStringAsync();
+      setWalletAddress(clipboardContent);
+      setIsAddressValid(validateSolanaAddress(clipboardContent));
+      if (currentStep === "invalid") {
+        setCurrentStep("transfer");
+      }
+    } catch (error) {
+      console.log("Error pasting from clipboard:", error);
     }
   };
 
   const copyToClipboard = async () => {
-    await Clipboard.setStringAsync(walletAddress);
+    try {
+      await Clipboard.setStringAsync(walletAddress);
 
-    if (Platform.OS === "android") {
-      Toast.show({
-        text1: t("Address copied to clipboard"),
-        type: "success",
-        backgroundColor: theme.colors.card,
-        textColor: theme.colors.textPrimary,
-        progressBarColor: theme.colors.profit,
-        iconColor: theme.colors.profit,
-      });
-    } else {
-      Alert.alert(t("Address copied to clipboard"));
+      if (Platform.OS === "android") {
+        Toast.show({
+          text1: t("Address copied to clipboard"),
+          type: "success",
+          backgroundColor: theme.colors.card,
+          textColor: theme.colors.textPrimary,
+          progressBarColor: theme.colors.profit,
+          iconColor: theme.colors.profit,
+        });
+      } else {
+        Alert.alert(t("Address copied to clipboard"));
+      }
+    } catch (error) {
+      console.log("Error copying to clipboard:", error);
     }
   };
 
@@ -138,17 +141,15 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
   };
 
   const handleClose = () => {
-    // If user has confirmed deletion, force close and clear state
     if (currentStep === "deleted") {
       if (onForceClose) {
         onForceClose();
       } else {
-        onConfirm(); // Fallback to onConfirm if onForceClose not provided
+        onConfirm();
       }
       return;
     }
 
-    // Regular close - reset to initial state
     setCurrentStep("transfer");
     setWalletAddress("");
     setIsAddressValid(false);
@@ -156,9 +157,7 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
   };
 
   const handleFinalClose = () => {
-    // Call onConfirm to actually delete the account and sign out
     onConfirm();
-    // Close the modal - handleClose will determine the appropriate close behavior
     onRequestClose();
   };
 
@@ -172,7 +171,6 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
         <BodyMSecondary>{t("Transfer it to another wallet")}</BodyMSecondary>
       </Column>
 
-      {/* Wallet Address Input Section */}
       <Column $gap={12} $alignItems="flex-start">
         <BodyMEmphasized>{t("Wallet address")}</BodyMEmphasized>
         <AddressInputContainer>
@@ -192,10 +190,25 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
             onSubmitEditing={() => Keyboard.dismiss()}
           />
         </AddressInputContainer>
-        <PasteButton onPress={handlePaste}>
-          <Octicons name="paste" size={16} color={theme.colors.textSecondary} />
-          <BodySSecondary>{t("Paste")}</BodySSecondary>
-        </PasteButton>
+
+        {/* Use a native View with specific zIndex and elevation */}
+        <View
+          style={{
+            zIndex: 999,
+            elevation: 999,
+            alignSelf: "flex-start",
+          }}
+        >
+          <PasteButton activeOpacity={0.2} onPress={handlePaste}>
+            <Octicons
+              name="paste"
+              size={16}
+              color={theme.colors.textSecondary}
+            />
+            <BodySSecondary>{t("Paste")}</BodySSecondary>
+          </PasteButton>
+        </View>
+
         {currentStep === "invalid" && (
           <Row $gap={8} $width="auto">
             <MaterialIcon name="warning" size={20} color={theme.colors.loss} />
@@ -206,12 +219,7 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
         )}
       </Column>
 
-      <SecondaryButton
-        onPress={handleNext}
-        // disabled={!isAddressValid}
-      >
-        {t("Next")}
-      </SecondaryButton>
+      <SecondaryButton onPress={handleNext}>{t("Next")}</SecondaryButton>
     </Column>
   );
 
@@ -224,7 +232,6 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
       />
       <Column $gap={4} $alignItems="flex-start">
         <Body1>{t("Transfer successful")}</Body1>
-
         <BodySSecondary>
           {t(
             "Your balance has been transferred to the specified wallet address"
@@ -245,10 +252,26 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
           editable={false}
         />
       </AddressInputContainer>
-      <PasteButton onPress={copyToClipboard}>
-        <Octicons name="copy" size={16} color={theme.colors.textSecondary} />
-        <BodySSecondary>{t("Copy")}</BodySSecondary>
-      </PasteButton>
+
+      {/* Same zIndex fix for copy button */}
+      <View
+        style={{
+          zIndex: 999,
+          elevation: 999,
+          alignSelf: "flex-start",
+        }}
+      >
+        <PasteButton
+          onPress={copyToClipboard}
+          style={{
+            zIndex: 999,
+            elevation: 999,
+          }}
+        >
+          <Octicons name="copy" size={16} color={theme.colors.textSecondary} />
+          <BodySSecondary>{t("Copy")}</BodySSecondary>
+        </PasteButton>
+      </View>
 
       <Column $gap={12} style={{ width: "100%" }}>
         <DangerButton onPress={handleTransferSuccess}>
@@ -309,7 +332,6 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
   );
 
   const renderContent = () => {
-    // If balance is 0, skip transfer steps and go directly to confirm delete
     if (mockBalance === 0 && currentStep === "transfer") {
       return renderConfirmDeleteStep();
     }
@@ -330,8 +352,19 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
     }
   };
 
+  // Determine if we need keyboard handling for this step
+  const needsKeyboardHandling =
+    currentStep === "transfer" ||
+    currentStep === "post-input" ||
+    currentStep === "invalid" ||
+    currentStep === "success";
+
   return (
-    <Modal visible={visible} onRequestClose={handleClose}>
+    <Modal
+      visible={visible}
+      onRequestClose={handleClose}
+      enableKeyboardHandling={needsKeyboardHandling}
+    >
       {renderContent()}
     </Modal>
   );
@@ -354,7 +387,9 @@ const AddressInput = styled.TextInput`
   font-size: 14px;
 `;
 
-const PasteButton = styled(PressableOpacity)`
+const PasteButton = styled(
+  Platform.OS === "android" ? PressableOpacity : Pressable
+)`
   flex-direction: row;
   align-items: center;
   justify-content: center;
