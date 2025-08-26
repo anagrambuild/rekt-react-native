@@ -163,3 +163,49 @@ export const TertiaryButton = ({
     )}
   </StyledTertiaryButton>
 );
+
+// DANGER BUTTON
+const StyledDangerButton = styled(PressableOpacity)<{
+  disabled?: boolean;
+  loading?: boolean;
+}>`
+  ${sharedStyles}
+  background-color: ${({
+    theme,
+    disabled,
+    loading,
+  }: ThemedButtonProps & { disabled?: boolean; loading?: boolean }) =>
+    disabled || loading ? theme.colors.disabled : theme.colors.loss};
+  opacity: ${({
+    disabled = false,
+    loading = false,
+  }: {
+    disabled?: boolean;
+    loading?: boolean;
+  }) => (disabled || loading ? 0.8 : 1)};
+`;
+
+const DangerButtonText = styled.Text`
+  color: ${({ theme }: ThemedButtonTextProps) => theme.colors.textPrimary};
+  font-family: "Geist";
+  font-weight: 400;
+  ${sharedTextStyles}
+`;
+
+export const DangerButton = ({
+  icon,
+  children,
+  loading,
+  ...props
+}: ButtonProps) => (
+  <StyledDangerButton {...props} loading={loading}>
+    {loading ? (
+      <SecondaryActivityIndicator />
+    ) : (
+      <>
+        {icon}
+        <DangerButtonText>{children}</DangerButtonText>
+      </>
+    )}
+  </StyledDangerButton>
+);
