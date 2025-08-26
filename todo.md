@@ -8,14 +8,15 @@ Implementing backend:
 
 - create account
 - check balance
-- deposit to swig address
+- deposit to swig address - remove hardcoded address
 - should not allow a trade with no usdc
 - open trade
 - close trade
 - get current trade status
 - wire up trade again button to really work
 - withdraw
-- withdraw before delete account
+- withdraw before delete account - remove mock balance
+- test delete account
 
 Tighten ups
 
