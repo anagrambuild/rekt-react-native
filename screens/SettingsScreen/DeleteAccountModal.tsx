@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Alert, Keyboard, Platform, View } from "react-native";
+import { Alert, Keyboard, Platform } from "react-native";
 
 import UsdcIcon from "@/assets/images/app-svgs/usdc.svg";
 import WalletSecondaryIcon from "@/assets/images/app-svgs/wallet-secondary.svg";
@@ -89,7 +89,7 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
       setCurrentStep("transfer");
     }
   };
-  // TODO - react geesture handler does not work on android
+
   const handlePaste = async () => {
     try {
       const clipboardContent = await Clipboard.getStringAsync();
@@ -191,23 +191,10 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
           />
         </AddressInputContainer>
 
-        {/* Use a native View with specific zIndex and elevation */}
-        <View
-          style={{
-            zIndex: 999,
-            elevation: 999,
-            alignSelf: "flex-start",
-          }}
-        >
-          <PasteButton activeOpacity={0.2} onPress={handlePaste}>
-            <Octicons
-              name="paste"
-              size={16}
-              color={theme.colors.textSecondary}
-            />
-            <BodySSecondary>{t("Paste")}</BodySSecondary>
-          </PasteButton>
-        </View>
+        <PasteButton activeOpacity={0.2} onPress={handlePaste}>
+          <Octicons name="paste" size={16} color={theme.colors.textSecondary} />
+          <BodySSecondary>{t("Paste")}</BodySSecondary>
+        </PasteButton>
 
         {currentStep === "invalid" && (
           <Row $gap={8} $width="auto">
@@ -253,25 +240,10 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
         />
       </AddressInputContainer>
 
-      {/* Same zIndex fix for copy button */}
-      <View
-        style={{
-          zIndex: 999,
-          elevation: 999,
-          alignSelf: "flex-start",
-        }}
-      >
-        <PasteButton
-          onPress={copyToClipboard}
-          style={{
-            zIndex: 999,
-            elevation: 999,
-          }}
-        >
-          <Octicons name="copy" size={16} color={theme.colors.textSecondary} />
-          <BodySSecondary>{t("Copy")}</BodySSecondary>
-        </PasteButton>
-      </View>
+      <PasteButton onPress={copyToClipboard}>
+        <Octicons name="copy" size={16} color={theme.colors.textSecondary} />
+        <BodySSecondary>{t("Copy")}</BodySSecondary>
+      </PasteButton>
 
       <Column $gap={12} style={{ width: "100%" }}>
         <DangerButton onPress={handleTransferSuccess}>
@@ -352,19 +324,8 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
     }
   };
 
-  // Determine if we need keyboard handling for this step
-  const needsKeyboardHandling =
-    currentStep === "transfer" ||
-    currentStep === "post-input" ||
-    currentStep === "invalid" ||
-    currentStep === "success";
-
   return (
-    <Modal
-      visible={visible}
-      onRequestClose={handleClose}
-      enableKeyboardHandling={needsKeyboardHandling}
-    >
+    <Modal visible={visible} onRequestClose={handleClose}>
       {renderContent()}
     </Modal>
   );
@@ -387,6 +348,7 @@ const AddressInput = styled.TextInput`
   font-size: 14px;
 `;
 
+// react gesture handler works better here for ios but does not work on android
 const PasteButton = styled(
   Platform.OS === "android" ? PressableOpacity : Pressable
 )`
