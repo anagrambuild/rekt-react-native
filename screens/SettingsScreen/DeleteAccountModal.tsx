@@ -50,9 +50,11 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
   const { t } = useTranslation();
 
   // Mock balance - in real app this would come from wallet context
-  const mockBalance = 500;
+  const mockBalance = 0; // Set to 0 to test the skip withdraw flow
 
-  const [currentStep, setCurrentStep] = useState<TransferStep>("transfer");
+  const [currentStep, setCurrentStep] = useState<TransferStep>(
+    mockBalance === 0 ? "confirm-delete" : "transfer"
+  );
   const [walletAddress, setWalletAddress] = useState("");
   const [isAddressValid, setIsAddressValid] = useState(false);
 
@@ -307,6 +309,11 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
   );
 
   const renderContent = () => {
+    // If balance is 0, skip transfer steps and go directly to confirm delete
+    if (mockBalance === 0 && currentStep === "transfer") {
+      return renderConfirmDeleteStep();
+    }
+
     switch (currentStep) {
       case "transfer":
       case "post-input":

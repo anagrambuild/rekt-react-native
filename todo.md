@@ -1,12 +1,17 @@
 UI
 
-Big items
+High Priority
 
 - web3 auth working on front end/ password with username if web3 auth doesn't work
-- look into passkeys
+- hook up to back end
 - withdraw
 - withdraw before delete account
+- check MWA on Android calling connection twice
+
+Low Priority
+
 - FAQs
+- look into passkeys
 
 polishing (mismatches from designs)
 
