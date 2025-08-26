@@ -45,24 +45,14 @@ export const SettingsScreen = () => {
 
   const handleLogout = async () => {
     try {
-      // Clear secure storage
       await supabase.auth.signOut();
-
-      // Disconnect wallet
       disconnect();
-
-      // Clear user profile and sign up form state
       setUserProfile(null);
       setShowSignUpForm(false);
-
-      // Set logged in state to false
       setIsLoggedIn(false);
-
-      // Explicitly navigate to app/index
       router.replace("/");
     } catch (error) {
       console.error("Logout failed:", error);
-      // Still try to log out even if there's an error
       setIsLoggedIn(false);
       router.replace("/");
     }
@@ -190,6 +180,12 @@ export const SettingsScreen = () => {
             visible={isDeleteAccountModalVisible}
             onRequestClose={() => setIsDeleteAccountModalVisible(false)}
             onConfirm={handleDeleteAccount}
+            onForceClose={() => {
+              setIsDeleteAccountModalVisible(false);
+              // Clear all state and sign out user
+              // This will be called when modal is closed after account deletion
+              handleDeleteAccount();
+            }}
           />
         )}
       </ScreenContainer>
