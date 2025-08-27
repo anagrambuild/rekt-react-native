@@ -211,6 +211,7 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
   };
 
   // TODO: Add this back when backend is ready
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
