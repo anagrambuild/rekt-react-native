@@ -133,15 +133,15 @@ const Index = () => {
     return <BiometricAuthScreen key="biometric-auth" />;
   }
 
-  // const connectWallet = () => {
-  //   if (Platform.OS === "ios") {
-  //     setShowWalletModal(true);
-  //   } else {
-  //     connect();
-  //   }
-  // };
+  const connectWallet = () => {
+    if (Platform.OS === "ios") {
+      setShowWalletModal(true);
+    } else {
+      connect();
+    }
+  };
 
-  const connectWallet = () => router.push("/(tabs)");
+  // const connectWallet = () => router.push("/(tabs)");
 
   if (showSignUpForm) {
     return (
