@@ -18,10 +18,13 @@ Implementing backend:
 - withdraw before delete account - remove mock balance
 - test delete account
 
+Notes for backend
+
+- no username update endpoint
+
 Tighten ups
 
 - check MWA on Android calling connection twice
-- Android crashing - compress video files
 
 Low Priority
 
