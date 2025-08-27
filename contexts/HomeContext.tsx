@@ -155,7 +155,7 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
       const balanceData = await getTradingBalance(userId);
       setBalance(balanceData);
     } catch (error) {
-      console.error("Error refreshing balance:", error);
+      // console.error("Error refreshing balance:", error);
       setBalanceError(
         error instanceof Error ? error.message : "Failed to load balance"
       );
