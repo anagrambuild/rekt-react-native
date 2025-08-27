@@ -27,9 +27,7 @@ interface AuthContextType {
   session: any | null;
   loading: boolean;
   // OTP Authentication methods
-  sendOTP: (
-    email: string
-  ) => Promise<{ success: boolean; error?: string }>;
+  sendOTP: (email: string) => Promise<{ success: boolean; error?: string }>;
   verifyOTP: (
     email: string,
     token: string
@@ -215,7 +213,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       return { success: true };
     } catch (error) {
-      console.error("Send OTP error:", error);
+      console.error("Send Code error:", error);
       return { success: false, error: "An unexpected error occurred" };
     } finally {
       setLoading(false);

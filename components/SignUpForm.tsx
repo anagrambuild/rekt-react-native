@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -9,12 +9,9 @@ import {
 
 import RektLogo from "@/assets/images/rekt-logo.svg";
 import { useAppContext, useAuth, useWallet } from "@/contexts";
-import { useBiometrics, useImagePicker } from "@/hooks";
+import { useBiometrics, useImagePicker, useUsernameValidation } from "@/hooks";
 import { LoadingScreen } from "@/screens/LoadingScreen";
-import {
-  useCreateUserMutation,
-  useUsernameAvailabilityQuery,
-} from "@/utils/queryUtils";
+import { useCreateUserMutation } from "@/utils/queryUtils";
 import { supabase } from "@/utils/supabase";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -40,7 +37,7 @@ interface SignUpFormProps {
 
 export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
   const { t } = useTranslation();
-  const { sendOTP, verifyOTP, signOut, loading: authLoading } = useAuth();
+  const { sendOTP, verifyOTP, loading: authLoading } = useAuth();
   const { publicKey, connected } = useWallet();
   const { takePhoto, pickFromLibrary, isLoading } = useImagePicker();
   const { isSupported, isEnrolled, biometricType, enableBiometrics } =
@@ -48,17 +45,8 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
   const theme = useTheme();
   const { signUpForm, setSignUpForm, setUserProfile } = useAppContext();
 
-  const [debouncedUsername, setDebouncedUsername] = useState("");
-
-  // React Query for username availability
-  const usernameAvailabilityQuery = useUsernameAvailabilityQuery(
-    debouncedUsername,
-    {
-      enabled:
-        debouncedUsername.length >= 3 &&
-        /^[a-zA-Z0-9_]+$/.test(debouncedUsername),
-    }
-  );
+  // Use the unified username validation hook
+  const usernameValidation = useUsernameValidation(signUpForm.username);
 
   // React Query mutation for user creation
   const createUserMutation = useCreateUserMutation({
@@ -85,12 +73,10 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
       });
 
       // Clear any error states
-      setUsernameError("");
       setEmailError("");
       setOtpError("");
       setOtpSent(false);
       setOtp("");
-      setDebouncedUsername("");
 
       onComplete?.();
     },
@@ -106,61 +92,13 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [usernameError, setUsernameError] = useState("");
   const [emailError, setEmailError] = useState("");
   const [otpError, setOtpError] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState("");
 
-  // Debounce username for API calls
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      const username = signUpForm.username;
-
-      // Clear previous errors when user starts typing
-      if (usernameError) setUsernameError("");
-
-      // Only set debounced username if it meets basic criteria
-      if (username && username.length >= 3 && username.length <= 20) {
-        if (!/^[a-zA-Z0-9_]+$/.test(username)) {
-          setUsernameError(
-            t("Username can only contain letters, numbers, and underscores")
-          );
-          setDebouncedUsername(""); // Don't check invalid format
-          return;
-        }
-        setDebouncedUsername(username);
-      } else {
-        setDebouncedUsername(""); // Don't check if too short/long
-        if (username && username.length > 0 && username.length < 3) {
-          setUsernameError(t("Username must be at least 3 characters"));
-        } else if (username && username.length > 20) {
-          setUsernameError(t("Username must be 20 characters or less"));
-        }
-      }
-    }, 500); // 500ms debounce
-
-    return () => clearTimeout(timeoutId);
-  }, [signUpForm.username, usernameError, t]);
-
-  // Handle username availability query results
-  useEffect(() => {
-    if (usernameAvailabilityQuery.data) {
-      if (!usernameAvailabilityQuery.data.available) {
-        setUsernameError(t("Username is already taken"));
-      } else {
-        setUsernameError("");
-      }
-    }
-    if (usernameAvailabilityQuery.error) {
-      console.error("Username check failed:", usernameAvailabilityQuery.error);
-      // Don't show error to user for network issues, just silently fail
-    }
-  }, [usernameAvailabilityQuery.data, usernameAvailabilityQuery.error, t]);
-
   const handleUsernameChange = (text: string) => {
     setSignUpForm(prev => ({ ...prev, username: text }));
-    // Error clearing is handled in the debounce effect
   };
 
   const emailInputRef = useRef<TextInput>(null);
@@ -215,7 +153,6 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
 
   const validateForm = () => {
     if (!signUpForm.username.trim()) {
-      setUsernameError(t("Username is required"));
       return false;
     }
     if (!signUpForm.email.trim()) {
@@ -272,7 +209,7 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
         throw new Error(result.error || "Failed to send OTP");
       }
     } catch (error) {
-      console.error("Send OTP error:", error);
+      console.error("Send Code error:", error);
       Toast.show({
         text1: t("Error"),
         text2: t("Failed to send OTP. Please try again."),
@@ -296,28 +233,14 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
       return;
     }
 
-    // Validate username length and format before proceeding
-    if (signUpForm.username.length < 3 || signUpForm.username.length > 20) {
-      Toast.show({
-        text1: t("Invalid Username"),
-        text2: t("Username must be between 3-20 characters"),
-        type: "error",
-      });
+    // Check required validation first
+    if (!usernameValidation.validateRequired()) {
       return;
     }
 
-    if (!/^[a-zA-Z0-9_]+$/.test(signUpForm.username)) {
-      Toast.show({
-        text1: t("Invalid Username"),
-        text2: t("Username can only contain letters, numbers, and underscores"),
-        type: "error",
-      });
-      return;
-    }
-
-    // Check username availability from React Query cache/state
-    if (!usernameAvailabilityQuery.data?.available) {
-      if (usernameAvailabilityQuery.isLoading) {
+    // Check username validation using the hook
+    if (!usernameValidation.isValid) {
+      if (usernameValidation.isChecking) {
         Toast.show({
           text1: t("Please wait"),
           text2: t("Checking username availability..."),
@@ -325,23 +248,19 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
         });
         return;
       }
-      if (usernameAvailabilityQuery.error) {
+      if (usernameValidation.hasError) {
         Toast.show({
-          text1: t("Error"),
-          text2: t("Failed to verify username availability. Please try again."),
+          text1: t("Invalid Username"),
+          text2: usernameValidation.error,
           type: "error",
         });
         return;
       }
-      if (usernameAvailabilityQuery.data?.available === false) {
-        setUsernameError(t("Username is already taken"));
-        return;
-      }
-      // If no data yet, don't proceed
+      // Generic validation failure
       Toast.show({
-        text1: t("Please wait"),
-        text2: t("Checking username availability..."),
-        type: "info",
+        text1: t("Invalid Username"),
+        text2: t("Please check your username and try again"),
+        type: "error",
       });
       return;
     }
@@ -458,25 +377,27 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
                   onSubmitEditing={onNext}
                 />
               </Column>
-              {usernameAvailabilityQuery.isLoading && debouncedUsername && (
+              {usernameValidation.isChecking && (
                 <ActivityIndicator
                   size="small"
                   color={theme.colors.primary}
                   style={{ marginBottom: 12 }}
                 />
               )}
-              {usernameAvailabilityQuery.data?.available === true &&
-                !usernameError && (
+              {usernameValidation.isAvailable === true &&
+                !usernameValidation.hasError && (
                   <SuccessIndicator style={{ marginBottom: 12 }}>
                     ✓
                   </SuccessIndicator>
                 )}
-              {(usernameAvailabilityQuery.data?.available === false ||
-                usernameError) && (
+              {(usernameValidation.isAvailable === false ||
+                usernameValidation.hasError) && (
                 <ErrorIndicator style={{ marginBottom: 12 }}>✗</ErrorIndicator>
               )}
             </Row>
-            {usernameError ? <ErrorText>{usernameError}</ErrorText> : null}
+            {usernameValidation.hasError ? (
+              <ErrorText>{usernameValidation.error}</ErrorText>
+            ) : null}
 
             {/* Email Input */}
             <Input
@@ -556,7 +477,10 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
             isSubmitting ||
             authLoading ||
             createUserMutation.isPending ||
-            (!otpSent && !signUpForm.email.trim()) ||
+            (!otpSent &&
+              (!signUpForm.email.trim() ||
+                usernameValidation.isEmpty ||
+                !usernameValidation.isValid)) ||
             (otpSent && !otp.trim())
           }
           style={{ marginTop: 24 }}
@@ -567,7 +491,7 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
               : t("Sending OTP...")
             : otpSent
             ? t("Complete Sign Up")
-            : t("Send OTP")}
+            : t("Send Code")}
         </PrimaryButton>
       </Column>
     </FormContainer>

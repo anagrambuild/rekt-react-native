@@ -8,6 +8,7 @@ import {
 import { apiClient } from "./apiClient";
 import {
   ChartDataPoint,
+  checkUsernameAvailabilityPublic,
   ClosePositionRequest,
   closeTradingPosition,
   createUser,
@@ -334,6 +335,37 @@ export const useSubmitTransactionMutation = (
       queryClient.invalidateQueries({ queryKey: ["trading", "history"] });
       queryClient.invalidateQueries({ queryKey: ["trading", "balance"] });
     },
+    ...options,
+  });
+};
+
+// Hook to check username availability with debouncing
+export const useUsernameAvailabilityQuery = (
+  username: string,
+  options?: Omit<
+    UseQueryOptions<{ available: boolean }, Error>,
+    "queryKey" | "queryFn"
+  >
+) => {
+  return useQuery({
+    queryKey: ["username", "availability", username],
+    queryFn: () => checkUsernameAvailabilityPublic(username),
+    enabled: !!username && username.length > 0,
+    staleTime: 1000 * 60 * 5, // 5 minutes stale time
+    ...options,
+  });
+};
+
+// Hook to get user by user ID
+export const useUserByUserIdQuery = (
+  userId: string,
+  options?: Omit<UseQueryOptions<User | null, Error>, "queryKey" | "queryFn">
+) => {
+  return useQuery({
+    queryKey: queryKeys.userProfile(userId),
+    queryFn: () => getUserByUserId(userId),
+    enabled: !!userId,
+    staleTime: 1000 * 60 * 5, // 5 minutes stale time
     ...options,
   });
 };
