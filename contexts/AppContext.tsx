@@ -25,7 +25,6 @@ import * as LocalAuthentication from "expo-local-authentication";
 type SignUpFormData = {
   username: string;
   email: string;
-  password: string;
   profileImage: string | null;
   enableBiometrics: boolean;
 };
@@ -59,7 +58,6 @@ export const AppContext = createContext<AppContextType>({
   signUpForm: {
     username: "",
     email: "",
-    password: "",
     profileImage: null,
     enableBiometrics: false,
   },
@@ -82,7 +80,6 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const [signUpForm, setSignUpForm] = useState<SignUpFormData>({
     username: "",
     email: "",
-    password: "",
     profileImage: null,
     enableBiometrics: false,
   });
