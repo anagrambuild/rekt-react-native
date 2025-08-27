@@ -1,6 +1,7 @@
 import { Linking } from "react-native";
 
 import {
+  createAssociatedTokenAccountInstruction,
   createTransferInstruction,
   getAccount,
   getAssociatedTokenAddress,
@@ -60,7 +61,14 @@ export class TransferService {
       USDC_MINT,
       fromWallet
     );
-    const toTokenAccount = await getAssociatedTokenAddress(USDC_MINT, toWallet);
+    // For Swig wallets (PDAs), we need to allow off-curve owners
+    // Check if the destination is likely a PDA by checking if it's on the ed25519 curve
+    const isLikelyPDA = !PublicKey.isOnCurve(toWallet);
+    const toTokenAccount = await getAssociatedTokenAddress(
+      USDC_MINT,
+      toWallet,
+      isLikelyPDA // allowOwnerOffCurve for PDAs
+    );
 
     const transaction = new Transaction();
 
@@ -72,13 +80,23 @@ export class TransferService {
         error instanceof TokenAccountNotFoundError ||
         error instanceof TokenInvalidAccountOwnerError
       ) {
-        // TODO - test and see if this is needed with a new swig - with new swig changes then we whould not need to create the ATA
         // Create associated token account for destination
-        // TODO: Fix TypeScript issue with createAssociatedTokenAccountInstruction
-        // const createATAInstruction = createAssociatedTokenAccountInstruction(
-        //   fromWallet, toTokenAccount, toWallet, USDC_MINT
-        // );
-        // transaction.add(createATAInstruction);
+        try {
+          const createATAInstruction = createAssociatedTokenAccountInstruction(
+            fromWallet, // payer
+            toTokenAccount, // the ATA address
+            toWallet, // owner (can be a PDA)
+            USDC_MINT
+          );
+          transaction.add(createATAInstruction);
+        } catch (ataError) {
+          console.error(`   ❌ Failed to create ATA instruction:`, ataError);
+          throw new Error(
+            `Failed to create ATA instruction: ${
+              ataError instanceof Error ? ataError.message : "Unknown error"
+            }`
+          );
+        }
       } else {
         throw error;
       }
