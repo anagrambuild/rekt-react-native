@@ -40,7 +40,7 @@ export const LiveTradeView = ({ trade }: LiveTradeViewProps) => {
   // Find the actual position for this trade
   const currentPosition = openPositions.find(
     pos =>
-      pos.asset === `${selectedToken.toUpperCase()}-PERP` &&
+      pos.market === selectedToken.toUpperCase() &&
       pos.direction === trade.side
   );
 
@@ -78,13 +78,13 @@ export const LiveTradeView = ({ trade }: LiveTradeViewProps) => {
       <Column $gap={4}>
         <Row $padding={12} style={{ paddingTop: 8 }}>
           <Row $gap={12} $width="auto">
-            {trade.side === "long" ? (
+            {trade.side === "LONG" ? (
               <LongArrow size={28} />
             ) : (
               <ShortArrow size={28} />
             )}
             <BodyMEmphasized>
-              {trade.leverage}x {t(trade.side === "long" ? "Long" : "Short")}
+              {trade.leverage}x {t(trade.side === "LONG" ? "Long" : "Short")}
             </BodyMEmphasized>
           </Row>
           <SellNowButton onPress={handleClose} disabled={isTrading}>

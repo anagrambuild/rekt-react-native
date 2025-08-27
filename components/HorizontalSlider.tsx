@@ -65,7 +65,7 @@ export const HorizontalSlider = ({
         solTrade
           ? { ...solTrade, leverage: newLeverage }
           : {
-              side: "short",
+              side: "SHORT",
               entryPrice: 0,
               amount: 10,
               leverage: newLeverage,
@@ -78,7 +78,7 @@ export const HorizontalSlider = ({
         ethTrade
           ? { ...ethTrade, leverage: newLeverage }
           : {
-              side: "short",
+              side: "SHORT",
               entryPrice: 0,
               amount: 10,
               leverage: newLeverage,
@@ -91,7 +91,7 @@ export const HorizontalSlider = ({
         btcTrade
           ? { ...btcTrade, leverage: newLeverage }
           : {
-              side: "short",
+              side: "SHORT",
               entryPrice: 0,
               amount: 10,
               leverage: newLeverage,
