@@ -20,12 +20,12 @@ import {
   // Add trading-related imports
   getTradingBalance,
   getTradingHistory,
+  getTradingHistoryPaginated,
   getUserByUserId,
   OpenPositionRequest,
   openTradingPosition,
+  PaginatedResponse,
   Position,
-  submitSignedTransaction,
-  SubmitTransactionRequest,
   SupportedTimeframe,
   SupportedToken,
   TokenPrice,
@@ -267,10 +267,30 @@ export const useOpenPositionsQuery = (
 ) => {
   return useQuery({
     queryKey: queryKeys.openPositions(userId),
-    queryFn: () => getOpenPositions(userId),
+    queryFn: async () => {
+      console.log("🔄 Fetching open positions for user:", userId);
+      try {
+        const positions = await getOpenPositions(userId);
+        console.log("📊 Fetched positions:", positions.length, "positions");
+        return positions;
+      } catch (error) {
+        console.error("💥 Error in useOpenPositionsQuery:", error);
+        throw error;
+      }
+    },
     enabled: !!userId,
-    staleTime: 1000 * 30, // 30 seconds stale time
-    refetchInterval: 1000 * 60, // Refetch every minute
+    staleTime: 1000 * 10, // 10 seconds stale time (shorter for more frequent updates)
+    refetchInterval: false, // Disable auto-refetch until backend is stable
+    retry: (failureCount, error: any) => {
+      // Don't retry on 500 errors - backend issue
+      if (error?.message?.includes("500")) {
+        console.log("🚫 Not retrying 500 error - backend issue");
+        return false;
+      }
+      return failureCount < 2; // Only retry twice for other errors
+    },
+    retryDelay: (attemptIndex: number) =>
+      Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
     ...options,
   });
 };
@@ -280,11 +300,40 @@ export const useTradingHistoryQuery = (
   userId: string,
   status?: "open" | "closed",
   limit: number = 50,
+  offset: number = 0,
   options?: Omit<UseQueryOptions<Position[], Error>, "queryKey" | "queryFn">
 ) => {
   return useQuery({
-    queryKey: queryKeys.tradingHistory(userId, status, limit),
-    queryFn: () => getTradingHistory(userId, status, limit),
+    queryKey: queryKeys.tradingHistory(userId, status, limit, offset),
+    queryFn: () => getTradingHistory(userId, status, limit, offset),
+    enabled: !!userId,
+    staleTime: 1000 * 60 * 5, // 5 minutes stale time
+    ...options,
+  });
+};
+
+// Hook to get user's trading history with pagination metadata
+export const useTradingHistoryPaginatedQuery = (
+  userId: string,
+  status?: "open" | "closed",
+  limit: number = 50,
+  offset: number = 0,
+  options?: Omit<
+    UseQueryOptions<PaginatedResponse<Position>, Error>,
+    "queryKey" | "queryFn"
+  >
+) => {
+  return useQuery({
+    queryKey: [
+      "trading",
+      "history",
+      "paginated",
+      userId,
+      status,
+      limit,
+      offset,
+    ],
+    queryFn: () => getTradingHistoryPaginated(userId, status, limit, offset),
     enabled: !!userId,
     staleTime: 1000 * 60 * 5, // 5 minutes stale time
     ...options,
@@ -293,15 +342,23 @@ export const useTradingHistoryQuery = (
 
 // Hook to open a new trading position
 export const useOpenPositionMutation = (
-  options?: UseMutationOptions<any, Error, OpenPositionRequest>
+  options?: UseMutationOptions<Position, Error, OpenPositionRequest>
 ) => {
   return useMutation({
     mutationFn: openTradingPosition,
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       // Invalidate position queries to refresh data
       queryClient.invalidateQueries({ queryKey: ["trading", "positions"] });
       queryClient.invalidateQueries({ queryKey: ["trading", "history"] });
       queryClient.invalidateQueries({ queryKey: ["trading", "balance"] });
+
+      // Optionally update the positions cache with the new position
+      queryClient.setQueryData(
+        queryKeys.openPositions(variables.userId),
+        (oldData: Position[] | undefined) => {
+          return oldData ? [...oldData, data] : [data];
+        }
+      );
     },
     ...options,
   });
@@ -309,31 +366,33 @@ export const useOpenPositionMutation = (
 
 // Hook to close a trading position
 export const useClosePositionMutation = (
-  options?: UseMutationOptions<any, Error, ClosePositionRequest>
+  options?: UseMutationOptions<Position, Error, ClosePositionRequest>
 ) => {
   return useMutation({
     mutationFn: closeTradingPosition,
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       // Invalidate position queries to refresh data
       queryClient.invalidateQueries({ queryKey: ["trading", "positions"] });
       queryClient.invalidateQueries({ queryKey: ["trading", "history"] });
       queryClient.invalidateQueries({ queryKey: ["trading", "balance"] });
-    },
-    ...options,
-  });
-};
 
-// Hook to submit a signed transaction
-export const useSubmitTransactionMutation = (
-  options?: UseMutationOptions<any, Error, SubmitTransactionRequest>
-) => {
-  return useMutation({
-    mutationFn: submitSignedTransaction,
-    onSuccess: () => {
-      // Invalidate position queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ["trading", "positions"] });
-      queryClient.invalidateQueries({ queryKey: ["trading", "history"] });
-      queryClient.invalidateQueries({ queryKey: ["trading", "balance"] });
+      // Remove the closed position from the open positions cache
+      queryClient.setQueryData(
+        queryKeys.openPositions(variables.userId),
+        (oldData: Position[] | undefined) => {
+          return oldData
+            ? oldData.filter(p => p.id !== variables.positionId)
+            : [];
+        }
+      );
+
+      // Add the closed position to the trading history cache
+      queryClient.setQueryData(
+        queryKeys.tradingHistory(variables.userId, "closed", 50),
+        (oldData: Position[] | undefined) => {
+          return oldData ? [data, ...oldData] : [data];
+        }
+      );
     },
     ...options,
   });
