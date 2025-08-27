@@ -168,7 +168,6 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   // Watch for userProfile changes and automatically log in when profile is set
   useEffect(() => {
     if (userProfile && !isLoggedIn) {
-      console.log("✅ User profile set, automatically logging in");
       setIsLoggedIn(true);
     }
   }, [userProfile, isLoggedIn]);

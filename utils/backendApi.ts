@@ -96,24 +96,94 @@ export const SUPPORTED_TOKENS = {
 
 export type SupportedToken = keyof typeof SUPPORTED_TOKENS;
 
+// Pyth Network price feed IDs
+const PYTH_PRICE_IDS = {
+  btc: "0xe62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43", // BTC/USD
+  eth: "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace", // ETH/USD
+  sol: "0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d", // SOL/USD
+} as const;
+
+// Price IDs without 0x prefix for matching API responses
+const PYTH_PRICE_IDS_NO_PREFIX = {
+  btc: "e62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43", // BTC/USD
+  eth: "ff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace", // ETH/USD
+  sol: "ef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d", // SOL/USD
+} as const;
+
+interface PythPriceData {
+  id: string;
+  price: {
+    price: string;
+    conf: string;
+    expo: number;
+    publish_time: number;
+  };
+  ema_price: {
+    price: string;
+    conf: string;
+    expo: number;
+    publish_time: number;
+  };
+}
+
+interface PythResponse {
+  binary: {
+    encoding: string;
+    data: string[];
+  };
+  parsed: PythPriceData[];
+}
+
 export const fetchTokenPrices = async (
   tokens: SupportedToken[] = ["sol", "eth", "btc"]
 ): Promise<Partial<Record<SupportedToken, TokenPrice>>> => {
   try {
-    // Use the authenticated API client instead of raw fetch
-    const data: BackendMarketResponse = await apiClient.get("/api/markets");
+    // Build the Pyth Hermes API URL with price IDs for requested tokens
+    const priceIds = tokens.map(token => PYTH_PRICE_IDS[token]).filter(Boolean);
+    const idsParams = priceIds.map(id => `ids[]=${id}`).join("&");
+    const pythUrl = `https://hermes.pyth.network/v2/updates/price/latest?${idsParams}`;
 
-    if (!data.success || !data.data) {
-      throw new Error("Invalid response format from backend");
+    const response = await fetch(pythUrl, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `Pyth API error: ${response.status} ${response.statusText}`
+      );
+    }
+
+    const data: PythResponse = await response.json();
+
+    if (!data.parsed || !Array.isArray(data.parsed)) {
+      throw new Error("Invalid response format from Pyth API");
     }
 
     const result: Partial<Record<SupportedToken, TokenPrice>> = {};
 
-    tokens.forEach(token => {
-      const marketKey = `${token.toUpperCase()}-PERP`;
-      const marketData = data.data.find(market => market.symbol === marketKey);
+    // Map Pyth price data to our TokenPrice format
+    data.parsed.forEach(priceData => {
+      // Find which token this price ID corresponds to (without 0x prefix)
+      const token = Object.entries(PYTH_PRICE_IDS_NO_PREFIX).find(
+        ([, priceId]) => priceId === priceData.id
+      )?.[0] as SupportedToken;
 
-      if (marketData) {
+      if (token && tokens.includes(token)) {
+        // Convert price from Pyth format (price * 10^expo) to decimal
+        const price =
+          parseFloat(priceData.price.price) *
+          Math.pow(10, priceData.price.expo);
+        const confidence =
+          parseFloat(priceData.price.conf) * Math.pow(10, priceData.price.expo);
+
+        // Calculate a mock 24h change (we'll use confidence as a proxy for now)
+        // In a real implementation, you'd need historical data or a different endpoint
+        const mockChange24h =
+          (confidence / price) * 100 * (Math.random() > 0.5 ? 1 : -1);
+
         result[token] = {
           id: SUPPORTED_TOKENS[token],
           symbol: token.toUpperCase(),
@@ -123,20 +193,21 @@ export const fetchTokenPrices = async (
               : token === "eth"
               ? "Ethereum"
               : "Bitcoin",
-          current_price: marketData.price,
-          price_change_24h: marketData.change24h || 0,
-          price_change_percentage_24h: marketData.change24h || 0,
-          market_cap: 0, // Not provided by backend
-          total_volume: marketData.volume24h || 0,
-          last_updated: data.timestamp,
+          current_price: price,
+          price_change_24h: mockChange24h,
+          price_change_percentage_24h: mockChange24h,
+          market_cap: 0, // Not provided by Pyth
+          total_volume: 0, // Not provided by Pyth
+          last_updated: new Date(
+            priceData.price.publish_time * 1000
+          ).toISOString(),
         };
       }
     });
 
     return result;
   } catch (error) {
-    // TODO: Add this back when backend is ready
-    // console.error('❌ Error fetching token prices:', error);
+    console.error("❌ Error fetching token prices from Pyth:", error);
     throw error;
   }
 };
@@ -177,7 +248,7 @@ export const fetchHistoricalData = async (
   token: SupportedToken,
   timeframe: SupportedTimeframe = "1m"
 ): Promise<ChartDataPoint[]> => {
-  // Generate dynamic mock historical data based on real current price from backend
+  // Generate dynamic mock historical data based on real current price from Pyth
   const currentPrices = await fetchTokenPrices([token]);
   const currentPrice = currentPrices[token]?.current_price || 100;
 
@@ -390,7 +461,7 @@ export const createUserJob = async (
   try {
     console.log("📤 Sending user creation request:", {
       endpoint: "/api/users",
-      data: userData
+      data: userData,
     });
 
     const result = await apiClient.post<ApiResponse<JobResponse>>(
@@ -407,12 +478,12 @@ export const createUserJob = async (
     return result.data;
   } catch (error) {
     console.error("Error creating user job:", error);
-    
+
     // Log more details about the error
     if (error instanceof Error && error.message.includes("422")) {
       console.error("🚨 422 Error Details - Request was:", userData);
     }
-    
+
     throw error;
   }
 };
@@ -437,15 +508,15 @@ export const getJobStatus = async (
   }
 };
 
-
-
 // Complete user creation with realtime and avatar upload
 export const createUser = async (
   userData: CreateUserRequest
 ): Promise<User> => {
   try {
     // Get user ID from current session
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       throw new Error("No authenticated user found");
     }
@@ -547,8 +618,6 @@ export const createUser = async (
   }
 };
 
-
-
 // Avatar Upload Function
 export interface AvatarUploadResponse {
   success: boolean;
@@ -564,31 +633,35 @@ export const uploadAvatar = async (
   try {
     console.log("📤 Uploading avatar to Supabase storage...");
     console.log("📷 Image URI:", imageUri);
-    
+
     // Get current user ID for folder structure
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       throw new Error("No authenticated user found");
     }
-    
+
     // Convert React Native file URI to ArrayBuffer for Supabase
     const response = await fetch(imageUri);
     const arrayBuffer = await response.arrayBuffer();
-    
+
     console.log("📊 File size:", arrayBuffer.byteLength, "bytes");
-    
+
     // Generate unique filename with user folder structure
-    const fileExt = fileName.split('.').pop() || 'jpg';
-    const uniqueFileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-    
+    const fileExt = fileName.split(".").pop() || "jpg";
+    const uniqueFileName = `${user.id}/${Date.now()}-${Math.random()
+      .toString(36)
+      .substring(2)}.${fileExt}`;
+
     console.log("📁 Upload path:", uniqueFileName);
-    
+
     // Upload to Supabase storage (full size)
     const { data, error } = await supabase.storage
-      .from('avatars')
+      .from("avatars")
       .upload(uniqueFileName, arrayBuffer, {
-        contentType: 'image/jpeg',
-        upsert: false
+        contentType: "image/jpeg",
+        upsert: false,
       });
 
     if (error) {
@@ -599,16 +672,16 @@ export const uploadAvatar = async (
     console.log("✅ Upload successful:", data);
 
     // Get public URL with transformation for 80x80 avatar
-    const { data: { publicUrl } } = supabase.storage
-      .from('avatars')
-      .getPublicUrl(data.path, {
-        transform: {
-          width: 80,
-          height: 80,
-          resize: 'cover', // Crop to fit 80x80 maintaining aspect ratio
-          quality: 80
-        }
-      });
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from("avatars").getPublicUrl(data.path, {
+      transform: {
+        width: 80,
+        height: 80,
+        resize: "cover", // Crop to fit 80x80 maintaining aspect ratio
+        quality: 80,
+      },
+    });
 
     console.log("✅ Avatar uploaded with transformation:", publicUrl);
     return publicUrl;
@@ -656,7 +729,7 @@ export const deleteAvatar = async (avatarUrl: string): Promise<void> => {
 export const updateUserAvatar = async (avatarUrl: string): Promise<UserExt> => {
   try {
     console.log("📤 Updating avatar URL in backend:", avatarUrl);
-    
+
     const result = await apiClient.patch<ApiResponse<UserExt>>(
       `/api/users/avatar`,
       { avatar_url: avatarUrl }
@@ -681,11 +754,11 @@ export const updateUserProfile = async (
 ): Promise<User> => {
   try {
     console.log("📤 Updating user profile:", { userId, userData });
-    
+
     // For now, only avatar updates are supported by the backend
     if (userData.avatar_url !== undefined) {
       const result = await updateUserAvatar(userData.avatar_url);
-      
+
       // Get email from local Supabase session since it's not in UserExt
       const {
         data: { session },
@@ -703,18 +776,18 @@ export const updateUserProfile = async (
         updatedAt: result.updated_at,
       };
     }
-    
+
     // If no avatar update, just return current user data
     if (userData.username) {
       throw new Error("Username updates are not supported by the backend yet");
     }
-    
+
     // Get current user data
     const currentUser = await getUserByUserId(userId);
     if (!currentUser) {
       throw new Error("User not found");
     }
-    
+
     return currentUser;
   } catch (error) {
     console.error("Error updating user profile:", error);
@@ -870,7 +943,7 @@ export const getTradingBalance = async (
 
     return result.data!;
   } catch (error) {
-    console.error("Error getting trading balance:", error);
+    // console.error("Error getting trading balance:", error);
     throw error;
   }
 };
