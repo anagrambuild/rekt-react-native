@@ -2,16 +2,20 @@ import { createContext, useContext, useEffect, useState } from "react";
 
 import { fetchTokenPrices, SupportedToken, TokenPrice } from "@/utils";
 import {
-  getOpenPositions,
-  getTradingBalance,
-  getTradingHistory,
+  ClosePositionRequest,
+  OpenPositionRequest,
   Position,
   TradingBalance,
 } from "@/utils/backendApi";
-import { TradingService } from "@/utils/tradingService";
+import {
+  useClosePositionMutation,
+  useOpenPositionMutation,
+  useOpenPositionsQuery,
+  useTradingBalanceQuery,
+  useTradingHistoryQuery,
+} from "@/utils/queryUtils";
 
 import { useProfileContext } from "./ProfileContext";
-import { useSolana } from "./SolanaContext";
 import { useWallet } from "./WalletContext";
 import { useTranslation } from "react-i18next";
 import { Toast } from "toastify-react-native";
@@ -19,7 +23,7 @@ import { Toast } from "toastify-react-native";
 // Trade type for active trades (keeping for backward compatibility)
 export type TradeStatus = "draft" | "open" | "closed";
 export interface Trade {
-  side: "long" | "short";
+  side: "LONG" | "SHORT";
   entryPrice: number;
   amount: number;
   leverage: number;
@@ -58,8 +62,8 @@ interface HomeContextType {
   historyError: string | null;
   isTrading: boolean;
   openPosition: (
-    asset: "SOL-PERP" | "BTC-PERP" | "ETH-PERP",
-    direction: "long" | "short",
+    market: "SOL" | "BTC" | "ETH",
+    direction: "LONG" | "SHORT",
     amount: number,
     leverage: number
   ) => Promise<boolean>;
@@ -112,7 +116,6 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
   const { t } = useTranslation();
   const { usdcBalance } = useWallet();
   const { userId } = useProfileContext();
-  const { connection } = useSolana();
   const [selectedToken, setSelectedToken] = useState<string>("sol");
   const [selectedTimeframe, setSelectedTimeframe] = useState<string>("1m");
   const [solTrade, setSolTrade] = useState<Trade | null>(null);
@@ -126,93 +129,69 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
   const [isPricesLoading, setIsPricesLoading] = useState(true);
   const [pricesError, setPricesError] = useState<Error | null>(null);
 
-  // Trading balance state
-  const [balance, setBalance] = useState<TradingBalance | null>(null);
-  const [isLoadingBalance, setIsLoadingBalance] = useState(false);
-  const [balanceError, setBalanceError] = useState<string | null>(null);
+  // Use React Query hooks for trading data
+  const {
+    data: balance,
+    isLoading: isLoadingBalance,
+    error: balanceQueryError,
+    refetch: refetchBalance,
+  } = useTradingBalanceQuery(userId || "", { enabled: !!userId });
 
-  // Positions state
-  const [openPositions, setOpenPositions] = useState<Position[]>([]);
-  const [isLoadingPositions, setIsLoadingPositions] = useState(false);
-  const [positionsError, setPositionsError] = useState<string | null>(null);
+  const {
+    data: openPositions = [],
+    isLoading: isLoadingPositions,
+    error: positionsQueryError,
+    refetch: refetchPositions,
+  } = useOpenPositionsQuery(userId || "", { enabled: !!userId });
 
-  // History state
-  const [tradingHistory, setTradingHistory] = useState<Position[]>([]);
-  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
-  const [historyError, setHistoryError] = useState<string | null>(null);
+  const {
+    data: tradingHistory = [],
+    isLoading: isLoadingHistory,
+    error: historyQueryError,
+    refetch: refetchHistory,
+  } = useTradingHistoryQuery(userId || "", undefined, 50, 0, {
+    enabled: !!userId,
+  });
+
+  // React Query mutations for trading actions
+  const openPositionMutation = useOpenPositionMutation();
+  const closePositionMutation = useClosePositionMutation();
+
+  // Convert query errors to strings for backward compatibility
+  const balanceError = balanceQueryError?.message || null;
+  const positionsError = positionsQueryError?.message || null;
+  const historyError = historyQueryError?.message || null;
 
   // Trading action state
-  const [isTrading, setIsTrading] = useState(false);
+  const isTrading =
+    openPositionMutation.isPending || closePositionMutation.isPending;
 
-  // Refresh balance
+  // Refresh functions using React Query refetch
   const refreshBalance = async () => {
     if (!userId) return;
-
-    setIsLoadingBalance(true);
-    setBalanceError(null);
-
-    try {
-      const balanceData = await getTradingBalance(userId);
-      setBalance(balanceData);
-    } catch (error) {
-      // console.error("Error refreshing balance:", error);
-      setBalanceError(
-        error instanceof Error ? error.message : "Failed to load balance"
-      );
-    } finally {
-      setIsLoadingBalance(false);
-    }
+    await refetchBalance();
   };
 
-  // Refresh positions
   const refreshPositions = async () => {
     if (!userId) return;
-
-    setIsLoadingPositions(true);
-    setPositionsError(null);
-
-    try {
-      const positions = await getOpenPositions(userId);
-      setOpenPositions(positions);
-    } catch (error) {
-      // console.error('Error refreshing positions:', error);
-      setPositionsError(
-        error instanceof Error ? error.message : "Failed to load positions"
-      );
-    } finally {
-      setIsLoadingPositions(false);
-    }
+    await refetchPositions();
   };
 
-  // Refresh history
   const refreshHistory = async () => {
     if (!userId) return;
-
-    setIsLoadingHistory(true);
-    setHistoryError(null);
-
-    try {
-      const history = await getTradingHistory(userId);
-      setTradingHistory(history);
-    } catch (error) {
-      // console.error('Error refreshing history:', error);
-      setHistoryError(
-        error instanceof Error ? error.message : "Failed to load history"
-      );
-    } finally {
-      setIsLoadingHistory(false);
-    }
+    await refetchHistory();
   };
 
   // Refresh all data
   const refreshAll = async () => {
-    await Promise.all([refreshBalance(), refreshPositions(), refreshHistory()]);
+    if (!userId) return;
+    await Promise.all([refetchBalance(), refetchPositions(), refetchHistory()]);
   };
 
-  // Open a new position using Swig trading flow
+  // Open a new position using React Query mutation
   const openPosition = async (
-    asset: "SOL-PERP" | "BTC-PERP" | "ETH-PERP",
-    direction: "long" | "short",
+    market: "SOL" | "BTC" | "ETH",
+    direction: "LONG" | "SHORT",
     amount: number,
     leverage: number
   ): Promise<boolean> => {
@@ -224,8 +203,6 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
       });
       return false;
     }
-
-    setIsTrading(true);
 
     try {
       // Validate inputs
@@ -250,88 +227,47 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
         return false;
       }
 
-      // Use the new trading service for complete flow
-      const tradingService = new TradingService(connection);
-      const result = await tradingService.executeTrade({
-        asset,
+      // Use React Query mutation for opening position
+      const openRequest: OpenPositionRequest = {
+        userId,
+        market,
         direction,
         amount: validAmount,
         leverage: validLeverage,
+      };
+
+      const position = await openPositionMutation.mutateAsync(openRequest);
+
+      Toast.show({
+        text1: t("Position Opened"),
+        text2: t("Position opened successfully!"),
+        type: "success",
       });
 
-      if (result.success) {
-        Toast.show({
-          text1: t("Position Opened"),
-          text2: t("Position opened successfully!"),
-          type: "success",
-        });
+      // Update local trade state to reflect the successful trade
+      const token =
+        market === "SOL" ? "sol" : market === "ETH" ? "eth" : "btc";
+      const currentTrade =
+        token === "sol" ? solTrade : token === "eth" ? ethTrade : btcTrade;
+      const updatedTrade = {
+        ...currentTrade,
+        side: direction,
+        entryPrice: position.entryPrice,
+        amount: validAmount,
+        leverage: validLeverage,
+        status: "open" as TradeStatus,
+        timestamp: Date.now(),
+      };
 
-        // Update local trade state to reflect the successful trade
-        const token =
-          asset === "SOL-PERP" ? "sol" : asset === "ETH-PERP" ? "eth" : "btc";
-        const currentTrade =
-          token === "sol" ? solTrade : token === "eth" ? ethTrade : btcTrade;
-        const updatedTrade = {
-          ...currentTrade,
-          side: direction,
-          entryPrice: 0, // Will be updated when positions refresh
-          amount: validAmount,
-          leverage: validLeverage,
-          status: "open" as TradeStatus,
-          timestamp: Date.now(),
-        };
-
-        if (token === "sol") {
-          setSolTrade(updatedTrade);
-        } else if (token === "eth") {
-          setEthTrade(updatedTrade);
-        } else {
-          setBtcTrade(updatedTrade);
-        }
-
-        // Refresh data after successful trade
-        await refreshAll();
-        return true;
-      } else if (result.requiresInitialization) {
-        // Handle initialization requirement
-        Toast.show({
-          text1: t("Initialization Required"),
-          text2: t(
-            "Your Drift account needs to be initialized first. Please try again."
-          ),
-          type: "info",
-        });
-
-        if (result.initializationData) {
-          // Attempt to initialize automatically
-          const initResult = await tradingService.initializeDriftAccount(
-            result.initializationData
-          );
-          if (initResult.success) {
-            Toast.show({
-              text1: t("Account Initialized"),
-              text2: t(
-                "Your Drift account has been initialized. Please try your trade again."
-              ),
-              type: "success",
-            });
-          } else {
-            Toast.show({
-              text1: t("Initialization Failed"),
-              text2: initResult.error || t("Failed to initialize account"),
-              type: "error",
-            });
-          }
-        }
-        return false;
+      if (token === "sol") {
+        setSolTrade(updatedTrade);
+      } else if (token === "eth") {
+        setEthTrade(updatedTrade);
       } else {
-        Toast.show({
-          text1: t("Trade Failed"),
-          text2: result.error || t("Failed to open position"),
-          type: "error",
-        });
-        return false;
+        setBtcTrade(updatedTrade);
       }
+
+      return true;
     } catch (error) {
       console.error("Error opening position:", error);
       Toast.show({
@@ -341,12 +277,10 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
         type: "error",
       });
       return false;
-    } finally {
-      setIsTrading(false);
     }
   };
 
-  // Close a position using Swig trading flow
+  // Close a position using React Query mutation
   const closePosition = async (positionId: string): Promise<boolean> => {
     if (!userId) {
       Toast.show({
@@ -357,43 +291,35 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
       return false;
     }
 
-    setIsTrading(true);
-
     try {
-      // Use the new trading service for complete flow
-      const tradingService = new TradingService(connection);
-      const result = await tradingService.closePosition(positionId);
+      // Use React Query mutation for closing position
+      const closeRequest: ClosePositionRequest = {
+        userId,
+        positionId,
+      };
 
-      if (result.success) {
-        const pnlData = result.data;
-        const pnlText = pnlData?.pnl
-          ? pnlData.pnl >= 0
-            ? `+$${pnlData.pnl.toFixed(2)}`
-            : `$${pnlData.pnl.toFixed(2)}`
-          : "N/A";
+      const closedPosition = await closePositionMutation.mutateAsync(
+        closeRequest
+      );
 
-        Toast.show({
-          text1: t("Position Closed"),
-          text2: pnlData?.pnl
-            ? t("Position closed with PnL: {{pnl}} ({{percentage}}%)", {
-                pnl: pnlText,
-                percentage: pnlData.pnlPercentage?.toFixed(2) || "0.00",
-              })
-            : t("Position closed successfully"),
-          type: "success",
-        });
+      const pnlText = closedPosition.pnl
+        ? closedPosition.pnl >= 0
+          ? `+$${closedPosition.pnl.toFixed(2)}`
+          : `$${closedPosition.pnl.toFixed(2)}`
+        : "N/A";
 
-        // Refresh data after successful close
-        await refreshAll();
-        return true;
-      } else {
-        Toast.show({
-          text1: t("Close Failed"),
-          text2: result.error || t("Failed to close position"),
-          type: "error",
-        });
-        return false;
-      }
+      Toast.show({
+        text1: t("Position Closed"),
+        text2: closedPosition.pnl
+          ? t("Position closed with PnL: {{pnl}} ({{percentage}}%)", {
+              pnl: pnlText,
+              percentage: closedPosition.pnlPercentage?.toFixed(2) || "0.00",
+            })
+          : t("Position closed successfully"),
+        type: "success",
+      });
+
+      return true;
     } catch (error) {
       console.error("Error closing position:", error);
       Toast.show({
@@ -405,22 +331,11 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
         type: "error",
       });
       return false;
-    } finally {
-      setIsTrading(false);
     }
   };
 
-  // Load initial data when profile ID is available
-  useEffect(() => {
-    if (userId) {
-      refreshAll();
-
-      // Set up interval to refresh positions every 10 seconds for live PnL
-      const interval = setInterval(refreshPositions, 10000);
-      return () => clearInterval(interval);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId]);
+  // React Query handles automatic refetching based on the refetchInterval in queryUtils
+  // No need for manual intervals since we configured refetchInterval in the query hooks
 
   // Fetch token prices on component mount
   useEffect(() => {
@@ -500,7 +415,7 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
         tokenPrices,
         isPricesLoading,
         pricesError,
-        balance,
+        balance: balance || null,
         isLoadingBalance,
         balanceError,
         openPositions,
