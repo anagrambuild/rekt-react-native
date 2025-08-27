@@ -33,11 +33,9 @@ import { Toast } from "toastify-react-native";
 export const EditProfileModal = ({
   visible,
   onRequestClose,
-  onSave,
 }: {
   visible: boolean;
   onRequestClose: () => void;
-  onSave?: () => void;
 }) => {
   const theme = useTheme();
   const { t } = useTranslation();
@@ -248,7 +246,6 @@ export const EditProfileModal = ({
         });
       }
 
-      onSave?.();
       onRequestClose();
     } catch (error) {
       console.error("Profile update failed:", error);
