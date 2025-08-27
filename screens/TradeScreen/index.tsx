@@ -7,7 +7,6 @@ import {
   PressableOpacity,
   PrimaryButton,
   Row,
-  ScreenContainer,
   SegmentContainer,
   SegmentControl,
 } from "@/components";
@@ -197,81 +196,72 @@ export const TradeScreen = () => {
         pointerEvents="none"
         nativeControls={false}
       />
-      <View style={{ flex: 1, position: "relative" }}>
+      <View style={{ flex: 1 }}>
         <Stack.Screen options={{ headerShown: false }} />
-        <ScreenContainer
-          style={{ height: "100%", backgroundColor: "transparent" }}
-          noPadding
-          contentContainerStyle={{
-            position: "relative",
-            paddingBottom: 80,
-            marginTop: 50,
-          }}
-        >
-          <Column $padding={16} $gap={12} style={{ height: "100%" }}>
-            <Column>
-              <Row>
-                <PressableOpacity onPress={() => router.back()}>
-                  <MaterialIcon
-                    name="keyboard-arrow-left"
-                    size={32}
-                    color={theme.colors.textSecondary}
-                  />
-                </PressableOpacity>
-                <SegmentContainer>
-                  <SegmentControl
-                    Svg={MaterialCommunityIcons}
-                    svgProps={{
-                      name: "arrow-bottom-right-thin-circle-outline",
-                    }}
-                    label={t("Short")}
-                    selected={tradeSide === "short"}
-                    onPress={() => setTradeSide("short")}
-                  />
-                  <SegmentControl
-                    Svg={MaterialCommunityIcons}
-                    svgProps={{ name: "arrow-top-right-thin-circle-outline" }}
-                    label={t("Long")}
-                    selected={tradeSide === "long"}
-                    onPress={() => setTradeSide("long")}
-                  />
-                </SegmentContainer>
-                <View style={{ width: 32 }} />
-              </Row>
 
-              <AnimatedBannerRow items={perpSocials} />
-
-              <PriceChartCard showLiquidation={true} />
-            </Column>
-            <Column $gap={4}>
-              <AmountCard
-                setAmountModalVisible={setAmountModalVisible}
-                amount={amount}
-                setAmount={setAmount}
-              />
-              <SliderCard leverage={leverage} amount={amount} />
-            </Column>
-          </Column>
-        </ScreenContainer>
-        {/* Button container absolutely positioned above the video area */}
+        {/* Fixed top section */}
         <View
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            bottom: 0,
-            paddingHorizontal: 16,
-            paddingBottom: 24,
-            zIndex: 10,
-          }}
+          style={{ paddingTop: 50, paddingHorizontal: 16, paddingBottom: 4 }}
         >
-          <PrimaryButton onPress={handleTrade} loading={isTrading}>
-            {t("{{side}} {{token}}", {
-              side: tradeSide === "long" ? "Long" : "Short",
-              token: selectedToken.toUpperCase(),
-            })}
-          </PrimaryButton>
+          <Row style={{ marginBottom: 4 }}>
+            <PressableOpacity onPress={() => router.back()}>
+              <MaterialIcon
+                name="keyboard-arrow-left"
+                size={32}
+                color={theme.colors.textSecondary}
+              />
+            </PressableOpacity>
+            <SegmentContainer>
+              <SegmentControl
+                Svg={MaterialCommunityIcons}
+                svgProps={{
+                  name: "arrow-bottom-right-thin-circle-outline",
+                }}
+                label={t("Short")}
+                selected={tradeSide === "short"}
+                onPress={() => setTradeSide("short")}
+              />
+              <SegmentControl
+                Svg={MaterialCommunityIcons}
+                svgProps={{ name: "arrow-top-right-thin-circle-outline" }}
+                label={t("Long")}
+                selected={tradeSide === "long"}
+                onPress={() => setTradeSide("long")}
+              />
+            </SegmentContainer>
+            <View style={{ width: 32 }} />
+          </Row>
+
+          <AnimatedBannerRow items={perpSocials} />
         </View>
+
+        {/* Dynamic middle section for PriceChartCard */}
+        <View style={{ flex: 1, paddingHorizontal: 16 }}>
+          <PriceChartCard showLiquidation={true} />
+        </View>
+
+        {/* Fixed bottom controls - NOT absolute positioned */}
+        <View style={{ backgroundColor: "transparent" }}>
+          <Column $padding={16} $gap={4} style={{ paddingTop: 8 }}>
+            <AmountCard
+              setAmountModalVisible={setAmountModalVisible}
+              amount={amount}
+              setAmount={setAmount}
+            />
+            <SliderCard leverage={leverage} amount={amount} />
+            <PrimaryButton
+              onPress={handleTrade}
+              loading={isTrading}
+              style={{ marginTop: 8 }}
+            >
+              {t("{{side}} {{token}}", {
+                side: tradeSide === "long" ? "Long" : "Short",
+                token: selectedToken.toUpperCase(),
+              })}
+            </PrimaryButton>
+          </Column>
+        </View>
+
         {amountPopupVisible && (
           <AmountModal
             visible={amountPopupVisible}

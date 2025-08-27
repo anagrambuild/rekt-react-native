@@ -77,8 +77,19 @@ export const PriceChartCard = ({
     : formatPrice(tokenPrices?.sol?.current_price);
 
   return (
-    <Card style={{ gap: 4 }}>
-      <ScrollRow contentContainerStyle={{ gap: 4 }}>
+    <Card
+      style={{
+        gap: 4,
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
+        padding: 8,
+      }}
+    >
+      <ScrollRow
+        contentContainerStyle={{ gap: 4 }}
+        style={{ height: 44, maxHeight: 44 }}
+      >
         <TokenTab
           name="sol"
           price={
@@ -124,7 +135,7 @@ export const PriceChartCard = ({
 };
 
 const ChartContainer = styled.View`
-  position: relative;
+  flex: 1;
 `;
 
 const PickerContainer = styled.View`

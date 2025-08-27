@@ -1,15 +1,10 @@
+import { View } from "react-native";
+
 import { useHomeContext } from "@/contexts";
 
 import { usePreventRemove } from "@react-navigation/native";
 
-import {
-  Column,
-  Gap,
-  LogoBanner,
-  Row,
-  ScreenContainer,
-  Title4,
-} from "../../components";
+import { Column, LogoBanner, Row, Title4 } from "../../components";
 import { AnimatedBannerRow } from "./AnimatedBannerRow";
 import { LiveTradeView } from "./LiveTradeView";
 import { LongButton, ShortButton } from "./long-short-buttons";
@@ -39,15 +34,15 @@ export const HomeScreen = () => {
     selectedToken === "sol"
       ? solTrade
       : selectedToken === "eth"
-        ? ethTrade
-        : btcTrade;
+      ? ethTrade
+      : btcTrade;
 
   const setTrade =
     selectedToken === "sol"
       ? setSolTrade
       : selectedToken === "eth"
-        ? setEthTrade
-        : setBtcTrade;
+      ? setEthTrade
+      : setBtcTrade;
 
   // Set trade side, creating a draft trade if none exists
   const setTradeSide = (side: "long" | "short") => {
@@ -75,61 +70,64 @@ export const HomeScreen = () => {
   const isActiveTrade = (trade && trade.status === "open") || !!currentPosition;
 
   return (
-    <ScreenContainer>
-      <Column $gap={16}>
-        <Column $gap={0}>
-          <LogoBanner />
+    <View style={{ flex: 1 }}>
+      {/* Fixed top section */}
+      <View style={{ paddingTop: 50, paddingHorizontal: 12 }}>
+        <LogoBanner />
+        <AnimatedBannerRow items={perpSocials} />
+      </View>
 
-          <AnimatedBannerRow items={perpSocials} />
-        </Column>
-
+      {/* Dynamic middle section for PriceChartCard */}
+      <View style={{ flex: 1, paddingHorizontal: 12, paddingVertical: 12 }}>
         <PriceChartCard showLiquidation={!!isActiveTrade} />
-      </Column>
-      <Gap height={12} />
-      <Column $gap={16}>
-        {!isActiveTrade && (
-          <Row style={{ paddingStart: 16 }}>
-            <Title4>{t("Ride the market")}</Title4>
-          </Row>
-        )}
-        {isActiveTrade ? (
-          <LiveTradeView
-            trade={
-              trade || {
-                side: currentPosition?.direction || "long",
-                entryPrice: currentPosition?.entryPrice || 0,
-                amount: currentPosition?.marginUsed || 0,
-                leverage: currentPosition?.leverage || 1,
-                status: "open",
-                pnl: currentPosition?.pnl || 0,
-                timestamp: currentPosition?.openedAt
-                  ? new Date(currentPosition.openedAt).getTime()
-                  : Date.now(),
+      </View>
+
+      {/* Fixed bottom section - Ride the market */}
+      <View style={{ paddingHorizontal: 12, paddingBottom: 20 }}>
+        <Column $gap={8}>
+          {!isActiveTrade && (
+            <Row style={{ paddingStart: 16, paddingTop: 24 }}>
+              <Title4>{t("Ride the market")}</Title4>
+            </Row>
+          )}
+          {isActiveTrade ? (
+            <LiveTradeView
+              trade={
+                trade || {
+                  side: currentPosition?.direction || "long",
+                  entryPrice: currentPosition?.entryPrice || 0,
+                  amount: currentPosition?.marginUsed || 0,
+                  leverage: currentPosition?.leverage || 1,
+                  status: "open",
+                  pnl: currentPosition?.pnl || 0,
+                  timestamp: currentPosition?.openedAt
+                    ? new Date(currentPosition.openedAt).getTime()
+                    : Date.now(),
+                }
               }
-            }
-          />
-        ) : (
-          <Row $padding={0}>
-            <ShortButton
-              onPress={() => {
-                setTradeSide("short");
-                router.push("/trade");
-              }}
-              title={t("Short")}
-              subtitle={t("Price will go down")}
             />
-            <LongButton
-              onPress={() => {
-                setTradeSide("long");
-                router.push("/trade");
-              }}
-              title={t("Long")}
-              subtitle={t("Price will go up")}
-            />
-          </Row>
-        )}
-      </Column>
-      <Gap height={4} />
-    </ScreenContainer>
+          ) : (
+            <Row>
+              <ShortButton
+                onPress={() => {
+                  setTradeSide("short");
+                  router.push("/trade");
+                }}
+                title={t("Short")}
+                subtitle={t("Price will go down")}
+              />
+              <LongButton
+                onPress={() => {
+                  setTradeSide("long");
+                  router.push("/trade");
+                }}
+                title={t("Long")}
+                subtitle={t("Price will go up")}
+              />
+            </Row>
+          )}
+        </Column>
+      </View>
+    </View>
   );
 };

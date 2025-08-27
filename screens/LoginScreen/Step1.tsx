@@ -56,6 +56,7 @@ export const Step1 = () => {
         </Row>
         <View
           style={{
+            height: "50%",
             paddingStart: 32,
             paddingEnd: 32,
             overflow: "hidden",
