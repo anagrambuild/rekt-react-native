@@ -210,15 +210,15 @@ export const useHistoricalDataQuery = (
   });
 };
 
-// Hook to get user by profile ID
-export const useUserByProfileQuery = (
+// Hook to get user by user ID
+export const useUserByUserIdQuery = (
   userId: string,
   options?: Omit<UseQueryOptions<User | null, Error>, "queryKey" | "queryFn">
 ) => {
   return useQuery({
     queryKey: queryKeys.userProfile(userId),
     queryFn: () => getUserByUserId(userId),
-    enabled: !!userId, // Only run query if profile ID is provided
+    enabled: !!userId,
     staleTime: 1000 * 60 * 5, // 5 minutes stale time
     ...options,
   });
@@ -351,20 +351,6 @@ export const useUsernameAvailabilityQuery = (
     queryKey: ["username", "availability", username],
     queryFn: () => checkUsernameAvailabilityPublic(username),
     enabled: !!username && username.length > 0,
-    staleTime: 1000 * 60 * 5, // 5 minutes stale time
-    ...options,
-  });
-};
-
-// Hook to get user by user ID
-export const useUserByUserIdQuery = (
-  userId: string,
-  options?: Omit<UseQueryOptions<User | null, Error>, "queryKey" | "queryFn">
-) => {
-  return useQuery({
-    queryKey: queryKeys.userProfile(userId),
-    queryFn: () => getUserByUserId(userId),
-    enabled: !!userId,
     staleTime: 1000 * 60 * 5, // 5 minutes stale time
     ...options,
   });
