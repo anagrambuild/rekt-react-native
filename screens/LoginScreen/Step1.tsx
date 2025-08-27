@@ -8,6 +8,7 @@ import { AnimatedBannerRow } from "../HomeScreen/AnimatedBannerRow";
 import { perpSocials } from "../HomeScreen/mockData";
 import { PriceChartCard } from "../HomeScreen/PriceChartCard";
 import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
 
 export const Step1 = () => {
   return (
@@ -56,7 +57,7 @@ export const Step1 = () => {
         </Row>
         <View
           style={{
-            height: "50%",
+            height: 350,
             paddingStart: 32,
             paddingEnd: 32,
             overflow: "hidden",
@@ -67,6 +68,19 @@ export const Step1 = () => {
           <PriceChartCard showLiquidation={false} loginScreen />
         </View>
       </View>
+
+      {/* Gradient overlay from bottom */}
+      <LinearGradient
+        colors={["transparent", "rgba(0,0,0,0.3)", "rgba(0,0,0,0.8)"]}
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: 200,
+          zIndex: 1001,
+        }}
+      />
     </Column>
   );
 };
