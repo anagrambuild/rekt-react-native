@@ -371,10 +371,56 @@ export interface JobStatusResponse {
   error?: string;
 }
 
+export interface TradeJobResponse {
+  job_id: string;
+  user_id: string;
+  status: string;
+  message: string;
+  position_id?: string;
+  transaction_signature?: string;
+  error?: string;
+}
+
+export interface CurrentPositionsResponse {
+  positions: Position[];
+  total_value?: number;
+  total_pnl?: number;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  offset: number;
+  limit: number;
+  has_more: boolean;
+}
+
+export interface PositionHistory {
+  id: string;
+  user_id: string;
+  market: string; // Backend returns "SOL", "BTC", "ETH"
+  trade_type: string; // Backend returns "LONG", "SHORT"
+  quantity: number;
+  entry_price?: number;
+  exit_price?: number;
+  leverage: number;
+  status: string;
+  pnl?: number;
+  fees?: number;
+  created_at: string;
+  updated_at: string;
+  closed_at?: string;
+}
+
 export interface CreateUserJobRequest {
   user_id: string;
   username: string;
   wallet_address?: string;
+}
+
+export interface CancelTradeRequest {
+  user_id: string;
+  position_id: string;
 }
 
 export interface UpdateAvatarRequest {
@@ -482,6 +528,74 @@ export const createUserJob = async (
     // Log more details about the error
     if (error instanceof Error && error.message.includes("422")) {
       console.error("🚨 422 Error Details - Request was:", userData);
+    }
+
+    throw error;
+  }
+};
+
+// Job-based trade placement for NoCap backend
+export const placeTradeJob = async (
+  tradeData: PlaceTradeRequest
+): Promise<TradeJobResponse> => {
+  try {
+    console.log("📤 Sending trade placement request:", {
+      endpoint: "/api/trades/place",
+      data: tradeData,
+    });
+
+    const result = await apiClient.post<ApiResponse<TradeJobResponse>>(
+      `/api/trades/place`,
+      tradeData
+    );
+
+    console.log("📥 Trade placement response:", result);
+
+    if (!result.success || !result.data) {
+      throw new Error(result.error || "Failed to place trade job");
+    }
+
+    return result.data;
+  } catch (error) {
+    console.error("Error placing trade job:", error);
+
+    // Log more details about the error
+    if (error instanceof Error && error.message.includes("422")) {
+      console.error("🚨 422 Error Details - Request was:", tradeData);
+    }
+
+    throw error;
+  }
+};
+
+// Job-based trade cancellation for NoCap backend
+export const cancelTradeJob = async (
+  cancelData: CancelTradeRequest
+): Promise<TradeJobResponse> => {
+  try {
+    console.log("📤 Sending trade cancellation request:", {
+      endpoint: "/api/trades/cancel",
+      data: cancelData,
+    });
+
+    const result = await apiClient.post<ApiResponse<TradeJobResponse>>(
+      `/api/trades/cancel`,
+      cancelData
+    );
+
+    console.log("📥 Trade cancellation response:", result);
+
+    if (!result.success || !result.data) {
+      throw new Error(result.error || "Failed to cancel trade job");
+    }
+
+    return result.data;
+  } catch (error) {
+    console.error("Error cancelling trade job:", error);
+
+    // Log more details about the error
+    if (error instanceof Error && error.message.includes("422")) {
+      console.error("🚨 422 Error Details - Request was:", cancelData);
     }
 
     throw error;
@@ -841,10 +955,21 @@ export interface TradingBalance {
   walletAddress: string;
 }
 
+export interface PlaceTradeRequest {
+  user_id: string;
+  market: string; // Backend expects "SOL", "BTC", "ETH" (not "SOL-PERP")
+  trade_type: "LONG" | "SHORT"; // Backend expects uppercase
+  quantity: number;
+  entry_price?: number;
+  take_profit_price?: number;
+  stop_loss_price?: number;
+  leverage: number;
+}
+
 export interface OpenPositionRequest {
   userId: string;
-  asset: "SOL-PERP" | "BTC-PERP" | "ETH-PERP";
-  direction: "long" | "short";
+  market: "SOL" | "BTC" | "ETH";
+  direction: "LONG" | "SHORT";
   amount: number;
   leverage: number;
 }
@@ -863,8 +988,8 @@ export interface InitializationResponse {
 
 export interface Position {
   id: string;
-  asset: string;
-  direction: "long" | "short";
+  market: string; // "SOL", "BTC", "ETH"
+  direction: "LONG" | "SHORT";
   status: string;
   size: number; // buying power (poisiton_size in supabase)
   entryPrice: number;
@@ -888,6 +1013,7 @@ export interface OpenPositionResponse {
   message: string;
 }
 
+// Legacy interface for backward compatibility
 export interface ClosePositionRequest {
   userId: string;
   positionId: string;
@@ -955,24 +1081,92 @@ export const getUSDCBalanceByUserId = async (
   return getTradingBalance(userId);
 };
 
-// Open a new trading position (returns transaction data for signing)
+// Open a new trading position using job-based system with realtime completion
 export const openTradingPosition = async (
   request: OpenPositionRequest
-): Promise<OpenPositionResponse> => {
+): Promise<Position> => {
   try {
-    // Use the authenticated API client instead of raw fetch
-    const result = await apiClient.post<OpenPositionResponse>(
-      `/api/trading/open`,
-      request
-    );
-
-    if (!result.success) {
-      throw new Error(result.message || "Failed to open position");
+    // Get user ID from current session
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error("No authenticated user found");
     }
 
-    return result;
+    // Use the new format directly - no conversion needed
+    const tradeRequest: PlaceTradeRequest = {
+      user_id: request.userId,
+      market: request.market,
+      trade_type: request.direction,
+      quantity: request.amount,
+      leverage: request.leverage,
+      // Optional fields can be added later for limit orders, TP/SL
+    };
+
+    // Step 1: Start trade placement job
+    const jobResponse = await placeTradeJob(tradeRequest);
+
+    console.log("Trade placement job started:", jobResponse.job_id);
+
+    // Step 2: Set up realtime subscription for job completion
+    const userId = (await supabase.auth.getUser()).data.user?.id;
+    if (!userId) {
+      throw new Error("No authenticated user found");
+    }
+
+    return new Promise((resolve, reject) => {
+      const channel = supabase
+        .channel(`trade:${userId}`)
+        .on("broadcast", { event: "trade_placed" }, async payload => {
+          console.log("🎉 Trade placed successfully:", payload);
+
+          try {
+            // Step 3: Get the created position data from the payload or fetch from API
+            if (payload.position) {
+              channel.unsubscribe();
+              resolve(payload.position as Position);
+            } else if (payload.position_id) {
+              // Fetch position details if only ID is provided
+              try {
+                const positions = await getOpenPositions(request.userId);
+                const newPosition = positions.find(p => p.id === payload.position_id);
+                if (newPosition) {
+                  channel.unsubscribe();
+                  resolve(newPosition);
+                } else {
+                  throw new Error("Position not found after creation");
+                }
+              } catch (error) {
+                throw new Error("Failed to retrieve created position: " + error);
+              }
+            } else {
+              throw new Error("No position data in trade completion payload");
+            }
+          } catch (error) {
+            channel.unsubscribe();
+            reject(error);
+          }
+        })
+        .on("broadcast", { event: "trade_placement_failed" }, payload => {
+          console.log("❌ Trade placement failed:", payload);
+          channel.unsubscribe();
+          reject(new Error(payload.error || "Trade placement failed"));
+        })
+        .subscribe(status => {
+          console.log("Realtime subscription status:", status);
+        });
+
+      // Set up timeout for job completion (5 minutes)
+      setTimeout(() => {
+        channel.unsubscribe();
+        reject(
+          new Error("Trade placement timeout - job took too long to complete")
+        );
+      }, 5 * 60 * 1000);
+    });
   } catch (error) {
-    console.error("Error opening trading position:", error);
+    console.error("Error in trade placement flow:", error);
     throw error;
   }
 };
@@ -980,40 +1174,150 @@ export const openTradingPosition = async (
 // Get open positions for a user
 export const getOpenPositions = async (userId: string): Promise<Position[]> => {
   try {
-    // Use the authenticated API client instead of raw fetch
-    const result = await apiClient.get<ApiResponse<Position[]>>(
-      `/api/trading/positions/${userId}`
+    console.log("🌐 Making API call to /api/trades/positions/" + userId);
+    
+    // Use the authenticated API client with new endpoint
+    const result = await apiClient.get<ApiResponse<CurrentPositionsResponse>>(
+      `/api/trades/positions/${userId}`
     );
 
+    console.log("📡 API response received:", result.success);
+
     if (!result.success) {
+      console.error("❌ API call failed:", result.error);
       throw new Error(result.error || "Failed to get positions");
     }
 
-    return result.data!;
+    // Debug: Log the raw response to understand the backend format
+    console.log("🔍 Raw positions response:", JSON.stringify(result.data, null, 2));
+
+    // The backend returns position summaries that need to be mapped to our Position format
+    // Since the backend structure might be different, let's map it properly
+    const backendPositions = result.data!.positions;
+    
+    // If positions are already in the correct format, return them
+    // Otherwise, we might need to map them similar to how we do in getTradingHistoryPaginated
+    const mappedPositions: Position[] = backendPositions.map((pos: any) => {
+      // Always map from backend format to ensure consistency
+      return {
+        id: pos.id || pos.position_id || '',
+        market: pos.market || '',
+        direction: pos.trade_type ? pos.trade_type as "LONG" | "SHORT" : pos.direction || 'LONG',
+          status: pos.status || 'open',
+          size: pos.quantity || pos.size || 0,
+          entryPrice: pos.entry_price || pos.entryPrice || 0,
+          exitPrice: pos.exit_price || pos.exitPrice || null,
+          currentPrice: pos.current_price || pos.currentPrice || pos.entry_price || 0,
+          pnl: pos.unrealized_pnl || pos.pnl || 0,
+          pnlPercentage: pos.pnl_percentage || pos.pnlPercentage || 0,
+          leverage: pos.leverage || 1,
+          liquidationPrice: pos.liquidation_price || pos.liquidationPrice || 0,
+          marginUsed: pos.margin_used || pos.marginUsed || 0,
+          openedAt: pos.created_at || pos.openedAt || new Date().toISOString(),
+          closedAt: pos.closed_at || pos.closedAt || null,
+          duration: pos.duration || 0,
+          fees: pos.fees || 0,
+          points: pos.points || 0,
+        } as Position;
+    });
+
+    console.log("✅ Mapped positions:", mappedPositions.length, "positions");
+    return mappedPositions;
   } catch (error) {
-    // console.error('Error getting open positions:', error);
+    console.error('❌ Error getting open positions:', error);
+    
+    // If it's a 500 error, return empty array instead of crashing the app
+    if (error instanceof Error && error.message.includes('500')) {
+      console.log("🔄 Backend endpoint not ready, returning empty positions array");
+      return [];
+    }
+    
     throw error;
   }
 };
 
-// Close a trading position (returns transaction data for signing)
+// Close a trading position using job-based system with realtime completion
 export const closeTradingPosition = async (
   request: ClosePositionRequest
-): Promise<ClosePositionResponse> => {
+): Promise<Position> => {
   try {
-    // Use the authenticated API client instead of raw fetch
-    const result = await apiClient.post<ClosePositionResponse>(
-      `/api/trading/close`,
-      request
-    );
-
-    if (!result.success) {
-      throw new Error(result.message || "Failed to close position");
+    // Get user ID from current session
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error("No authenticated user found");
     }
 
-    return result;
+    // Convert legacy request format to new backend format
+    const cancelRequest: CancelTradeRequest = {
+      user_id: request.userId,
+      position_id: request.positionId,
+    };
+
+    // Step 1: Start trade cancellation job
+    const jobResponse = await cancelTradeJob(cancelRequest);
+
+    console.log("Trade cancellation job started:", jobResponse.job_id);
+
+    // Step 2: Set up realtime subscription for job completion
+    const userId = (await supabase.auth.getUser()).data.user?.id;
+    if (!userId) {
+      throw new Error("No authenticated user found");
+    }
+
+    return new Promise((resolve, reject) => {
+      const channel = supabase
+        .channel(`trade:${userId}`)
+        .on("broadcast", { event: "trade_cancelled" }, async payload => {
+          console.log("🎉 Trade cancelled successfully:", payload);
+
+          try {
+            // Step 3: Get the updated position data from the payload or fetch from API
+            if (payload.position) {
+              channel.unsubscribe();
+              resolve(payload.position as Position);
+            } else if (payload.position_id) {
+              // Fetch updated position details if only ID is provided
+              try {
+                const history = await getTradingHistory(request.userId, "closed", 50);
+                const closedPosition = history.find(p => p.id === payload.position_id);
+                if (closedPosition) {
+                  channel.unsubscribe();
+                  resolve(closedPosition);
+                } else {
+                  throw new Error("Closed position not found after cancellation");
+                }
+              } catch (error) {
+                throw new Error("Failed to retrieve closed position: " + error);
+              }
+            } else {
+              throw new Error("No position data in trade cancellation payload");
+            }
+          } catch (error) {
+            channel.unsubscribe();
+            reject(error);
+          }
+        })
+        .on("broadcast", { event: "trade_cancellation_failed" }, payload => {
+          console.log("❌ Trade cancellation failed:", payload);
+          channel.unsubscribe();
+          reject(new Error(payload.error || "Trade cancellation failed"));
+        })
+        .subscribe(status => {
+          console.log("Realtime subscription status:", status);
+        });
+
+      // Set up timeout for job completion (5 minutes)
+      setTimeout(() => {
+        channel.unsubscribe();
+        reject(
+          new Error("Trade cancellation timeout - job took too long to complete")
+        );
+      }, 5 * 60 * 1000);
+    });
   } catch (error) {
-    console.error("Error closing trading position:", error);
+    console.error("Error in trade cancellation flow:", error);
     throw error;
   }
 };
@@ -1041,28 +1345,114 @@ export const submitSignedTransaction = async (
   }
 };
 
-// Get trading history for a user
+// Get trading history for a user with pagination
 export const getTradingHistory = async (
   userId: string,
   status?: "open" | "closed",
-  limit: number = 50
+  limit: number = 50,
+  offset: number = 0
 ): Promise<Position[]> => {
   try {
-    let endpoint = `/api/trading/history/${userId}?limit=${limit}`;
+    let endpoint = `/api/trades/history/${userId}?limit=${limit}&offset=${offset}`;
     if (status) {
       endpoint += `&status=${status}`;
     }
 
-    // Use the authenticated API client instead of raw fetch
-    const result = await apiClient.get<ApiResponse<Position[]>>(endpoint);
+    console.log("🌐 Making API call to trading history:", endpoint);
+
+    // Use the authenticated API client with new endpoint
+    const result = await apiClient.get<ApiResponse<PaginatedResponse<PositionHistory>>>(endpoint);
+
+    console.log("📡 Trading history API response received:", result.success);
+
+    if (!result.success) {
+      console.error("❌ Trading history API call failed:", result.error);
+      throw new Error(result.error || "Failed to get trading history");
+    }
+
+    // Convert PositionHistory to Position format
+    const positions: Position[] = result.data!.data.map(history => ({
+      id: history.id,
+      market: history.market,
+      direction: history.trade_type as "LONG" | "SHORT",
+      status: history.status,
+      size: history.quantity,
+      entryPrice: history.entry_price || 0,
+      exitPrice: history.exit_price || null,
+      currentPrice: history.exit_price || history.entry_price || 0,
+      pnl: history.pnl || 0,
+      pnlPercentage: history.pnl && history.entry_price ? 
+        ((history.pnl / (history.quantity * history.entry_price)) * 100) : 0,
+      leverage: history.leverage,
+      liquidationPrice: 0, // Not provided in PositionHistory
+      marginUsed: (history.quantity * (history.entry_price || 0)) / history.leverage,
+      openedAt: history.created_at,
+      closedAt: history.closed_at || null,
+      duration: history.closed_at ? 
+        new Date(history.closed_at).getTime() - new Date(history.created_at).getTime() : 0,
+      fees: history.fees || 0,
+      points: 0, // Not provided in PositionHistory
+    }));
+
+    return positions;
+  } catch (error) {
+    // console.error('Error getting trading history:', error);
+    throw error;
+  }
+};
+
+// Get paginated trading history with full response metadata
+export const getTradingHistoryPaginated = async (
+  userId: string,
+  status?: "open" | "closed",
+  limit: number = 50,
+  offset: number = 0
+): Promise<PaginatedResponse<Position>> => {
+  try {
+    let endpoint = `/api/trades/history/${userId}?limit=${limit}&offset=${offset}`;
+    if (status) {
+      endpoint += `&status=${status}`;
+    }
+
+    const result = await apiClient.get<ApiResponse<PaginatedResponse<PositionHistory>>>(endpoint);
 
     if (!result.success) {
       throw new Error(result.error || "Failed to get trading history");
     }
 
-    return result.data!;
+    // Convert PositionHistory to Position format
+    const positions: Position[] = result.data!.data.map(history => ({
+      id: history.id,
+      market: history.market,
+      direction: history.trade_type as "LONG" | "SHORT",
+      status: history.status,
+      size: history.quantity,
+      entryPrice: history.entry_price || 0,
+      exitPrice: history.exit_price || null,
+      currentPrice: history.exit_price || history.entry_price || 0,
+      pnl: history.pnl || 0,
+      pnlPercentage: history.pnl && history.entry_price ? 
+        ((history.pnl / (history.quantity * history.entry_price)) * 100) : 0,
+      leverage: history.leverage,
+      liquidationPrice: 0,
+      marginUsed: (history.quantity * (history.entry_price || 0)) / history.leverage,
+      openedAt: history.created_at,
+      closedAt: history.closed_at || null,
+      duration: history.closed_at ? 
+        new Date(history.closed_at).getTime() - new Date(history.created_at).getTime() : 0,
+      fees: history.fees || 0,
+      points: 0,
+    }));
+
+    return {
+      data: positions,
+      total: result.data!.total,
+      offset: result.data!.offset,
+      limit: result.data!.limit,
+      has_more: result.data!.has_more,
+    };
   } catch (error) {
-    // console.error('Error getting trading history:', error);
+    console.error('Error getting paginated trading history:', error);
     throw error;
   }
 };
