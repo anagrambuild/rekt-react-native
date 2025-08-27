@@ -6,52 +6,77 @@ import styled from "styled-components/native";
 
 // Animated banner row for perpSocials
 export const AnimatedBannerRow = ({ items }: { items: any[] }) => {
-  const scrollAnim = useRef(new Animated.Value(0)).current;
+  const translateX = useRef(new Animated.Value(0)).current;
   const itemGap = 16;
-  const [rowWidth, setRowWidth] = useState(0);
+  const [contentWidth, setContentWidth] = useState(0);
 
-  // Calculate total width of all items (approximate)
-  const onLayout = (e: any) => {
-    setRowWidth(e.nativeEvent.layout.width);
+  const handleContentLayout = (e: any) => {
+    const width = Math.round(e.nativeEvent.layout.width);
+    if (width && Math.abs(width - contentWidth) > 0.5) {
+      setContentWidth(width);
+    }
   };
 
   useEffect(() => {
-    if (rowWidth === 0) return;
-    const animate = () => {
-      scrollAnim.setValue(0);
-      Animated.timing(scrollAnim, {
-        toValue: -rowWidth,
-        duration: 6000,
+    if (contentWidth <= 0) return;
+    translateX.setValue(0);
+    const pixelsPerSecond = 60;
+    // Add itemGap to account for the spacer between the two sets
+    const totalScrollDistance = contentWidth + itemGap;
+    const duration = Math.max(1000, (totalScrollDistance / pixelsPerSecond) * 1000);
+    const animation = Animated.loop(
+      Animated.timing(translateX, {
+        toValue: -totalScrollDistance,
+        duration,
         useNativeDriver: true,
         easing: Easing.linear,
-      }).start(() => animate());
+      })
+    );
+    animation.start();
+    return () => {
+      animation.stop();
     };
-    animate();
-    return () => scrollAnim.stopAnimation();
-  }, [rowWidth, scrollAnim]);
-
-  // Duplicate items multiple times to ensure we have enough content
-  const allItems = [...items, ...items, ...items, ...items, ...items, ...items];
+  }, [contentWidth, translateX]);
 
   return (
     <BannerRowContainer>
       <Animated.View
+        pointerEvents="none"
+        renderToHardwareTextureAndroid={true}
+        shouldRasterizeIOS={true}
         style={{
           flexDirection: "row",
-          gap: itemGap,
-          transform: [{ translateX: scrollAnim }],
+          transform: [{ translateX }],
+          backfaceVisibility: "hidden",
         }}
-        onLayout={onLayout}
       >
-        {allItems.map((perpSocial, i) => (
-          <PerpSocialChip
-            key={i + "-" + perpSocial.id}
-            imgSrc={perpSocial.imgSrc}
-            position={perpSocial.position}
-            meta={perpSocial.meta}
-            earningMultiple={perpSocial.earningMultiple}
-          />
-        ))}
+        <View
+          style={{ flexDirection: "row", gap: itemGap }}
+          onLayout={handleContentLayout}
+        >
+          {items.map((perpSocial, i) => (
+            <PerpSocialChip
+              key={i + "-" + perpSocial.id}
+              imgSrc={perpSocial.imgSrc}
+              position={perpSocial.position}
+              meta={perpSocial.meta}
+              earningMultiple={perpSocial.earningMultiple}
+            />
+          ))}
+        </View>
+        {/* Spacer to maintain gap between sets */}
+        <View style={{ width: itemGap }} />
+        <View style={{ flexDirection: "row", gap: itemGap }}>
+          {items.map((perpSocial, i) => (
+            <PerpSocialChip
+              key={"dup-" + i + "-" + perpSocial.id}
+              imgSrc={perpSocial.imgSrc}
+              position={perpSocial.position}
+              meta={perpSocial.meta}
+              earningMultiple={perpSocial.earningMultiple}
+            />
+          ))}
+        </View>
       </Animated.View>
     </BannerRowContainer>
   );
