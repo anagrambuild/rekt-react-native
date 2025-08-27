@@ -1,5 +1,7 @@
 UI
 
+- add avatar on account creation
+
 High Priority
 
 - web3 auth working on front end/ password with username if web3 auth doesn't work
@@ -8,7 +10,6 @@ Implementing backend:
 
 - create account
 - check balance
-- deposit to swig address - remove hardcoded address
 - should not allow a trade with no usdc
 - open trade
 - close trade

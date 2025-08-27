@@ -27,8 +27,7 @@ import {
   WalletConnectionContent,
   WebViewScreen,
 } from "@/components";
-import { useWallet } from "@/contexts";
-import { useProfileContext } from "@/contexts/ProfileContext";
+import { useAppContext, useProfileContext, useWallet } from "@/contexts";
 
 import Feather from "@expo/vector-icons/Feather";
 import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
@@ -48,6 +47,7 @@ export const TransferIn = ({
 }: {
   setView: (view: OnOffRampViewType) => void;
 }) => {
+  const { userProfile } = useAppContext();
   const {
     setIsOnOffRampModalVisible,
     showExplorer,
@@ -86,8 +86,7 @@ export const TransferIn = ({
   const addressOpacityAnim = useRef(new Animated.Value(0)).current;
   const qrCodeOpacityAnim = useRef(new Animated.Value(0)).current;
 
-  // TODO - change this to the user's address from profile
-  const address = "GuY9pCs5yhf7pmSYa41xoYTZvMfqgHHiFyjaeTF2oTXc";
+  const address = userProfile?.swigWalletAddress;
   const shortAddress =
     address.length > 10
       ? address.slice(0, 6) + "..." + address.slice(-4)
