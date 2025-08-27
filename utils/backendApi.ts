@@ -21,8 +21,20 @@ export interface UserApiResponse {
   };
 }
 
-export interface UsernameCheckApiResponse {
+export interface UsernameAvailabilityResponse {
+  username: string;
   available: boolean;
+}
+
+export interface UserExt {
+  id: string;
+  user_id: string;
+  username: string;
+  non_custodial_wallet_address: string | null;
+  swig_address: string | null;
+  avatar_url: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface AvatarUploadApiResponse {
@@ -273,31 +285,64 @@ export interface UsernameCheckResponse {
   available: boolean;
 }
 
+// NoCap Backend Types
+export interface JobResponse {
+  job_id: string;
+  status: string;
+  message: string;
+}
+
+export interface JobStatusResponse {
+  job_id: string;
+  status: "queued" | "processing" | "completed" | "failed";
+  message: string;
+  result?: any;
+  error?: string;
+}
+
+export interface CreateUserJobRequest {
+  user_id: string;
+  username: string;
+  wallet_address?: string;
+}
+
+export interface UpdateAvatarRequest {
+  avatar_url: string;
+}
+
 // Public username check that doesn't require authentication
 export const checkUsernameAvailabilityPublic = async (
   username: string
 ): Promise<UsernameCheckResponse> => {
   try {
-    // Use direct fetch for public endpoints that don't require authentication
-    const url = `${apiClient.getBaseURL()}/api/auth/check-username`;
+    // Updated URL path and method for nocap-backend
+    const url = `${apiClient.getBaseURL()}/api/users/username/${encodeURIComponent(
+      username
+    )}/availability`;
     console.log("🌐 Using API URL:", url);
 
     const response = await fetch(url, {
-      method: "POST",
+      method: "GET", // Changed from POST
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ username }),
+      // No body needed since username is in URL
     });
 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
-    const data: UsernameCheckApiResponse = await response.json();
+    // Updated response structure handling
+    const data: ApiResponse<UsernameAvailabilityResponse> =
+      await response.json();
+
+    if (!data.success) {
+      throw new Error(data.error || "Failed to check username availability");
+    }
 
     return {
-      available: data.available,
+      available: data.data!.available,
     };
   } catch (error) {
     console.error("❌ Username check error (public):", error);
@@ -307,20 +352,30 @@ export const checkUsernameAvailabilityPublic = async (
 
 export const getUserByUserId = async (userId: string): Promise<User | null> => {
   try {
-    // Use the authenticated API client instead of raw fetch
-    const result = await apiClient.get<UserApiResponse>(
-      `/api/users/profile/${userId}`
+    // Updated URL path for nocap-backend
+    const result = await apiClient.get<ApiResponse<UserExt>>(
+      `/api/users/${userId}`
     );
 
-    // Map backend response to frontend User interface
+    if (!result.success || !result.data) {
+      throw new Error(result.error || "Failed to get user");
+    }
+
+    // Get email from local Supabase session since it's not in UserExt
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    const email = session?.user?.email || "";
+
+    // Map backend UserExt response to frontend User interface
     return {
-      id: result.user.id,
-      username: result.user.username,
-      email: result.user.email,
-      profileImage: result.user.avatar_url,
-      swigWalletAddress: result.user.swig_wallet_address,
-      createdAt: result.user.joined_at || new Date().toISOString(),
-      updatedAt: result.user.updated_at || new Date().toISOString(),
+      id: result.data.user_id, // Note: UserExt has separate id and user_id
+      username: result.data.username,
+      email: email, // Get from local session
+      profileImage: result.data.avatar_url || undefined,
+      swigWalletAddress: result.data.swig_address || undefined,
+      createdAt: result.data.created_at,
+      updatedAt: result.data.updated_at,
     };
   } catch (error) {
     console.error("Error fetching user by profile ID:", error);
@@ -328,61 +383,171 @@ export const getUserByUserId = async (userId: string): Promise<User | null> => {
   }
 };
 
-export const createUser = async (
-  userData: CreateUserRequest
-): Promise<User> => {
+// Job-based user creation for NoCap backend
+export const createUserJob = async (
+  userData: CreateUserJobRequest
+): Promise<JobResponse> => {
   try {
-    // Map frontend data structure to new backend expected structure
-    const backendUserData = {
-      username: userData.username,
-      email: userData.email || "",
-      avatar_url: userData.profileImage || "",
-      wallet_address: userData.walletAddress,
-    };
+    console.log("📤 Sending user creation request:", {
+      endpoint: "/api/users",
+      data: userData
+    });
 
-    const result = await apiClient.post<{
-      success: boolean;
-      user: any;
-      message: string;
-    }>(`/api/auth/create-account`, backendUserData);
+    const result = await apiClient.post<ApiResponse<JobResponse>>(
+      `/api/users`,
+      userData
+    );
 
-    // Map backend response to frontend User interface
-    // Backend returns: { success: true, user: { id, username, email, swig_wallet_address, ... }, message, driftAccount }
-    return {
-      id: result.user.id,
-      username: result.user.username,
-      email: result.user.email,
-      profileImage: result.user.avatar_url,
-      swigWalletAddress: result.user.swig_wallet_address,
-      createdAt: result.user.joined_at || new Date().toISOString(),
-      updatedAt: result.user.updated_at || new Date().toISOString(),
-    };
-  } catch (error) {
-    console.error("Error creating user:", error);
+    console.log("📥 User creation response:", result);
 
-    // Provide more specific error messages
-    if (error instanceof Error) {
-      if (error.name === "AbortError") {
-        throw new Error(
-          "Request timed out. Please check your internet connection and try again."
-        );
-      } else if (error.message.includes("Network request failed")) {
-        throw new Error(
-          "Network error. Please check if the backend server is running and accessible."
-        );
-      }
+    if (!result.success || !result.data) {
+      throw new Error(result.error || "Failed to create user job");
     }
 
+    return result.data;
+  } catch (error) {
+    console.error("Error creating user job:", error);
+    
+    // Log more details about the error
+    if (error instanceof Error && error.message.includes("422")) {
+      console.error("🚨 422 Error Details - Request was:", userData);
+    }
+    
     throw error;
   }
 };
 
-// File upload types
-interface FileObject {
-  uri: string;
-  type: string;
-  name: string;
-}
+// Check job status
+export const getJobStatus = async (
+  jobId: string
+): Promise<JobStatusResponse> => {
+  try {
+    const result = await apiClient.get<ApiResponse<JobStatusResponse>>(
+      `/api/jobs/${jobId}`
+    );
+
+    if (!result.success || !result.data) {
+      throw new Error(result.error || "Failed to get job status");
+    }
+
+    return result.data;
+  } catch (error) {
+    console.error("Error getting job status:", error);
+    throw error;
+  }
+};
+
+
+
+// Complete user creation with realtime and avatar upload
+export const createUser = async (
+  userData: CreateUserRequest
+): Promise<User> => {
+  try {
+    // Get user ID from current session
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error("No authenticated user found");
+    }
+
+    // Step 1: Start user creation job
+    const jobResponse = await createUserJob({
+      user_id: user.id,
+      username: userData.username,
+      wallet_address: userData.walletAddress,
+    });
+
+    console.log("User creation job started:", jobResponse.job_id);
+
+    // Step 2: Set up realtime subscription for job completion
+    const userId = (await supabase.auth.getUser()).data.user?.id;
+    if (!userId) {
+      throw new Error("No authenticated user found");
+    }
+
+    return new Promise((resolve, reject) => {
+      const channel = supabase
+        .channel(`user:${userId}`)
+        .on("broadcast", { event: "user_created" }, async payload => {
+          console.log("🎉 User created successfully:", payload);
+
+          try {
+            // Step 3: Upload avatar if provided
+            if (userData.profileImage) {
+              try {
+                const avatarUrl = await uploadAvatar(
+                  userData.profileImage,
+                  `avatar_${Date.now()}.jpg`
+                );
+                await updateUserAvatar(avatarUrl);
+                console.log("✅ Avatar uploaded successfully");
+              } catch (avatarError) {
+                console.warn("⚠️ Avatar upload failed:", avatarError);
+                // Continue without avatar
+              }
+            }
+
+            // Step 4: Get the created user data directly from API
+            try {
+              const result = await apiClient.get<ApiResponse<UserExt>>(
+                `/api/users/${userId}`
+              );
+
+              if (!result.success || !result.data) {
+                throw new Error(result.error || "Failed to get user");
+              }
+
+              // Get email from local Supabase session since it's not in UserExt
+              const {
+                data: { session },
+              } = await supabase.auth.getSession();
+              const email = session?.user?.email || "";
+
+              // Map backend UserExt response to frontend User interface
+              const user: User = {
+                id: result.data.user_id,
+                username: result.data.username,
+                email: email,
+                profileImage: result.data.avatar_url || undefined,
+                swigWalletAddress: result.data.swig_address || undefined,
+                createdAt: result.data.created_at,
+                updatedAt: result.data.updated_at,
+              };
+
+              channel.unsubscribe();
+              resolve(user);
+            } catch (error) {
+              throw new Error("Failed to retrieve created user: " + error);
+            }
+          } catch (error) {
+            channel.unsubscribe();
+            reject(error);
+          }
+        })
+        .on("broadcast", { event: "user_creation_failed" }, payload => {
+          console.log("❌ User creation failed:", payload);
+          channel.unsubscribe();
+          reject(new Error(payload.error || "User creation failed"));
+        })
+        .subscribe(status => {
+          console.log("Realtime subscription status:", status);
+        });
+
+      // Set up timeout for job completion (5 minutes)
+      setTimeout(() => {
+        channel.unsubscribe();
+        reject(
+          new Error("User creation timeout - job took too long to complete")
+        );
+      }, 5 * 60 * 1000);
+    });
+  } catch (error) {
+    console.error("Error in user creation flow:", error);
+    throw error;
+  }
+};
+
+
 
 // Avatar Upload Function
 export interface AvatarUploadResponse {
@@ -397,58 +562,56 @@ export const uploadAvatar = async (
   fileName: string
 ): Promise<string> => {
   try {
-    // Create FormData for file upload
-    const formData = new FormData();
+    console.log("📤 Uploading avatar to Supabase storage...");
+    console.log("📷 Image URI:", imageUri);
+    
+    // Get current user ID for folder structure
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error("No authenticated user found");
+    }
+    
+    // Convert React Native file URI to ArrayBuffer for Supabase
+    const response = await fetch(imageUri);
+    const arrayBuffer = await response.arrayBuffer();
+    
+    console.log("📊 File size:", arrayBuffer.byteLength, "bytes");
+    
+    // Generate unique filename with user folder structure
+    const fileExt = fileName.split('.').pop() || 'jpg';
+    const uniqueFileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+    
+    console.log("📁 Upload path:", uniqueFileName);
+    
+    // Upload to Supabase storage (full size)
+    const { data, error } = await supabase.storage
+      .from('avatars')
+      .upload(uniqueFileName, arrayBuffer, {
+        contentType: 'image/jpeg',
+        upsert: false
+      });
 
-    // Add the image file to FormData
-    const fileObject: FileObject = {
-      uri: imageUri,
-      type: "image/jpeg", // Backend accepts JPEG, PNG, WebP, GIF
-      name: fileName,
-    };
-
-    formData.append("avatar", fileObject as any); // FormData requires 'as any' for React Native
-
-    // For FormData uploads, we need to use fetch directly but with auth headers
-    // Get the auth token from Supabase
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    const token = session?.access_token;
-
-    if (!token) {
-      throw new Error("No authentication token available");
+    if (error) {
+      console.error("❌ Supabase upload error:", error);
+      throw new Error(`Supabase upload failed: ${error.message}`);
     }
 
-    // For FormData uploads, we need to use fetch directly
-    const response = await fetch(
-      `${apiClient.getBaseURL()}/api/upload/avatar`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          // Don't set Content-Type header - let FormData set it with boundary
-        },
-        body: formData,
-      }
-    );
+    console.log("✅ Upload successful:", data);
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        errorData.message ||
-          errorData.error ||
-          `HTTP error! status: ${response.status}`
-      );
-    }
+    // Get public URL with transformation for 80x80 avatar
+    const { data: { publicUrl } } = supabase.storage
+      .from('avatars')
+      .getPublicUrl(data.path, {
+        transform: {
+          width: 80,
+          height: 80,
+          resize: 'cover', // Crop to fit 80x80 maintaining aspect ratio
+          quality: 80
+        }
+      });
 
-    const result: AvatarUploadResponse = await response.json();
-
-    if (!result.success || !result.avatar_url) {
-      throw new Error(result.message || "Failed to upload avatar");
-    }
-
-    return result.avatar_url;
+    console.log("✅ Avatar uploaded with transformation:", publicUrl);
+    return publicUrl;
   } catch (error) {
     console.error("Error uploading avatar:", error);
     throw error;
@@ -489,32 +652,70 @@ export const deleteAvatar = async (avatarUrl: string): Promise<void> => {
   }
 };
 
-// Update user profile using the correct backend endpoint
+// Update user avatar using the correct backend endpoint
+export const updateUserAvatar = async (avatarUrl: string): Promise<UserExt> => {
+  try {
+    console.log("📤 Updating avatar URL in backend:", avatarUrl);
+    
+    const result = await apiClient.patch<ApiResponse<UserExt>>(
+      `/api/users/avatar`,
+      { avatar_url: avatarUrl }
+    );
+
+    if (!result.success || !result.data) {
+      throw new Error(result.error || "Failed to update avatar");
+    }
+
+    console.log("✅ Avatar URL updated in backend");
+    return result.data;
+  } catch (error) {
+    console.error("Error updating avatar:", error);
+    throw error;
+  }
+};
+
+// Update user profile - currently only supports avatar updates
 export const updateUserProfile = async (
   userId: string,
   userData: { username?: string; email?: string; avatar_url?: string }
 ): Promise<User> => {
   try {
-    // Use the authenticated API client instead of raw fetch
-    const result = await apiClient.put<ApiResponse<UserApiResponse>>(
-      `/api/users/profile/${userId}`,
-      userData
-    );
+    console.log("📤 Updating user profile:", { userId, userData });
+    
+    // For now, only avatar updates are supported by the backend
+    if (userData.avatar_url !== undefined) {
+      const result = await updateUserAvatar(userData.avatar_url);
+      
+      // Get email from local Supabase session since it's not in UserExt
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const email = session?.user?.email || "";
 
-    if (!result.success) {
-      throw new Error(result.error || "Failed to update user profile");
+      // Map backend UserExt response to frontend User interface
+      return {
+        id: result.user_id,
+        username: result.username,
+        email: email,
+        profileImage: result.avatar_url || undefined,
+        swigWalletAddress: result.swig_address || undefined,
+        createdAt: result.created_at,
+        updatedAt: result.updated_at,
+      };
     }
-
-    // Map backend response to frontend User interface
-    return {
-      id: result.data!.user.id,
-      username: result.data!.user.username,
-      email: result.data!.user.email,
-      profileImage: result.data!.user.avatar_url,
-      swigWalletAddress: result.data!.user.swig_wallet_address,
-      createdAt: result.data!.user.joined_at || new Date().toISOString(),
-      updatedAt: result.data!.user.updated_at || new Date().toISOString(),
-    };
+    
+    // If no avatar update, just return current user data
+    if (userData.username) {
+      throw new Error("Username updates are not supported by the backend yet");
+    }
+    
+    // Get current user data
+    const currentUser = await getUserByUserId(userId);
+    if (!currentUser) {
+      throw new Error("User not found");
+    }
+    
+    return currentUser;
   } catch (error) {
     console.error("Error updating user profile:", error);
     throw error;
@@ -789,6 +990,24 @@ export const getTradingHistory = async (
     return result.data!;
   } catch (error) {
     // console.error('Error getting trading history:', error);
+    throw error;
+  }
+};
+
+// Breeze opt-in functionality
+export const breezeOptIn = async (): Promise<JobResponse> => {
+  try {
+    const result = await apiClient.post<ApiResponse<JobResponse>>(
+      `/api/users/breeze-opt-in`
+    );
+
+    if (!result.success || !result.data) {
+      throw new Error(result.error || "Failed to start Breeze opt-in");
+    }
+
+    return result.data;
+  } catch (error) {
+    console.error("Error starting Breeze opt-in:", error);
     throw error;
   }
 };
