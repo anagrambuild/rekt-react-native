@@ -1,5 +1,5 @@
 // Default (development) settings
-const BASE_URL = "https://32a154e4982f.ngrok-free.app";
+const BASE_URL = "https://nocap-api.onrender.com";
 let name = "rekt-react-native";
 let slug = "rekt-react-native";
 let owner = "anagram-xyz";
@@ -14,8 +14,6 @@ let env = "development";
 let apiUrl = BASE_URL;
 let solanaNetwork = "solana:mainnet-beta";
 let usdcMint = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"; // Mainnet USDC
-// let solanaNetwork = 'solana:devnet';
-// let usdcMint = 'Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr'; // Devnet USDC
 
 // Preview settings
 if (process.env.DEPLOY_ENVIRONMENT === "preview") {
@@ -29,11 +27,9 @@ if (process.env.DEPLOY_ENVIRONMENT === "preview") {
   bundleIdentifier = "com.anagramxyz.rektreactnativepreview";
   scheme = "rektreactnativepreview";
   env = "preview";
-  apiUrl = BASE_URL;
-  // solanaNetwork = 'solana:devnet';
-  // usdcMint = 'Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr'; // Devnet USDC
-  solanaNetwork = "solana:mainnet-beta";
-  usdcMint = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"; // Mainnet USDC
+  // apiUrl = BASE_URL;
+  // solanaNetwork = "solana:mainnet-beta";
+  // usdcMint = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"; // Mainnet USDC
 }
 
 // Example: override for production
@@ -49,9 +45,9 @@ if (process.env.DEPLOY_ENVIRONMENT === "production") {
   // bundleIdentifier = 'com.anagramxyz.rektreactnativeprod';
   // scheme = 'rektreactnativeprod';
   env = "production";
-  apiUrl = "https://rekt-user-management.onrender.com";
-  solanaNetwork = "solana:mainnet-beta";
-  usdcMint = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"; // Mainnet USDC
+  // apiUrl = "https://rekt-user-management.onrender.com";
+  // solanaNetwork = "solana:mainnet-beta";
+  // usdcMint = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 }
 
 module.exports = {
