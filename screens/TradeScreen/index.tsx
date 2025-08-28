@@ -219,14 +219,14 @@ export const TradeScreen = () => {
                 }}
                 label={t("Short")}
                 selected={tradeSide === "SHORT"}
-                onPress={() => setTradeSide("short")}
+                onPress={() => setTradeSide("SHORT")}
               />
               <SegmentControl
                 Svg={MaterialCommunityIcons}
                 svgProps={{ name: "arrow-top-right-thin-circle-outline" }}
                 label={t("Long")}
                 selected={tradeSide === "LONG"}
-                onPress={() => setTradeSide("long")}
+                onPress={() => setTradeSide("LONG")}
               />
             </SegmentContainer>
             <View style={{ width: 32 }} />
@@ -234,7 +234,6 @@ export const TradeScreen = () => {
 
           <AnimatedBannerRow items={perpSocials} />
         </View>
-
 
         {/* Dynamic middle section for PriceChartCard */}
         <View style={{ flex: 1, paddingHorizontal: 16 }}>
