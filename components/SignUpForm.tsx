@@ -201,7 +201,7 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
       if (result.success) {
         setOtpSent(true);
         Toast.show({
-          text1: t("OTP Sent"),
+          text1: t("Code Sent"),
           text2: t("Check your email for the verification code"),
           type: "success",
         });
