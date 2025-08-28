@@ -1,6 +1,10 @@
 UI
 
 - add avatar on account creation
+- get swig wallet balance
+- add more interactivity to splash
+- add text to loading screen on account creation?
+- why is app crashing?????
 
 High Priority
 
@@ -25,6 +29,7 @@ Notes for backend
 
 Tighten ups
 
+- fix slider jumping around
 - check MWA on Android calling connection twice
 
 Low Priority
