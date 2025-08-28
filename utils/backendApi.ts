@@ -1130,7 +1130,9 @@ export const openTradingPosition = async (
               // Fetch position details if only ID is provided
               try {
                 const positions = await getOpenPositions(request.userId);
-                const newPosition = positions.find(p => p.id === payload.position_id);
+                const newPosition = positions.find(
+                  p => p.id === payload.position_id
+                );
                 if (newPosition) {
                   channel.unsubscribe();
                   resolve(newPosition);
@@ -1138,7 +1140,9 @@ export const openTradingPosition = async (
                   throw new Error("Position not found after creation");
                 }
               } catch (error) {
-                throw new Error("Failed to retrieve created position: " + error);
+                throw new Error(
+                  "Failed to retrieve created position: " + error
+                );
               }
             } else {
               throw new Error("No position data in trade completion payload");
@@ -1175,7 +1179,7 @@ export const openTradingPosition = async (
 export const getOpenPositions = async (userId: string): Promise<Position[]> => {
   try {
     console.log("🌐 Making API call to /api/trades/positions/" + userId);
-    
+
     // Use the authenticated API client with new endpoint
     const result = await apiClient.get<ApiResponse<CurrentPositionsResponse>>(
       `/api/trades/positions/${userId}`
@@ -1189,49 +1193,57 @@ export const getOpenPositions = async (userId: string): Promise<Position[]> => {
     }
 
     // Debug: Log the raw response to understand the backend format
-    console.log("🔍 Raw positions response:", JSON.stringify(result.data, null, 2));
+    console.log(
+      "🔍 Raw positions response:",
+      JSON.stringify(result.data, null, 2)
+    );
 
     // The backend returns position summaries that need to be mapped to our Position format
     // Since the backend structure might be different, let's map it properly
     const backendPositions = result.data!.positions;
-    
+
     // If positions are already in the correct format, return them
     // Otherwise, we might need to map them similar to how we do in getTradingHistoryPaginated
     const mappedPositions: Position[] = backendPositions.map((pos: any) => {
       // Always map from backend format to ensure consistency
       return {
-        id: pos.id || pos.position_id || '',
-        market: pos.market || '',
-        direction: pos.trade_type ? pos.trade_type as "LONG" | "SHORT" : pos.direction || 'LONG',
-          status: pos.status || 'open',
-          size: pos.quantity || pos.size || 0,
-          entryPrice: pos.entry_price || pos.entryPrice || 0,
-          exitPrice: pos.exit_price || pos.exitPrice || null,
-          currentPrice: pos.current_price || pos.currentPrice || pos.entry_price || 0,
-          pnl: pos.unrealized_pnl || pos.pnl || 0,
-          pnlPercentage: pos.pnl_percentage || pos.pnlPercentage || 0,
-          leverage: pos.leverage || 1,
-          liquidationPrice: pos.liquidation_price || pos.liquidationPrice || 0,
-          marginUsed: pos.margin_used || pos.marginUsed || 0,
-          openedAt: pos.created_at || pos.openedAt || new Date().toISOString(),
-          closedAt: pos.closed_at || pos.closedAt || null,
-          duration: pos.duration || 0,
-          fees: pos.fees || 0,
-          points: pos.points || 0,
-        } as Position;
+        id: pos.id || pos.position_id || "",
+        market: pos.market || "",
+        direction: pos.trade_type
+          ? (pos.trade_type as "LONG" | "SHORT")
+          : pos.direction || "LONG",
+        status: pos.status || "open",
+        size: pos.quantity || pos.size || 0,
+        entryPrice: pos.entry_price || pos.entryPrice || 0,
+        exitPrice: pos.exit_price || pos.exitPrice || null,
+        currentPrice:
+          pos.current_price || pos.currentPrice || pos.entry_price || 0,
+        pnl: pos.unrealized_pnl || pos.pnl || 0,
+        pnlPercentage: pos.pnl_percentage || pos.pnlPercentage || 0,
+        leverage: pos.leverage || 1,
+        liquidationPrice: pos.liquidation_price || pos.liquidationPrice || 0,
+        marginUsed: pos.margin_used || pos.marginUsed || 0,
+        openedAt: pos.created_at || pos.openedAt || new Date().toISOString(),
+        closedAt: pos.closed_at || pos.closedAt || null,
+        duration: pos.duration || 0,
+        fees: pos.fees || 0,
+        points: pos.points || 0,
+      } as Position;
     });
 
     console.log("✅ Mapped positions:", mappedPositions.length, "positions");
     return mappedPositions;
   } catch (error) {
-    console.error('❌ Error getting open positions:', error);
-    
+    console.error("❌ Error getting open positions:", error);
+
     // If it's a 500 error, return empty array instead of crashing the app
-    if (error instanceof Error && error.message.includes('500')) {
-      console.log("🔄 Backend endpoint not ready, returning empty positions array");
+    if (error instanceof Error && error.message.includes("500")) {
+      console.log(
+        "🔄 Backend endpoint not ready, returning empty positions array"
+      );
       return [];
     }
-    
+
     throw error;
   }
 };
@@ -1280,13 +1292,21 @@ export const closeTradingPosition = async (
             } else if (payload.position_id) {
               // Fetch updated position details if only ID is provided
               try {
-                const history = await getTradingHistory(request.userId, "closed", 50);
-                const closedPosition = history.find(p => p.id === payload.position_id);
+                const history = await getTradingHistory(
+                  request.userId,
+                  "closed",
+                  50
+                );
+                const closedPosition = history.find(
+                  p => p.id === payload.position_id
+                );
                 if (closedPosition) {
                   channel.unsubscribe();
                   resolve(closedPosition);
                 } else {
-                  throw new Error("Closed position not found after cancellation");
+                  throw new Error(
+                    "Closed position not found after cancellation"
+                  );
                 }
               } catch (error) {
                 throw new Error("Failed to retrieve closed position: " + error);
@@ -1312,7 +1332,9 @@ export const closeTradingPosition = async (
       setTimeout(() => {
         channel.unsubscribe();
         reject(
-          new Error("Trade cancellation timeout - job took too long to complete")
+          new Error(
+            "Trade cancellation timeout - job took too long to complete"
+          )
         );
       }, 5 * 60 * 1000);
     });
@@ -1361,7 +1383,9 @@ export const getTradingHistory = async (
     console.log("🌐 Making API call to trading history:", endpoint);
 
     // Use the authenticated API client with new endpoint
-    const result = await apiClient.get<ApiResponse<PaginatedResponse<PositionHistory>>>(endpoint);
+    const result = await apiClient.get<
+      ApiResponse<PaginatedResponse<PositionHistory>>
+    >(endpoint);
 
     console.log("📡 Trading history API response received:", result.success);
 
@@ -1381,15 +1405,20 @@ export const getTradingHistory = async (
       exitPrice: history.exit_price || null,
       currentPrice: history.exit_price || history.entry_price || 0,
       pnl: history.pnl || 0,
-      pnlPercentage: history.pnl && history.entry_price ? 
-        ((history.pnl / (history.quantity * history.entry_price)) * 100) : 0,
+      pnlPercentage:
+        history.pnl && history.entry_price
+          ? (history.pnl / (history.quantity * history.entry_price)) * 100
+          : 0,
       leverage: history.leverage,
       liquidationPrice: 0, // Not provided in PositionHistory
-      marginUsed: (history.quantity * (history.entry_price || 0)) / history.leverage,
+      marginUsed:
+        (history.quantity * (history.entry_price || 0)) / history.leverage,
       openedAt: history.created_at,
       closedAt: history.closed_at || null,
-      duration: history.closed_at ? 
-        new Date(history.closed_at).getTime() - new Date(history.created_at).getTime() : 0,
+      duration: history.closed_at
+        ? new Date(history.closed_at).getTime() -
+          new Date(history.created_at).getTime()
+        : 0,
       fees: history.fees || 0,
       points: 0, // Not provided in PositionHistory
     }));
@@ -1414,7 +1443,9 @@ export const getTradingHistoryPaginated = async (
       endpoint += `&status=${status}`;
     }
 
-    const result = await apiClient.get<ApiResponse<PaginatedResponse<PositionHistory>>>(endpoint);
+    const result = await apiClient.get<
+      ApiResponse<PaginatedResponse<PositionHistory>>
+    >(endpoint);
 
     if (!result.success) {
       throw new Error(result.error || "Failed to get trading history");
@@ -1431,15 +1462,20 @@ export const getTradingHistoryPaginated = async (
       exitPrice: history.exit_price || null,
       currentPrice: history.exit_price || history.entry_price || 0,
       pnl: history.pnl || 0,
-      pnlPercentage: history.pnl && history.entry_price ? 
-        ((history.pnl / (history.quantity * history.entry_price)) * 100) : 0,
+      pnlPercentage:
+        history.pnl && history.entry_price
+          ? (history.pnl / (history.quantity * history.entry_price)) * 100
+          : 0,
       leverage: history.leverage,
       liquidationPrice: 0,
-      marginUsed: (history.quantity * (history.entry_price || 0)) / history.leverage,
+      marginUsed:
+        (history.quantity * (history.entry_price || 0)) / history.leverage,
       openedAt: history.created_at,
       closedAt: history.closed_at || null,
-      duration: history.closed_at ? 
-        new Date(history.closed_at).getTime() - new Date(history.created_at).getTime() : 0,
+      duration: history.closed_at
+        ? new Date(history.closed_at).getTime() -
+          new Date(history.created_at).getTime()
+        : 0,
       fees: history.fees || 0,
       points: 0,
     }));
@@ -1452,7 +1488,7 @@ export const getTradingHistoryPaginated = async (
       has_more: result.data!.has_more,
     };
   } catch (error) {
-    console.error('Error getting paginated trading history:', error);
+    console.error("Error getting paginated trading history:", error);
     throw error;
   }
 };
