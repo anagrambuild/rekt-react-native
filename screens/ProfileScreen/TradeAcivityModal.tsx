@@ -57,7 +57,7 @@ export const TradeActivityModal = () => {
 
     // Map DetailedTradeData to HomeContext Trade format
     const newTrade = {
-      side: selectedTrade.type, // 'long' | 'short'
+      side: selectedTrade.type.toUpperCase() as "LONG" | "SHORT",
       entryPrice: selectedTrade.entryPrice,
       amount: selectedTrade.amount,
       leverage: selectedTrade.leverage,

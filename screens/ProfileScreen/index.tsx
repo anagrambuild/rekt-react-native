@@ -83,8 +83,8 @@ export const ProfileScreen = () => {
 
   // Map Position to TradeActivityCard props
   const mapPositionToTradeCard = (position: Position) => {
-    // Extract symbol from asset (e.g., "SOL-PERP" -> "sol")
-    const symbol = position.asset.split("-")[0].toLowerCase() as
+    // Extract symbol from market (e.g., "SOL" -> "sol")
+    const symbol = position.market.toLowerCase() as
       | "btc"
       | "eth"
       | "sol";
@@ -101,7 +101,7 @@ export const ProfileScreen = () => {
       return `${seconds} ${t(seconds !== 1 ? "SECS" : "SEC")}`;
     };
     return {
-      type: position.direction as "long" | "short",
+      type: position.direction.toLowerCase() as "long" | "short",
       symbol,
       amount: position.marginUsed,
       leverage: position.leverage,

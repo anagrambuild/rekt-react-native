@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -9,13 +9,9 @@ import {
 
 import RektLogo from "@/assets/images/rekt-logo.svg";
 import { useAppContext, useAuth, useWallet } from "@/contexts";
-import { useBiometrics, useImagePicker } from "@/hooks";
+import { useBiometrics, useImagePicker, useUsernameValidation } from "@/hooks";
 import { LoadingScreen } from "@/screens/LoadingScreen";
-import {
-  checkUsernameAvailabilityPublic,
-  createUser,
-  uploadAvatar,
-} from "@/utils/backendApi";
+import { useCreateUserMutation } from "@/utils/queryUtils";
 import { supabase } from "@/utils/supabase";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -31,7 +27,6 @@ import {
   Title1,
 } from "./common";
 import { Image } from "expo-image";
-import { router } from "expo-router";
 import { useTranslation } from "react-i18next";
 import styled, { DefaultTheme, useTheme } from "styled-components/native";
 import { Toast } from "toastify-react-native";
@@ -42,11 +37,7 @@ interface SignUpFormProps {
 
 export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
   const { t } = useTranslation();
-  const {
-    signUp,
-    //  signOut,
-    loading: authLoading,
-  } = useAuth();
+  const { sendOTP, verifyOTP, loading: authLoading } = useAuth();
   const { publicKey, connected } = useWallet();
   const { takePhoto, pickFromLibrary, isLoading } = useImagePicker();
   const { isSupported, isEnrolled, biometricType, enableBiometrics } =
@@ -54,74 +45,66 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
   const theme = useTheme();
   const { signUpForm, setSignUpForm, setUserProfile } = useAppContext();
 
+  // Use the unified username validation hook
+  const usernameValidation = useUsernameValidation(signUpForm.username);
+
+  // React Query mutation for user creation
+  const createUserMutation = useCreateUserMutation({
+    onSuccess: user => {
+      console.log("✅ User created successfully via React Query");
+      console.log("👤 User:", user);
+
+      // Show success toast
+      Toast.show({
+        text1: t("Account Created Successfully"),
+        text2: t("Welcome to Rekt!"),
+        type: "success",
+      });
+
+      // Update app state with the newly created user
+      setUserProfile(user);
+
+      // Clear the form after successful creation
+      setSignUpForm({
+        username: "",
+        email: "",
+        profileImage: null,
+        enableBiometrics: false,
+      });
+
+      // Clear any error states
+      setEmailError("");
+      setOtpError("");
+      setOtpSent(false);
+      setOtp("");
+
+      onComplete?.();
+    },
+    onError: error => {
+      console.error("❌ User creation failed:", error);
+      Toast.show({
+        text1: t("Error"),
+        text2:
+          error instanceof Error ? error.message : t("Account creation failed"),
+        type: "error",
+      });
+    },
+  });
+
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [usernameError, setUsernameError] = useState("");
   const [emailError, setEmailError] = useState("");
-  const [passwordError, setPasswordError] = useState("");
-  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(
-    null
-  );
-
-  // Debounce username checking
-  useEffect(() => {
-    const timeoutId = setTimeout(async () => {
-      const username = signUpForm.username;
-
-      if (!username || username.length < 3) {
-        setUsernameAvailable(null);
-        return;
-      }
-
-      // Check username format and length first
-      if (!/^[a-zA-Z0-9_]+$/.test(username)) {
-        setUsernameError(
-          t("Username can only contain letters, numbers, and underscores")
-        );
-        setUsernameAvailable(false);
-        return;
-      }
-
-      if (username.length < 3 || username.length > 20) {
-        setUsernameError(t("Username must be between 3-20 characters"));
-        setUsernameAvailable(false);
-        return;
-      }
-
-      try {
-        const result = await checkUsernameAvailabilityPublic(username);
-        setUsernameAvailable(result.available);
-
-        if (!result.available) {
-          setUsernameError(t("Username is already taken"));
-        } else {
-          setUsernameError("");
-        }
-      } catch (error) {
-        console.error("Username check failed:", error);
-        setUsernameAvailable(null);
-      }
-    }, 500); // 500ms debounce
-
-    return () => clearTimeout(timeoutId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [signUpForm.username]);
+  const [otpError, setOtpError] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp] = useState("");
 
   const handleUsernameChange = (text: string) => {
     setSignUpForm(prev => ({ ...prev, username: text }));
-    if (usernameError) setUsernameError("");
-    // Reset username validation state when user types
-    setUsernameAvailable(null);
   };
 
   const emailInputRef = useRef<TextInput>(null);
-  const passwordInputRef = useRef<TextInput>(null);
 
   const onNext = () => {
     emailInputRef.current?.focus();
-  };
-
-  const onEmailNext = () => {
-    passwordInputRef.current?.focus();
   };
 
   const handleEmailChange = (text: string) => {
@@ -139,18 +122,9 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
     }
   };
 
-  const handlePasswordChange = (text: string) => {
-    setSignUpForm(prev => ({ ...prev, password: text }));
-
-    // Clear previous error
-    if (passwordError) setPasswordError("");
-
-    // Validate password if not empty
-    if (text.trim() && text.length > 0) {
-      if (text.length < 5) {
-        setPasswordError(t("Password must be at least 5 characters"));
-      }
-    }
+  const handleOtpChange = (text: string) => {
+    setOtp(text);
+    if (otpError) setOtpError("");
   };
 
   const handleImagePicker = () => {
@@ -179,19 +153,18 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
 
   const validateForm = () => {
     if (!signUpForm.username.trim()) {
-      setUsernameError(t("Username is required"));
       return false;
     }
     if (!signUpForm.email.trim()) {
       setEmailError(t("Email is required"));
       return false;
     }
-    if (!signUpForm.password.trim()) {
-      setPasswordError(t("Password is required"));
+    if (otpSent && !otp.trim()) {
+      setOtpError(t("OTP is required"));
       return false;
     }
-    if (signUpForm.password.length < 5) {
-      setPasswordError(t("Password must be at least 5 characters"));
+    if (otpSent && otp.length !== 6) {
+      setOtpError(t("OTP must be 6 digits"));
       return false;
     }
     return true;
@@ -210,8 +183,43 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
     }
   };
 
-  // TODO: Add this back when backend is ready
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const handleSendOTP = async () => {
+    if (!signUpForm.email.trim()) {
+      setEmailError(t("Email is required"));
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(signUpForm.email)) {
+      setEmailError(t("Please enter a valid email address"));
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const result = await sendOTP(signUpForm.email);
+      if (result.success) {
+        setOtpSent(true);
+        Toast.show({
+          text1: t("OTP Sent"),
+          text2: t("Check your email for the verification code"),
+          type: "success",
+        });
+      } else {
+        throw new Error(result.error || "Failed to send OTP");
+      }
+    } catch (error) {
+      console.error("Send Code error:", error);
+      Toast.show({
+        text1: t("Error"),
+        text2: t("Failed to send OTP. Please try again."),
+        type: "error",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
@@ -225,52 +233,33 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
       return;
     }
 
-    // Check username length and format before API call
-    if (signUpForm.username.length < 3 || signUpForm.username.length > 20) {
-      Toast.show({
-        text1: t("Invalid Username"),
-        text2: t("Username must be between 3-20 characters"),
-        type: "error",
-      });
+    // Check required validation first
+    if (!usernameValidation.validateRequired()) {
       return;
     }
 
-    if (!/^[a-zA-Z0-9_]+$/.test(signUpForm.username)) {
-      Toast.show({
-        text1: t("Invalid Username"),
-        text2: t("Username can only contain letters, numbers, and underscores"),
-        type: "error",
-      });
-      return;
-    }
-
-    // Validate email format if provided (email is optional)
-    if (signUpForm.email.trim() && signUpForm.email.length > 0) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(signUpForm.email)) {
+    // Check username validation using the hook
+    if (!usernameValidation.isValid) {
+      if (usernameValidation.isChecking) {
         Toast.show({
-          text1: t("Invalid Email"),
-          text2: t("Please enter a valid email address"),
+          text1: t("Please wait"),
+          text2: t("Checking username availability..."),
+          type: "info",
+        });
+        return;
+      }
+      if (usernameValidation.hasError) {
+        Toast.show({
+          text1: t("Invalid Username"),
+          text2: usernameValidation.error,
           type: "error",
         });
         return;
       }
-    }
-
-    // Check username availability before proceeding
-    try {
-      const usernameCheck = await checkUsernameAvailabilityPublic(
-        signUpForm.username
-      );
-      if (!usernameCheck.available) {
-        setUsernameError(t("Username is already taken"));
-        return;
-      }
-    } catch (error) {
-      console.error("Username check failed:", error);
+      // Generic validation failure
       Toast.show({
-        text1: t("Error"),
-        text2: t("Failed to verify username availability. Please try again."),
+        text1: t("Invalid Username"),
+        text2: t("Please check your username and try again"),
         type: "error",
       });
       return;
@@ -278,126 +267,60 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
 
     setIsSubmitting(true);
     try {
-      // Step 1: Create Supabase user account
-      const supabaseResult = await signUp(
-        signUpForm.email,
-        signUpForm.password
-      );
-      console.log("supabaseResult", supabaseResult);
-
-      // Log the auth token details
-      if (supabaseResult.success) {
-        console.log("✅ Supabase auth successful");
-        console.log("User ID:", supabaseResult.user?.id);
-        console.log("User email:", supabaseResult.user?.email);
-
-        // Get the current session to access tokens
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        if (session) {
-          console.log("Access token:", session.access_token);
-          console.log("Refresh token:", session.refresh_token);
-          console.log("Session user ID:", session.user.id);
-        } else {
-          console.log("No session available yet");
-        }
-      } else {
-        console.log("❌ Supabase auth failed:", supabaseResult.error);
-      }
-      if (!supabaseResult.success) {
-        throw new Error(supabaseResult.error || "Supabase signup failed");
+      // Step 1: Verify OTP and authenticate with Supabase
+      const otpResult = await verifyOTP(signUpForm.email, otp);
+      if (!otpResult.success) {
+        throw new Error(otpResult.error || "OTP verification failed");
       }
 
-      // Step 2: Swig account creation is now handled by the backend automatically
+      console.log("✅ OTP verification successful");
 
-      // Step 3: Upload avatar if provided
-      let avatarUrl: string | undefined;
-      if (signUpForm.profileImage) {
-        try {
-          avatarUrl = await uploadAvatar(
-            signUpForm.profileImage,
-            `avatar_${Date.now()}.jpg`
-          );
-        } catch (avatarError) {
-          console.warn(
-            "⚠️ Avatar upload failed, continuing without avatar:",
-            avatarError
-          );
-          // Continue without avatar rather than failing the entire process
-        }
+      // DEBUG: Check session after OTP verification
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      console.log("🔑 Session after OTP:", {
+        hasSession: !!session,
+        hasAccessToken: !!session?.access_token,
+        userId: session?.user?.id,
+        tokenPreview: session?.access_token?.substring(0, 50) + "...",
+      });
+
+      // LOG FULL TOKEN
+      console.log("🎫 FULL JWT TOKEN:", session?.access_token);
+
+      if (!session?.access_token) {
+        throw new Error("No session found after OTP verification");
       }
 
-      // Step 4: Create user in database
-      // The new backend will create the Swig account automatically
-      if (!publicKey) {
-        throw new Error(
-          "Wallet not connected. Please connect your wallet first."
-        );
-      }
-
-      // Step 5: Store biometric preference if enabled
+      // Step 2: Store biometric preference if enabled
       if (signUpForm.enableBiometrics) {
         await AsyncStorage.setItem("biometric_enabled", "true");
       } else {
         await AsyncStorage.setItem("biometric_enabled", "false");
       }
 
-      // Step 6: Create user in database
-      const user = await createUser({
+      // Step 3: Create user in database using React Query mutation
+      createUserMutation.mutate({
         username: signUpForm.username,
         email: signUpForm.email,
-        walletAddress: publicKey.toBase58(), // Pass the connected wallet address
-        profileImage: avatarUrl, // Use uploaded avatar URL instead of local path
+        walletAddress: publicKey.toBase58(),
+        profileImage: signUpForm.profileImage || undefined,
       });
-
-      // Log the successful user creation response
-      console.log("✅ User created successfully via backend API");
-      console.log("👤 User ID:", user.id);
-      console.log("👤 Username:", user.username);
-      console.log("👤 Email:", user.email);
-      console.log("👤 Swig Wallet Address:", user.swigWalletAddress);
-      console.log("👤 Profile Image:", user.profileImage);
-      console.log("👤 Created At:", user.createdAt);
-      console.log("👤 Updated At:", user.updatedAt);
-
-      // Show success toast
-      Toast.show({
-        text1: t("Account Created Successfully"),
-        text2: t("Welcome to Rekt!"),
-        type: "success",
-      });
-
-      // Update app state with the newly created user
-      setUserProfile(user);
-
-      // Clear the form after successful creation
-      setSignUpForm({
-        username: "",
-        email: "",
-        password: "",
-        profileImage: null,
-        enableBiometrics: false,
-      });
-
-      // Clear any error states
-      setUsernameError("");
-      setEmailError("");
-      setPasswordError("");
-      setUsernameAvailable(null);
-
-      setIsSubmitting(false);
-      onComplete?.();
     } catch (error) {
-      console.error("❌ Account creation process failed:", error);
+      console.error("❌ OTP verification failed:", error);
+      Toast.show({
+        text1: t("Error"),
+        text2:
+          error instanceof Error ? error.message : t("OTP verification failed"),
+        type: "error",
+      });
       setIsSubmitting(false);
     }
   };
 
-  const goToApp = () => router.push("/(tabs)");
-
-  // Show loading screen when submitting (after user returns from Phantom)
-  if (isSubmitting) {
+  // Show loading screen when submitting or creating user
+  if (isSubmitting || createUserMutation.isPending) {
     return (
       <>
         <LoadingScreen />
@@ -454,43 +377,56 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
                   onSubmitEditing={onNext}
                 />
               </Column>
-              {usernameAvailable === true && (
-                <SuccessIndicator style={{ marginBottom: 12 }}>
-                  ✓
-                </SuccessIndicator>
+              {usernameValidation.isChecking && (
+                <ActivityIndicator
+                  size="small"
+                  color={theme.colors.primary}
+                  style={{ marginBottom: 12 }}
+                />
               )}
-              {usernameAvailable === false && (
+              {usernameValidation.isAvailable === true &&
+                !usernameValidation.hasError && (
+                  <SuccessIndicator style={{ marginBottom: 12 }}>
+                    ✓
+                  </SuccessIndicator>
+                )}
+              {(usernameValidation.isAvailable === false ||
+                usernameValidation.hasError) && (
                 <ErrorIndicator style={{ marginBottom: 12 }}>✗</ErrorIndicator>
               )}
             </Row>
-            {usernameError ? <ErrorText>{usernameError}</ErrorText> : null}
+            {usernameValidation.hasError ? (
+              <ErrorText>{usernameValidation.error}</ErrorText>
+            ) : null}
 
             {/* Email Input */}
             <Input
               label={t("Email Address")}
-              placeholder={t("Enter your email (optional)")}
+              placeholder={t("Enter your email")}
               value={signUpForm.email}
               onChangeText={handleEmailChange}
               keyboardType="email-address"
-              textContentType="emailAddress"
-              returnKeyType="next"
-              onSubmitEditing={onEmailNext}
+              returnKeyType="done"
+              onSubmitEditing={Keyboard.dismiss}
               ref={emailInputRef}
             />
             {emailError ? <ErrorText>{emailError}</ErrorText> : null}
 
-            {/* Password Input */}
-            <Input
-              label={t("Password")}
-              placeholder={t("Enter your password")}
-              value={signUpForm.password}
-              onChangeText={handlePasswordChange}
-              secureTextEntry
-              returnKeyType="done"
-              onSubmitEditing={Keyboard.dismiss}
-              ref={passwordInputRef}
-            />
-            {passwordError ? <ErrorText>{passwordError}</ErrorText> : null}
+            {/* OTP Input - only show after OTP is sent */}
+            {otpSent && (
+              <>
+                <Input
+                  label={t("Verification Code")}
+                  placeholder={t("Enter 6-digit code")}
+                  value={otp}
+                  onChangeText={handleOtpChange}
+                  keyboardType="numeric"
+                  returnKeyType="done"
+                  onSubmitEditing={Keyboard.dismiss}
+                />
+                {otpError ? <ErrorText>{otpError}</ErrorText> : null}
+              </>
+            )}
 
             {/* Biometric Switch */}
             {isSupported && isEnrolled && (
@@ -525,22 +461,37 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
           onPress={async () => {
             try {
               await signOut();
-              console.log('✅ User signed out successfully');
+              console.log("✅ User signed out successfully");
             } catch (error) {
-              console.error('❌ Error signing out:', error);
+              console.error("❌ Error signing out:", error);
             }
           }}
         >
-          {t('Sign Out')}
+          {t("Sign Out")}
         </PrimaryButton> */}
 
         {/* Submit Button */}
         <PrimaryButton
-          onPress={goToApp}
-          disabled={isSubmitting || authLoading}
+          onPress={otpSent ? handleSubmit : handleSendOTP}
+          disabled={
+            isSubmitting ||
+            authLoading ||
+            createUserMutation.isPending ||
+            (!otpSent &&
+              (!signUpForm.email.trim() ||
+                usernameValidation.isEmpty ||
+                !usernameValidation.isValid)) ||
+            (otpSent && !otp.trim())
+          }
           style={{ marginTop: 24 }}
         >
-          {isSubmitting ? t("Creating Account...") : t("Complete Sign Up")}
+          {isSubmitting || createUserMutation.isPending
+            ? createUserMutation.isPending
+              ? t("Creating Account...")
+              : t("Sending OTP...")
+            : otpSent
+            ? t("Complete Sign Up")
+            : t("Send Code")}
         </PrimaryButton>
       </Column>
     </FormContainer>

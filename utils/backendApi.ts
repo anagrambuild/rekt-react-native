@@ -21,8 +21,20 @@ export interface UserApiResponse {
   };
 }
 
-export interface UsernameCheckApiResponse {
+export interface UsernameAvailabilityResponse {
+  username: string;
   available: boolean;
+}
+
+export interface UserExt {
+  id: string;
+  user_id: string;
+  username: string;
+  non_custodial_wallet_address: string | null;
+  swig_address: string | null;
+  avatar_url: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface AvatarUploadApiResponse {
@@ -84,24 +96,94 @@ export const SUPPORTED_TOKENS = {
 
 export type SupportedToken = keyof typeof SUPPORTED_TOKENS;
 
+// Pyth Network price feed IDs
+const PYTH_PRICE_IDS = {
+  btc: "0xe62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43", // BTC/USD
+  eth: "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace", // ETH/USD
+  sol: "0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d", // SOL/USD
+} as const;
+
+// Price IDs without 0x prefix for matching API responses
+const PYTH_PRICE_IDS_NO_PREFIX = {
+  btc: "e62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43", // BTC/USD
+  eth: "ff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace", // ETH/USD
+  sol: "ef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d", // SOL/USD
+} as const;
+
+interface PythPriceData {
+  id: string;
+  price: {
+    price: string;
+    conf: string;
+    expo: number;
+    publish_time: number;
+  };
+  ema_price: {
+    price: string;
+    conf: string;
+    expo: number;
+    publish_time: number;
+  };
+}
+
+interface PythResponse {
+  binary: {
+    encoding: string;
+    data: string[];
+  };
+  parsed: PythPriceData[];
+}
+
 export const fetchTokenPrices = async (
   tokens: SupportedToken[] = ["sol", "eth", "btc"]
 ): Promise<Partial<Record<SupportedToken, TokenPrice>>> => {
   try {
-    // Use the authenticated API client instead of raw fetch
-    const data: BackendMarketResponse = await apiClient.get("/api/markets");
+    // Build the Pyth Hermes API URL with price IDs for requested tokens
+    const priceIds = tokens.map(token => PYTH_PRICE_IDS[token]).filter(Boolean);
+    const idsParams = priceIds.map(id => `ids[]=${id}`).join("&");
+    const pythUrl = `https://hermes.pyth.network/v2/updates/price/latest?${idsParams}`;
 
-    if (!data.success || !data.data) {
-      throw new Error("Invalid response format from backend");
+    const response = await fetch(pythUrl, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `Pyth API error: ${response.status} ${response.statusText}`
+      );
+    }
+
+    const data: PythResponse = await response.json();
+
+    if (!data.parsed || !Array.isArray(data.parsed)) {
+      throw new Error("Invalid response format from Pyth API");
     }
 
     const result: Partial<Record<SupportedToken, TokenPrice>> = {};
 
-    tokens.forEach(token => {
-      const marketKey = `${token.toUpperCase()}-PERP`;
-      const marketData = data.data.find(market => market.symbol === marketKey);
+    // Map Pyth price data to our TokenPrice format
+    data.parsed.forEach(priceData => {
+      // Find which token this price ID corresponds to (without 0x prefix)
+      const token = Object.entries(PYTH_PRICE_IDS_NO_PREFIX).find(
+        ([, priceId]) => priceId === priceData.id
+      )?.[0] as SupportedToken;
 
-      if (marketData) {
+      if (token && tokens.includes(token)) {
+        // Convert price from Pyth format (price * 10^expo) to decimal
+        const price =
+          parseFloat(priceData.price.price) *
+          Math.pow(10, priceData.price.expo);
+        const confidence =
+          parseFloat(priceData.price.conf) * Math.pow(10, priceData.price.expo);
+
+        // Calculate a mock 24h change (we'll use confidence as a proxy for now)
+        // In a real implementation, you'd need historical data or a different endpoint
+        const mockChange24h =
+          (confidence / price) * 100 * (Math.random() > 0.5 ? 1 : -1);
+
         result[token] = {
           id: SUPPORTED_TOKENS[token],
           symbol: token.toUpperCase(),
@@ -111,20 +193,21 @@ export const fetchTokenPrices = async (
               : token === "eth"
               ? "Ethereum"
               : "Bitcoin",
-          current_price: marketData.price,
-          price_change_24h: marketData.change24h || 0,
-          price_change_percentage_24h: marketData.change24h || 0,
-          market_cap: 0, // Not provided by backend
-          total_volume: marketData.volume24h || 0,
-          last_updated: data.timestamp,
+          current_price: price,
+          price_change_24h: mockChange24h,
+          price_change_percentage_24h: mockChange24h,
+          market_cap: 0, // Not provided by Pyth
+          total_volume: 0, // Not provided by Pyth
+          last_updated: new Date(
+            priceData.price.publish_time * 1000
+          ).toISOString(),
         };
       }
     });
 
     return result;
   } catch (error) {
-    // TODO: Add this back when backend is ready
-    // console.error('❌ Error fetching token prices:', error);
+    console.error("❌ Error fetching token prices from Pyth:", error);
     throw error;
   }
 };
@@ -165,7 +248,7 @@ export const fetchHistoricalData = async (
   token: SupportedToken,
   timeframe: SupportedTimeframe = "1m"
 ): Promise<ChartDataPoint[]> => {
-  // Generate dynamic mock historical data based on real current price from backend
+  // Generate dynamic mock historical data based on real current price from Pyth
   const currentPrices = await fetchTokenPrices([token]);
   const currentPrice = currentPrices[token]?.current_price || 100;
 
@@ -273,31 +356,110 @@ export interface UsernameCheckResponse {
   available: boolean;
 }
 
+// NoCap Backend Types
+export interface JobResponse {
+  job_id: string;
+  status: string;
+  message: string;
+}
+
+export interface JobStatusResponse {
+  job_id: string;
+  status: "queued" | "processing" | "completed" | "failed";
+  message: string;
+  result?: any;
+  error?: string;
+}
+
+export interface TradeJobResponse {
+  job_id: string;
+  user_id: string;
+  status: string;
+  message: string;
+  position_id?: string;
+  transaction_signature?: string;
+  error?: string;
+}
+
+export interface CurrentPositionsResponse {
+  positions: Position[];
+  total_value?: number;
+  total_pnl?: number;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  offset: number;
+  limit: number;
+  has_more: boolean;
+}
+
+export interface PositionHistory {
+  id: string;
+  user_id: string;
+  market: string; // Backend returns "SOL", "BTC", "ETH"
+  trade_type: string; // Backend returns "LONG", "SHORT"
+  quantity: number;
+  entry_price?: number;
+  exit_price?: number;
+  leverage: number;
+  status: string;
+  pnl?: number;
+  fees?: number;
+  created_at: string;
+  updated_at: string;
+  closed_at?: string;
+}
+
+export interface CreateUserJobRequest {
+  user_id: string;
+  username: string;
+  wallet_address?: string;
+}
+
+export interface CancelTradeRequest {
+  user_id: string;
+  position_id: string;
+}
+
+export interface UpdateAvatarRequest {
+  avatar_url: string;
+}
+
 // Public username check that doesn't require authentication
 export const checkUsernameAvailabilityPublic = async (
   username: string
 ): Promise<UsernameCheckResponse> => {
   try {
-    // Use direct fetch for public endpoints that don't require authentication
-    const url = `${apiClient.getBaseURL()}/api/auth/check-username`;
+    // Updated URL path and method for nocap-backend
+    const url = `${apiClient.getBaseURL()}/api/users/username/${encodeURIComponent(
+      username
+    )}/availability`;
     console.log("🌐 Using API URL:", url);
 
     const response = await fetch(url, {
-      method: "POST",
+      method: "GET", // Changed from POST
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ username }),
+      // No body needed since username is in URL
     });
 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
-    const data: UsernameCheckApiResponse = await response.json();
+    // Updated response structure handling
+    const data: ApiResponse<UsernameAvailabilityResponse> =
+      await response.json();
+
+    if (!data.success) {
+      throw new Error(data.error || "Failed to check username availability");
+    }
 
     return {
-      available: data.available,
+      available: data.data!.available,
     };
   } catch (error) {
     console.error("❌ Username check error (public):", error);
@@ -307,20 +469,30 @@ export const checkUsernameAvailabilityPublic = async (
 
 export const getUserByUserId = async (userId: string): Promise<User | null> => {
   try {
-    // Use the authenticated API client instead of raw fetch
-    const result = await apiClient.get<UserApiResponse>(
-      `/api/users/profile/${userId}`
+    // Updated URL path for nocap-backend
+    const result = await apiClient.get<ApiResponse<UserExt>>(
+      `/api/users/${userId}`
     );
 
-    // Map backend response to frontend User interface
+    if (!result.success || !result.data) {
+      throw new Error(result.error || "Failed to get user");
+    }
+
+    // Get email from local Supabase session since it's not in UserExt
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    const email = session?.user?.email || "";
+
+    // Map backend UserExt response to frontend User interface
     return {
-      id: result.user.id,
-      username: result.user.username,
-      email: result.user.email,
-      profileImage: result.user.avatar_url,
-      swigWalletAddress: result.user.swig_wallet_address,
-      createdAt: result.user.joined_at || new Date().toISOString(),
-      updatedAt: result.user.updated_at || new Date().toISOString(),
+      id: result.data.user_id, // Note: UserExt has separate id and user_id
+      username: result.data.username,
+      email: email, // Get from local session
+      profileImage: result.data.avatar_url || undefined,
+      swigWalletAddress: result.data.swig_address || undefined,
+      createdAt: result.data.created_at,
+      updatedAt: result.data.updated_at,
     };
   } catch (error) {
     console.error("Error fetching user by profile ID:", error);
@@ -328,61 +500,237 @@ export const getUserByUserId = async (userId: string): Promise<User | null> => {
   }
 };
 
-export const createUser = async (
-  userData: CreateUserRequest
-): Promise<User> => {
+// Job-based user creation for NoCap backend
+export const createUserJob = async (
+  userData: CreateUserJobRequest
+): Promise<JobResponse> => {
   try {
-    // Map frontend data structure to new backend expected structure
-    const backendUserData = {
-      username: userData.username,
-      email: userData.email || "",
-      avatar_url: userData.profileImage || "",
-      wallet_address: userData.walletAddress,
-    };
+    console.log("📤 Sending user creation request:", {
+      endpoint: "/api/users",
+      data: userData,
+    });
 
-    const result = await apiClient.post<{
-      success: boolean;
-      user: any;
-      message: string;
-    }>(`/api/auth/create-account`, backendUserData);
+    const result = await apiClient.post<ApiResponse<JobResponse>>(
+      `/api/users`,
+      userData
+    );
 
-    // Map backend response to frontend User interface
-    // Backend returns: { success: true, user: { id, username, email, swig_wallet_address, ... }, message, driftAccount }
-    return {
-      id: result.user.id,
-      username: result.user.username,
-      email: result.user.email,
-      profileImage: result.user.avatar_url,
-      swigWalletAddress: result.user.swig_wallet_address,
-      createdAt: result.user.joined_at || new Date().toISOString(),
-      updatedAt: result.user.updated_at || new Date().toISOString(),
-    };
+    console.log("📥 User creation response:", result);
+
+    if (!result.success || !result.data) {
+      throw new Error(result.error || "Failed to create user job");
+    }
+
+    return result.data;
   } catch (error) {
-    console.error("Error creating user:", error);
+    console.error("Error creating user job:", error);
 
-    // Provide more specific error messages
-    if (error instanceof Error) {
-      if (error.name === "AbortError") {
-        throw new Error(
-          "Request timed out. Please check your internet connection and try again."
-        );
-      } else if (error.message.includes("Network request failed")) {
-        throw new Error(
-          "Network error. Please check if the backend server is running and accessible."
-        );
-      }
+    // Log more details about the error
+    if (error instanceof Error && error.message.includes("422")) {
+      console.error("🚨 422 Error Details - Request was:", userData);
     }
 
     throw error;
   }
 };
 
-// File upload types
-interface FileObject {
-  uri: string;
-  type: string;
-  name: string;
-}
+// Job-based trade placement for NoCap backend
+export const placeTradeJob = async (
+  tradeData: PlaceTradeRequest
+): Promise<TradeJobResponse> => {
+  try {
+    console.log("📤 Sending trade placement request:", {
+      endpoint: "/api/trades/place",
+      data: tradeData,
+    });
+
+    const result = await apiClient.post<ApiResponse<TradeJobResponse>>(
+      `/api/trades/place`,
+      tradeData
+    );
+
+    console.log("📥 Trade placement response:", result);
+
+    if (!result.success || !result.data) {
+      throw new Error(result.error || "Failed to place trade job");
+    }
+
+    return result.data;
+  } catch (error) {
+    console.error("Error placing trade job:", error);
+
+    // Log more details about the error
+    if (error instanceof Error && error.message.includes("422")) {
+      console.error("🚨 422 Error Details - Request was:", tradeData);
+    }
+
+    throw error;
+  }
+};
+
+// Job-based trade cancellation for NoCap backend
+export const cancelTradeJob = async (
+  cancelData: CancelTradeRequest
+): Promise<TradeJobResponse> => {
+  try {
+    console.log("📤 Sending trade cancellation request:", {
+      endpoint: "/api/trades/cancel",
+      data: cancelData,
+    });
+
+    const result = await apiClient.post<ApiResponse<TradeJobResponse>>(
+      `/api/trades/cancel`,
+      cancelData
+    );
+
+    console.log("📥 Trade cancellation response:", result);
+
+    if (!result.success || !result.data) {
+      throw new Error(result.error || "Failed to cancel trade job");
+    }
+
+    return result.data;
+  } catch (error) {
+    console.error("Error cancelling trade job:", error);
+
+    // Log more details about the error
+    if (error instanceof Error && error.message.includes("422")) {
+      console.error("🚨 422 Error Details - Request was:", cancelData);
+    }
+
+    throw error;
+  }
+};
+
+// Check job status
+export const getJobStatus = async (
+  jobId: string
+): Promise<JobStatusResponse> => {
+  try {
+    const result = await apiClient.get<ApiResponse<JobStatusResponse>>(
+      `/api/jobs/${jobId}`
+    );
+
+    if (!result.success || !result.data) {
+      throw new Error(result.error || "Failed to get job status");
+    }
+
+    return result.data;
+  } catch (error) {
+    console.error("Error getting job status:", error);
+    throw error;
+  }
+};
+
+// Complete user creation with realtime and avatar upload
+export const createUser = async (
+  userData: CreateUserRequest
+): Promise<User> => {
+  try {
+    // Get user ID from current session
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error("No authenticated user found");
+    }
+
+    // Step 1: Start user creation job
+    const jobResponse = await createUserJob({
+      user_id: user.id,
+      username: userData.username,
+      wallet_address: userData.walletAddress,
+    });
+
+    console.log("User creation job started:", jobResponse.job_id);
+
+    // Step 2: Set up realtime subscription for job completion
+    const userId = (await supabase.auth.getUser()).data.user?.id;
+    if (!userId) {
+      throw new Error("No authenticated user found");
+    }
+
+    return new Promise((resolve, reject) => {
+      const channel = supabase
+        .channel(`user:${userId}`)
+        .on("broadcast", { event: "user_created" }, async payload => {
+          console.log("🎉 User created successfully:", payload);
+
+          try {
+            // Step 3: Upload avatar if provided
+            if (userData.profileImage) {
+              try {
+                const avatarUrl = await uploadAvatar(
+                  userData.profileImage,
+                  `avatar_${Date.now()}.jpg`
+                );
+                await updateUserAvatar(avatarUrl);
+                console.log("✅ Avatar uploaded successfully");
+              } catch (avatarError) {
+                console.warn("⚠️ Avatar upload failed:", avatarError);
+                // Continue without avatar
+              }
+            }
+
+            // Step 4: Get the created user data directly from API
+            try {
+              const result = await apiClient.get<ApiResponse<UserExt>>(
+                `/api/users/${userId}`
+              );
+
+              if (!result.success || !result.data) {
+                throw new Error(result.error || "Failed to get user");
+              }
+
+              // Get email from local Supabase session since it's not in UserExt
+              const {
+                data: { session },
+              } = await supabase.auth.getSession();
+              const email = session?.user?.email || "";
+
+              // Map backend UserExt response to frontend User interface
+              const user: User = {
+                id: result.data.user_id,
+                username: result.data.username,
+                email: email,
+                profileImage: result.data.avatar_url || undefined,
+                swigWalletAddress: result.data.swig_address || undefined,
+                createdAt: result.data.created_at,
+                updatedAt: result.data.updated_at,
+              };
+
+              channel.unsubscribe();
+              resolve(user);
+            } catch (error) {
+              throw new Error("Failed to retrieve created user: " + error);
+            }
+          } catch (error) {
+            channel.unsubscribe();
+            reject(error);
+          }
+        })
+        .on("broadcast", { event: "user_creation_failed" }, payload => {
+          console.log("❌ User creation failed:", payload);
+          channel.unsubscribe();
+          reject(new Error(payload.error || "User creation failed"));
+        })
+        .subscribe(status => {
+          console.log("Realtime subscription status:", status);
+        });
+
+      // Set up timeout for job completion (5 minutes)
+      setTimeout(() => {
+        channel.unsubscribe();
+        reject(
+          new Error("User creation timeout - job took too long to complete")
+        );
+      }, 5 * 60 * 1000);
+    });
+  } catch (error) {
+    console.error("Error in user creation flow:", error);
+    throw error;
+  }
+};
 
 // Avatar Upload Function
 export interface AvatarUploadResponse {
@@ -397,58 +745,60 @@ export const uploadAvatar = async (
   fileName: string
 ): Promise<string> => {
   try {
-    // Create FormData for file upload
-    const formData = new FormData();
+    console.log("📤 Uploading avatar to Supabase storage...");
+    console.log("📷 Image URI:", imageUri);
 
-    // Add the image file to FormData
-    const fileObject: FileObject = {
-      uri: imageUri,
-      type: "image/jpeg", // Backend accepts JPEG, PNG, WebP, GIF
-      name: fileName,
-    };
-
-    formData.append("avatar", fileObject as any); // FormData requires 'as any' for React Native
-
-    // For FormData uploads, we need to use fetch directly but with auth headers
-    // Get the auth token from Supabase
+    // Get current user ID for folder structure
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    const token = session?.access_token;
-
-    if (!token) {
-      throw new Error("No authentication token available");
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error("No authenticated user found");
     }
 
-    // For FormData uploads, we need to use fetch directly
-    const response = await fetch(
-      `${apiClient.getBaseURL()}/api/upload/avatar`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          // Don't set Content-Type header - let FormData set it with boundary
-        },
-        body: formData,
-      }
-    );
+    // Convert React Native file URI to ArrayBuffer for Supabase
+    const response = await fetch(imageUri);
+    const arrayBuffer = await response.arrayBuffer();
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        errorData.message ||
-          errorData.error ||
-          `HTTP error! status: ${response.status}`
-      );
+    console.log("📊 File size:", arrayBuffer.byteLength, "bytes");
+
+    // Generate unique filename with user folder structure
+    const fileExt = fileName.split(".").pop() || "jpg";
+    const uniqueFileName = `${user.id}/${Date.now()}-${Math.random()
+      .toString(36)
+      .substring(2)}.${fileExt}`;
+
+    console.log("📁 Upload path:", uniqueFileName);
+
+    // Upload to Supabase storage (full size)
+    const { data, error } = await supabase.storage
+      .from("avatars")
+      .upload(uniqueFileName, arrayBuffer, {
+        contentType: "image/jpeg",
+        upsert: false,
+      });
+
+    if (error) {
+      console.error("❌ Supabase upload error:", error);
+      throw new Error(`Supabase upload failed: ${error.message}`);
     }
 
-    const result: AvatarUploadResponse = await response.json();
+    console.log("✅ Upload successful:", data);
 
-    if (!result.success || !result.avatar_url) {
-      throw new Error(result.message || "Failed to upload avatar");
-    }
+    // Get public URL with transformation for 80x80 avatar
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from("avatars").getPublicUrl(data.path, {
+      transform: {
+        width: 80,
+        height: 80,
+        resize: "cover", // Crop to fit 80x80 maintaining aspect ratio
+        quality: 80,
+      },
+    });
 
-    return result.avatar_url;
+    console.log("✅ Avatar uploaded with transformation:", publicUrl);
+    return publicUrl;
   } catch (error) {
     console.error("Error uploading avatar:", error);
     throw error;
@@ -489,32 +839,70 @@ export const deleteAvatar = async (avatarUrl: string): Promise<void> => {
   }
 };
 
-// Update user profile using the correct backend endpoint
+// Update user avatar using the correct backend endpoint
+export const updateUserAvatar = async (avatarUrl: string): Promise<UserExt> => {
+  try {
+    console.log("📤 Updating avatar URL in backend:", avatarUrl);
+
+    const result = await apiClient.patch<ApiResponse<UserExt>>(
+      `/api/users/avatar`,
+      { avatar_url: avatarUrl }
+    );
+
+    if (!result.success || !result.data) {
+      throw new Error(result.error || "Failed to update avatar");
+    }
+
+    console.log("✅ Avatar URL updated in backend");
+    return result.data;
+  } catch (error) {
+    console.error("Error updating avatar:", error);
+    throw error;
+  }
+};
+
+// Update user profile - currently only supports avatar updates
 export const updateUserProfile = async (
   userId: string,
   userData: { username?: string; email?: string; avatar_url?: string }
 ): Promise<User> => {
   try {
-    // Use the authenticated API client instead of raw fetch
-    const result = await apiClient.put<ApiResponse<UserApiResponse>>(
-      `/api/users/profile/${userId}`,
-      userData
-    );
+    console.log("📤 Updating user profile:", { userId, userData });
 
-    if (!result.success) {
-      throw new Error(result.error || "Failed to update user profile");
+    // For now, only avatar updates are supported by the backend
+    if (userData.avatar_url !== undefined) {
+      const result = await updateUserAvatar(userData.avatar_url);
+
+      // Get email from local Supabase session since it's not in UserExt
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const email = session?.user?.email || "";
+
+      // Map backend UserExt response to frontend User interface
+      return {
+        id: result.user_id,
+        username: result.username,
+        email: email,
+        profileImage: result.avatar_url || undefined,
+        swigWalletAddress: result.swig_address || undefined,
+        createdAt: result.created_at,
+        updatedAt: result.updated_at,
+      };
     }
 
-    // Map backend response to frontend User interface
-    return {
-      id: result.data!.user.id,
-      username: result.data!.user.username,
-      email: result.data!.user.email,
-      profileImage: result.data!.user.avatar_url,
-      swigWalletAddress: result.data!.user.swig_wallet_address,
-      createdAt: result.data!.user.joined_at || new Date().toISOString(),
-      updatedAt: result.data!.user.updated_at || new Date().toISOString(),
-    };
+    // If no avatar update, just return current user data
+    if (userData.username) {
+      throw new Error("Username updates are not supported by the backend yet");
+    }
+
+    // Get current user data
+    const currentUser = await getUserByUserId(userId);
+    if (!currentUser) {
+      throw new Error("User not found");
+    }
+
+    return currentUser;
   } catch (error) {
     console.error("Error updating user profile:", error);
     throw error;
@@ -567,10 +955,21 @@ export interface TradingBalance {
   walletAddress: string;
 }
 
+export interface PlaceTradeRequest {
+  user_id: string;
+  market: string; // Backend expects "SOL", "BTC", "ETH" (not "SOL-PERP")
+  trade_type: "LONG" | "SHORT"; // Backend expects uppercase
+  quantity: number;
+  entry_price?: number;
+  take_profit_price?: number;
+  stop_loss_price?: number;
+  leverage: number;
+}
+
 export interface OpenPositionRequest {
   userId: string;
-  asset: "SOL-PERP" | "BTC-PERP" | "ETH-PERP";
-  direction: "long" | "short";
+  market: "SOL" | "BTC" | "ETH";
+  direction: "LONG" | "SHORT";
   amount: number;
   leverage: number;
 }
@@ -589,8 +988,8 @@ export interface InitializationResponse {
 
 export interface Position {
   id: string;
-  asset: string;
-  direction: "long" | "short";
+  market: string; // "SOL", "BTC", "ETH"
+  direction: "LONG" | "SHORT";
   status: string;
   size: number; // buying power (poisiton_size in supabase)
   entryPrice: number;
@@ -614,6 +1013,7 @@ export interface OpenPositionResponse {
   message: string;
 }
 
+// Legacy interface for backward compatibility
 export interface ClosePositionRequest {
   userId: string;
   positionId: string;
@@ -669,7 +1069,7 @@ export const getTradingBalance = async (
 
     return result.data!;
   } catch (error) {
-    console.error("Error getting trading balance:", error);
+    // console.error("Error getting trading balance:", error);
     throw error;
   }
 };
@@ -681,24 +1081,92 @@ export const getUSDCBalanceByUserId = async (
   return getTradingBalance(userId);
 };
 
-// Open a new trading position (returns transaction data for signing)
+// Open a new trading position using job-based system with realtime completion
 export const openTradingPosition = async (
   request: OpenPositionRequest
-): Promise<OpenPositionResponse> => {
+): Promise<Position> => {
   try {
-    // Use the authenticated API client instead of raw fetch
-    const result = await apiClient.post<OpenPositionResponse>(
-      `/api/trading/open`,
-      request
-    );
-
-    if (!result.success) {
-      throw new Error(result.message || "Failed to open position");
+    // Get user ID from current session
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error("No authenticated user found");
     }
 
-    return result;
+    // Use the new format directly - no conversion needed
+    const tradeRequest: PlaceTradeRequest = {
+      user_id: request.userId,
+      market: request.market,
+      trade_type: request.direction,
+      quantity: request.amount,
+      leverage: request.leverage,
+      // Optional fields can be added later for limit orders, TP/SL
+    };
+
+    // Step 1: Start trade placement job
+    const jobResponse = await placeTradeJob(tradeRequest);
+
+    console.log("Trade placement job started:", jobResponse.job_id);
+
+    // Step 2: Set up realtime subscription for job completion
+    const userId = (await supabase.auth.getUser()).data.user?.id;
+    if (!userId) {
+      throw new Error("No authenticated user found");
+    }
+
+    return new Promise((resolve, reject) => {
+      const channel = supabase
+        .channel(`trade:${userId}`)
+        .on("broadcast", { event: "trade_placed" }, async payload => {
+          console.log("🎉 Trade placed successfully:", payload);
+
+          try {
+            // Step 3: Get the created position data from the payload or fetch from API
+            if (payload.position) {
+              channel.unsubscribe();
+              resolve(payload.position as Position);
+            } else if (payload.position_id) {
+              // Fetch position details if only ID is provided
+              try {
+                const positions = await getOpenPositions(request.userId);
+                const newPosition = positions.find(p => p.id === payload.position_id);
+                if (newPosition) {
+                  channel.unsubscribe();
+                  resolve(newPosition);
+                } else {
+                  throw new Error("Position not found after creation");
+                }
+              } catch (error) {
+                throw new Error("Failed to retrieve created position: " + error);
+              }
+            } else {
+              throw new Error("No position data in trade completion payload");
+            }
+          } catch (error) {
+            channel.unsubscribe();
+            reject(error);
+          }
+        })
+        .on("broadcast", { event: "trade_placement_failed" }, payload => {
+          console.log("❌ Trade placement failed:", payload);
+          channel.unsubscribe();
+          reject(new Error(payload.error || "Trade placement failed"));
+        })
+        .subscribe(status => {
+          console.log("Realtime subscription status:", status);
+        });
+
+      // Set up timeout for job completion (5 minutes)
+      setTimeout(() => {
+        channel.unsubscribe();
+        reject(
+          new Error("Trade placement timeout - job took too long to complete")
+        );
+      }, 5 * 60 * 1000);
+    });
   } catch (error) {
-    console.error("Error opening trading position:", error);
+    console.error("Error in trade placement flow:", error);
     throw error;
   }
 };
@@ -706,40 +1174,150 @@ export const openTradingPosition = async (
 // Get open positions for a user
 export const getOpenPositions = async (userId: string): Promise<Position[]> => {
   try {
-    // Use the authenticated API client instead of raw fetch
-    const result = await apiClient.get<ApiResponse<Position[]>>(
-      `/api/trading/positions/${userId}`
+    console.log("🌐 Making API call to /api/trades/positions/" + userId);
+    
+    // Use the authenticated API client with new endpoint
+    const result = await apiClient.get<ApiResponse<CurrentPositionsResponse>>(
+      `/api/trades/positions/${userId}`
     );
 
+    console.log("📡 API response received:", result.success);
+
     if (!result.success) {
+      console.error("❌ API call failed:", result.error);
       throw new Error(result.error || "Failed to get positions");
     }
 
-    return result.data!;
+    // Debug: Log the raw response to understand the backend format
+    console.log("🔍 Raw positions response:", JSON.stringify(result.data, null, 2));
+
+    // The backend returns position summaries that need to be mapped to our Position format
+    // Since the backend structure might be different, let's map it properly
+    const backendPositions = result.data!.positions;
+    
+    // If positions are already in the correct format, return them
+    // Otherwise, we might need to map them similar to how we do in getTradingHistoryPaginated
+    const mappedPositions: Position[] = backendPositions.map((pos: any) => {
+      // Always map from backend format to ensure consistency
+      return {
+        id: pos.id || pos.position_id || '',
+        market: pos.market || '',
+        direction: pos.trade_type ? pos.trade_type as "LONG" | "SHORT" : pos.direction || 'LONG',
+          status: pos.status || 'open',
+          size: pos.quantity || pos.size || 0,
+          entryPrice: pos.entry_price || pos.entryPrice || 0,
+          exitPrice: pos.exit_price || pos.exitPrice || null,
+          currentPrice: pos.current_price || pos.currentPrice || pos.entry_price || 0,
+          pnl: pos.unrealized_pnl || pos.pnl || 0,
+          pnlPercentage: pos.pnl_percentage || pos.pnlPercentage || 0,
+          leverage: pos.leverage || 1,
+          liquidationPrice: pos.liquidation_price || pos.liquidationPrice || 0,
+          marginUsed: pos.margin_used || pos.marginUsed || 0,
+          openedAt: pos.created_at || pos.openedAt || new Date().toISOString(),
+          closedAt: pos.closed_at || pos.closedAt || null,
+          duration: pos.duration || 0,
+          fees: pos.fees || 0,
+          points: pos.points || 0,
+        } as Position;
+    });
+
+    console.log("✅ Mapped positions:", mappedPositions.length, "positions");
+    return mappedPositions;
   } catch (error) {
-    // console.error('Error getting open positions:', error);
+    console.error('❌ Error getting open positions:', error);
+    
+    // If it's a 500 error, return empty array instead of crashing the app
+    if (error instanceof Error && error.message.includes('500')) {
+      console.log("🔄 Backend endpoint not ready, returning empty positions array");
+      return [];
+    }
+    
     throw error;
   }
 };
 
-// Close a trading position (returns transaction data for signing)
+// Close a trading position using job-based system with realtime completion
 export const closeTradingPosition = async (
   request: ClosePositionRequest
-): Promise<ClosePositionResponse> => {
+): Promise<Position> => {
   try {
-    // Use the authenticated API client instead of raw fetch
-    const result = await apiClient.post<ClosePositionResponse>(
-      `/api/trading/close`,
-      request
-    );
-
-    if (!result.success) {
-      throw new Error(result.message || "Failed to close position");
+    // Get user ID from current session
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error("No authenticated user found");
     }
 
-    return result;
+    // Convert legacy request format to new backend format
+    const cancelRequest: CancelTradeRequest = {
+      user_id: request.userId,
+      position_id: request.positionId,
+    };
+
+    // Step 1: Start trade cancellation job
+    const jobResponse = await cancelTradeJob(cancelRequest);
+
+    console.log("Trade cancellation job started:", jobResponse.job_id);
+
+    // Step 2: Set up realtime subscription for job completion
+    const userId = (await supabase.auth.getUser()).data.user?.id;
+    if (!userId) {
+      throw new Error("No authenticated user found");
+    }
+
+    return new Promise((resolve, reject) => {
+      const channel = supabase
+        .channel(`trade:${userId}`)
+        .on("broadcast", { event: "trade_cancelled" }, async payload => {
+          console.log("🎉 Trade cancelled successfully:", payload);
+
+          try {
+            // Step 3: Get the updated position data from the payload or fetch from API
+            if (payload.position) {
+              channel.unsubscribe();
+              resolve(payload.position as Position);
+            } else if (payload.position_id) {
+              // Fetch updated position details if only ID is provided
+              try {
+                const history = await getTradingHistory(request.userId, "closed", 50);
+                const closedPosition = history.find(p => p.id === payload.position_id);
+                if (closedPosition) {
+                  channel.unsubscribe();
+                  resolve(closedPosition);
+                } else {
+                  throw new Error("Closed position not found after cancellation");
+                }
+              } catch (error) {
+                throw new Error("Failed to retrieve closed position: " + error);
+              }
+            } else {
+              throw new Error("No position data in trade cancellation payload");
+            }
+          } catch (error) {
+            channel.unsubscribe();
+            reject(error);
+          }
+        })
+        .on("broadcast", { event: "trade_cancellation_failed" }, payload => {
+          console.log("❌ Trade cancellation failed:", payload);
+          channel.unsubscribe();
+          reject(new Error(payload.error || "Trade cancellation failed"));
+        })
+        .subscribe(status => {
+          console.log("Realtime subscription status:", status);
+        });
+
+      // Set up timeout for job completion (5 minutes)
+      setTimeout(() => {
+        channel.unsubscribe();
+        reject(
+          new Error("Trade cancellation timeout - job took too long to complete")
+        );
+      }, 5 * 60 * 1000);
+    });
   } catch (error) {
-    console.error("Error closing trading position:", error);
+    console.error("Error in trade cancellation flow:", error);
     throw error;
   }
 };
@@ -767,28 +1345,132 @@ export const submitSignedTransaction = async (
   }
 };
 
-// Get trading history for a user
+// Get trading history for a user with pagination
 export const getTradingHistory = async (
   userId: string,
   status?: "open" | "closed",
-  limit: number = 50
+  limit: number = 50,
+  offset: number = 0
 ): Promise<Position[]> => {
   try {
-    let endpoint = `/api/trading/history/${userId}?limit=${limit}`;
+    let endpoint = `/api/trades/history/${userId}?limit=${limit}&offset=${offset}`;
     if (status) {
       endpoint += `&status=${status}`;
     }
 
-    // Use the authenticated API client instead of raw fetch
-    const result = await apiClient.get<ApiResponse<Position[]>>(endpoint);
+    console.log("🌐 Making API call to trading history:", endpoint);
+
+    // Use the authenticated API client with new endpoint
+    const result = await apiClient.get<ApiResponse<PaginatedResponse<PositionHistory>>>(endpoint);
+
+    console.log("📡 Trading history API response received:", result.success);
+
+    if (!result.success) {
+      console.error("❌ Trading history API call failed:", result.error);
+      throw new Error(result.error || "Failed to get trading history");
+    }
+
+    // Convert PositionHistory to Position format
+    const positions: Position[] = result.data!.data.map(history => ({
+      id: history.id,
+      market: history.market,
+      direction: history.trade_type as "LONG" | "SHORT",
+      status: history.status,
+      size: history.quantity,
+      entryPrice: history.entry_price || 0,
+      exitPrice: history.exit_price || null,
+      currentPrice: history.exit_price || history.entry_price || 0,
+      pnl: history.pnl || 0,
+      pnlPercentage: history.pnl && history.entry_price ? 
+        ((history.pnl / (history.quantity * history.entry_price)) * 100) : 0,
+      leverage: history.leverage,
+      liquidationPrice: 0, // Not provided in PositionHistory
+      marginUsed: (history.quantity * (history.entry_price || 0)) / history.leverage,
+      openedAt: history.created_at,
+      closedAt: history.closed_at || null,
+      duration: history.closed_at ? 
+        new Date(history.closed_at).getTime() - new Date(history.created_at).getTime() : 0,
+      fees: history.fees || 0,
+      points: 0, // Not provided in PositionHistory
+    }));
+
+    return positions;
+  } catch (error) {
+    // console.error('Error getting trading history:', error);
+    throw error;
+  }
+};
+
+// Get paginated trading history with full response metadata
+export const getTradingHistoryPaginated = async (
+  userId: string,
+  status?: "open" | "closed",
+  limit: number = 50,
+  offset: number = 0
+): Promise<PaginatedResponse<Position>> => {
+  try {
+    let endpoint = `/api/trades/history/${userId}?limit=${limit}&offset=${offset}`;
+    if (status) {
+      endpoint += `&status=${status}`;
+    }
+
+    const result = await apiClient.get<ApiResponse<PaginatedResponse<PositionHistory>>>(endpoint);
 
     if (!result.success) {
       throw new Error(result.error || "Failed to get trading history");
     }
 
-    return result.data!;
+    // Convert PositionHistory to Position format
+    const positions: Position[] = result.data!.data.map(history => ({
+      id: history.id,
+      market: history.market,
+      direction: history.trade_type as "LONG" | "SHORT",
+      status: history.status,
+      size: history.quantity,
+      entryPrice: history.entry_price || 0,
+      exitPrice: history.exit_price || null,
+      currentPrice: history.exit_price || history.entry_price || 0,
+      pnl: history.pnl || 0,
+      pnlPercentage: history.pnl && history.entry_price ? 
+        ((history.pnl / (history.quantity * history.entry_price)) * 100) : 0,
+      leverage: history.leverage,
+      liquidationPrice: 0,
+      marginUsed: (history.quantity * (history.entry_price || 0)) / history.leverage,
+      openedAt: history.created_at,
+      closedAt: history.closed_at || null,
+      duration: history.closed_at ? 
+        new Date(history.closed_at).getTime() - new Date(history.created_at).getTime() : 0,
+      fees: history.fees || 0,
+      points: 0,
+    }));
+
+    return {
+      data: positions,
+      total: result.data!.total,
+      offset: result.data!.offset,
+      limit: result.data!.limit,
+      has_more: result.data!.has_more,
+    };
   } catch (error) {
-    // console.error('Error getting trading history:', error);
+    console.error('Error getting paginated trading history:', error);
+    throw error;
+  }
+};
+
+// Breeze opt-in functionality
+export const breezeOptIn = async (): Promise<JobResponse> => {
+  try {
+    const result = await apiClient.post<ApiResponse<JobResponse>>(
+      `/api/users/breeze-opt-in`
+    );
+
+    if (!result.success || !result.data) {
+      throw new Error(result.error || "Failed to start Breeze opt-in");
+    }
+
+    return result.data;
+  } catch (error) {
+    console.error("Error starting Breeze opt-in:", error);
     throw error;
   }
 };

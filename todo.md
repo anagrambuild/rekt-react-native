@@ -1,5 +1,11 @@
 UI
 
+- add avatar on account creation
+- get swig wallet balance
+- add more interactivity to splash
+- add text to loading screen on account creation?
+- why is app crashing?????
+
 High Priority
 
 - web3 auth working on front end/ password with username if web3 auth doesn't work
@@ -8,7 +14,6 @@ Implementing backend:
 
 - create account
 - check balance
-- deposit to swig address - remove hardcoded address
 - should not allow a trade with no usdc
 - open trade
 - close trade
@@ -18,10 +23,14 @@ Implementing backend:
 - withdraw before delete account - remove mock balance
 - test delete account
 
+Notes for backend
+
+- no username update endpoint
+
 Tighten ups
 
+- fix slider jumping around
 - check MWA on Android calling connection twice
-- Android crashing - compress video files
 
 Low Priority
 

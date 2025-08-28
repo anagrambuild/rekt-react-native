@@ -288,5 +288,22 @@
   "Transaction Explorer": "Transaction Explorer",
   "Loading Explorer...": "Loading Explorer...",
   "Connect and Send": "Connect and Send",
-  "You need to connect your wallet first to make a deposit.": "You need to connect your wallet first to make a deposit."
+  "You need to connect your wallet first to make a deposit.": "You need to connect your wallet first to make a deposit.",
+  "Send Code": "Send Code",
+  "Sending OTP...": "Sending OTP...",
+  "OTP Sent": "OTP Sent",
+  "Check your email for the verification code": "Check your email for the verification code",
+  "Verification Code": "Verification Code",
+  "Enter 6-digit code": "Enter 6-digit code",
+  "Enter your email": "Enter your email",
+  "OTP is required": "OTP is required",
+  "OTP must be 6 digits": "OTP must be 6 digits",
+  "OTP verification failed": "OTP verification failed",
+  "Failed to send OTP. Please try again.": "Failed to send OTP. Please try again.",
+  "Please wait": "Please wait",
+  "Checking username availability...": "Checking username availability...",
+  "Username must be at least 3 characters": "Username must be at least 3 characters",
+  "Username must be 20 characters or less": "Username must be 20 characters or less",
+  "Skip for now": "Skip for now",
+  "Account creation failed": "Account creation failed"
 }

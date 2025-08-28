@@ -38,8 +38,7 @@ class ApiClient {
         Authorization: `Bearer ${token}`,
       };
     } catch (error) {
-      // TODO: Add this back when backend is ready
-      // console.error('Failed to get auth token:', error);
+      console.error("Failed to get auth token:", error);
       throw new Error("Authentication required");
     }
   }
@@ -75,9 +74,18 @@ class ApiClient {
     });
 
     if (!response.ok) {
-      throw new Error(
-        `API request failed: ${response.status} ${response.statusText}`
-      );
+      let errorDetails = `${response.status} ${response.statusText}`;
+      try {
+        const errorBody = await response.text();
+        if (errorBody) {
+          console.error(`🚨 API Error ${response.status}:`, errorBody);
+          errorDetails += ` - ${errorBody}`;
+        }
+      } catch (e) {
+        console.error("Error parsing error body:", e);
+        // Ignore error parsing error body
+      }
+      throw new Error(`API request failed: ${errorDetails}`);
     }
 
     return response.json();
@@ -98,6 +106,35 @@ class ApiClient {
       throw new Error(
         `API request failed: ${response.status} ${response.statusText}`
       );
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Make an authenticated PATCH request
+   */
+  async patch<T>(endpoint: string, data?: any): Promise<T> {
+    const headers = await this.getAuthHeaders();
+    const response = await fetch(`${this.baseURL}${endpoint}`, {
+      method: "PATCH",
+      headers,
+      body: data ? JSON.stringify(data) : undefined,
+    });
+
+    if (!response.ok) {
+      let errorDetails = `${response.status} ${response.statusText}`;
+      try {
+        const errorBody = await response.text();
+        if (errorBody) {
+          console.error(`🚨 API Error ${response.status}:`, errorBody);
+          errorDetails += ` - ${errorBody}`;
+        }
+      } catch (e) {
+        console.error("Error parsing error body:", e);
+        // Ignore error parsing error body
+      }
+      throw new Error(`API request failed: ${errorDetails}`);
     }
 
     return response.json();
