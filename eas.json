@@ -17,7 +17,7 @@
     },
     "preview": {
       "distribution": "internal",
-      "channel": "preview-aug-2025",
+      "channel": "preview",
       "env": {
         "DEPLOY_ENVIRONMENT": "preview"
       },
