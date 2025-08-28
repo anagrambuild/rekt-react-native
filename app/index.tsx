@@ -211,7 +211,16 @@ const Index = () => {
         />
       </Column>
       <AnimatedButtonsContainer style={{ opacity: welcomeOpacity }}>
-        <PrimaryButton onPress={connectWallet} disabled={connecting}>
+        <PrimaryButton
+          onPress={() => {
+            if (__DEV__ && process.env.EXPO_PUBLIC_SKIP_AUTH === "true") {
+              router.push("/(tabs)");
+            } else {
+              connectWallet();
+            }
+          }}
+          disabled={connecting}
+        >
           {connecting ? t("Connecting...") : t("Connect Wallet")}
         </PrimaryButton>
       </AnimatedButtonsContainer>
