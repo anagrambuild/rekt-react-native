@@ -38,47 +38,50 @@ export const Modal: React.FC<ModalProps> = ({
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
       >
-        <Backdrop onPress={onRequestClose} testID="modal-backdrop" />
-        <BottomSheetContainer>
-          <GestureDetector gesture={flingDownGesture}>
-            <ContentContainer>
-              <HandleContainer>
-                {Platform.OS === "ios" ? (
-                  <Handle />
-                ) : (
-                  <PressableOpacity onPress={onRequestClose}>
-                    <MaterialIcons
-                      name="close"
-                      size={18}
-                      color={theme.colors.textSecondary}
-                    />
-                  </PressableOpacity>
-                )}
-              </HandleContainer>
-              {children}
-            </ContentContainer>
-          </GestureDetector>
-        </BottomSheetContainer>
+        <ModalContainer>
+          <Backdrop onPress={onRequestClose} testID="modal-backdrop" />
+          <BottomSheetContainer>
+            <GestureDetector gesture={flingDownGesture}>
+              <ContentContainer>
+                <HandleContainer>
+                  {Platform.OS === "ios" ? (
+                    <Handle />
+                  ) : (
+                    <PressableOpacity onPress={onRequestClose}>
+                      <MaterialIcons
+                        name="close"
+                        size={18}
+                        color={theme.colors.textSecondary}
+                      />
+                    </PressableOpacity>
+                  )}
+                </HandleContainer>
+                {children}
+              </ContentContainer>
+            </GestureDetector>
+          </BottomSheetContainer>
+        </ModalContainer>
       </KeyboardAvoidingView>
     </RNModal>
   );
 };
 
+const ModalContainer = styled.View`
+  flex: 1;
+  position: relative;
+`;
+
 const Backdrop = styled.Pressable`
   flex: 1;
   background-color: ${({ theme }: { theme: DefaultTheme }) =>
     theme.colors.background + "CC"};
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 1;
 `;
 
 const BottomSheetContainer = styled.View`
-  flex: 1;
-  justify-content: flex-end;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
 `;
 
 const ContentContainer = styled.View`
@@ -87,7 +90,6 @@ const ContentContainer = styled.View`
     theme.colors.onPrimary};
   border-radius: 16px 16px 0 0;
   padding: 6px 24px 24px 24px;
-  z-index: 2;
   border-top-width: 1px;
   border-top-color: ${({ theme }: { theme: DefaultTheme }) =>
     theme.colors.border};

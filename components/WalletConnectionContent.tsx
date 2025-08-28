@@ -1,7 +1,8 @@
+import { useEffect, useRef } from "react";
 import { Alert, Linking, View } from "react-native";
 
 import PhantomIcon from "@/assets/images/app-svgs/phantom.svg";
-import { useWallet } from "@/contexts";
+import { useAppContext, useWallet } from "@/contexts";
 
 import { Column } from "./common/containers";
 // Use require for bs58 to avoid PRNG issues
@@ -13,6 +14,7 @@ import styled, { DefaultTheme } from "styled-components/native";
 
 interface WalletConnectionContentProps {
   onRequestClose: () => void;
+  onConnectionSuccess?: () => void;
 }
 
 interface WalletOption {
@@ -26,9 +28,24 @@ interface WalletOption {
 
 export const WalletConnectionContent: React.FC<
   WalletConnectionContentProps
-> = ({ onRequestClose }) => {
+> = ({ onRequestClose, onConnectionSuccess }) => {
   const { t } = useTranslation();
-  const { getDappKeyPair } = useWallet();
+  const { getDappKeyPair, setConnectionSuccessCallback, connected } =
+    useWallet();
+  const { setExpectingWalletConnection, setWalletConnectionCallback } =
+    useAppContext();
+  const callbackTriggeredRef = useRef(false);
+
+  // Fallback mechanism: if wallet gets connected but deep link handler didn't fire
+  useEffect(() => {
+    if (connected && onConnectionSuccess && !callbackTriggeredRef.current) {
+      callbackTriggeredRef.current = true;
+      // Small delay to ensure state is properly set
+      setTimeout(() => {
+        onConnectionSuccess();
+      }, 500);
+    }
+  }, [connected, onConnectionSuccess]);
 
   const walletOptions: WalletOption[] = [
     {
@@ -90,6 +107,31 @@ export const WalletConnectionContent: React.FC<
             const connectUrl = `https://phantom.app/ul/v1/connect?dapp_encryption_public_key=${encodedPublicKey}&cluster=${cluster}&app_url=${encodeURIComponent(
               appUrl
             )}&redirect_link=${encodeURIComponent(appUrl)}`;
+
+            // Set up both callback mechanisms
+            if (onConnectionSuccess) {
+              // Set the deep link callback
+              setConnectionSuccessCallback(() => {
+                callbackTriggeredRef.current = true;
+                setExpectingWalletConnection(false);
+                setWalletConnectionCallback(null);
+                onConnectionSuccess();
+              });
+              
+              // Set the AppState fallback
+              setExpectingWalletConnection(true);
+              setWalletConnectionCallback(() => {
+                callbackTriggeredRef.current = true;
+                onConnectionSuccess();
+              });
+
+              // Set the AppState fallback
+              setExpectingWalletConnection(true);
+              setWalletConnectionCallback(() => {
+                callbackTriggeredRef.current = true;
+                onConnectionSuccess();
+              });
+            }
 
             await Linking.openURL(connectUrl);
             onRequestClose(); // Close modal immediately, response will be handled by URL scheme
