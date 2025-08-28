@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Dimensions, Pressable } from "react-native";
+import { Dimensions, LayoutChangeEvent, Pressable } from "react-native";
 
 import rektBomb from "@/assets/images/app-pngs/rekt-bomb.png";
 import FlagIcon from "@/assets/images/app-svgs/flag.svg";
@@ -37,7 +37,7 @@ export const PriceChart = ({
 }) => {
   const { t } = useTranslation();
   const theme = useTheme();
-  const chartHeight = 200;
+  const [chartHeight, setChartHeight] = useState(200);
   const { selectedToken, selectedTimeframe, tokenPrices, openPositions } =
     useHomeContext();
 
@@ -129,10 +129,11 @@ export const PriceChart = ({
   const isProfit = hasOpenTrade
     ? currentPosition
       ? currentPosition.pnl >= 0
-        : trade && trade.status === "open"
-          ? (trade.side === "LONG" && currentPrice > trade.entryPrice) ||
-            (trade.side === "SHORT" && currentPrice < trade.entryPrice)
-          : null    : null;
+      : trade && trade.status === "open"
+      ? (trade.side === "LONG" && currentPrice > trade.entryPrice) ||
+        (trade.side === "SHORT" && currentPrice < trade.entryPrice)
+      : null
+    : null;
 
   // Set chart color - only apply profit/loss colors when there's an open trade/position
   let chartColor = theme.colors.tint;
@@ -175,7 +176,8 @@ export const PriceChart = ({
       <Wrapper>
         <ChartContainer
           style={{
-            height: chartHeight,
+            flex: 1,
+            minHeight: chartHeight,
             justifyContent: "center",
             alignItems: "center",
           }}
@@ -189,7 +191,14 @@ export const PriceChart = ({
   }
 
   return (
-    <Wrapper>
+    <Wrapper
+      onLayout={(event: LayoutChangeEvent) => {
+        const { height } = event.nativeEvent.layout;
+        if (height > 0 && height !== chartHeight) {
+          setChartHeight(Math.max(150, height - 32)); // Account for padding
+        }
+      }}
+    >
       <ChartContainer>
         <LineChart
           data={data}
@@ -268,11 +277,11 @@ export const PriceChart = ({
                   ? `+${currentPosition.pnlPercentage.toFixed(2)}%`
                   : `${currentPosition.pnlPercentage.toFixed(2)}%`
                 : showPercent && !currentPosition
-                  ? `${changePercent.toFixed(2)}%`
-                  : `$${currentPrice.toLocaleString("en-US", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}`}
+                ? `${changePercent.toFixed(2)}%`
+                : `$${currentPrice.toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}`}
             </CurrentPriceText>
           </CurrentPriceBubble>
         </CurrentPriceLabel>
@@ -358,6 +367,7 @@ export const PriceChart = ({
 };
 
 const Wrapper = styled.View`
+  flex: 1;
   align-items: center;
   background-color: ${({ theme }: { theme: DefaultTheme }) =>
     theme.colors.background};
@@ -366,8 +376,9 @@ const Wrapper = styled.View`
 `;
 
 const ChartContainer = styled.View`
+  flex: 1;
   position: relative;
-  /* overflow: hidden; */
+  width: 100%;
 `;
 
 const YAxisLabel = styled.View`
@@ -399,8 +410,8 @@ const CurrentPriceBubble = styled.View<{ $isProfit: boolean | null }>`
     $isProfit === true
       ? theme.colors.profit
       : $isProfit === false
-        ? theme.colors.loss
-        : theme.colors.tint};
+      ? theme.colors.loss
+      : theme.colors.tint};
 `;
 
 const CurrentPriceText = styled.Text`
