@@ -24,8 +24,8 @@ export const MiniGameScreen = () => {
 
   // Check for active trades from actual open positions
   const currentPosition = openPositions.find(position => {
-    const tokenMap = { sol: "SOL-PERP", eth: "ETH-PERP", btc: "BTC-PERP" };
-    return position.asset === tokenMap[selectedToken as keyof typeof tokenMap];
+    const tokenMap = { sol: "SOL", eth: "ETH", btc: "BTC" };
+    return position.market === tokenMap[selectedToken as keyof typeof tokenMap];
   });
 
   const isActiveTrade = !!currentPosition;

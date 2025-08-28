@@ -80,8 +80,8 @@ export const PriceChart = ({
 
   // Find current position for this token to get real PnL
   const currentPosition = openPositions.find(position => {
-    const tokenMap = { sol: "SOL-PERP", eth: "ETH-PERP", btc: "BTC-PERP" };
-    return position.asset === tokenMap[selectedToken as keyof typeof tokenMap];
+    const tokenMap = { sol: "SOL", eth: "ETH", btc: "BTC" };
+    return position.market === tokenMap[selectedToken as keyof typeof tokenMap];
   });
 
   // Get liquidation price from real position data only
@@ -130,8 +130,8 @@ export const PriceChart = ({
     ? currentPosition
       ? currentPosition.pnl >= 0
       : trade && trade.status === "open"
-      ? (trade.side === "long" && currentPrice > trade.entryPrice) ||
-        (trade.side === "short" && currentPrice < trade.entryPrice)
+      ? (trade.side === "LONG" && currentPrice > trade.entryPrice) ||
+        (trade.side === "SHORT" && currentPrice < trade.entryPrice)
       : null
     : null;
 

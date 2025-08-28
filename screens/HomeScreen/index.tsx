@@ -45,7 +45,7 @@ export const HomeScreen = () => {
       : setBtcTrade;
 
   // Set trade side, creating a draft trade if none exists
-  const setTradeSide = (side: "long" | "short") => {
+  const setTradeSide = (side: "LONG" | "SHORT") => {
     if (trade) {
       setTrade({ ...trade, side });
     } else {
@@ -63,8 +63,8 @@ export const HomeScreen = () => {
 
   // Check for active trades - either from local state or actual open positions
   const currentPosition = openPositions.find(position => {
-    const tokenMap = { sol: "SOL-PERP", eth: "ETH-PERP", btc: "BTC-PERP" };
-    return position.asset === tokenMap[selectedToken as keyof typeof tokenMap];
+    const tokenMap = { sol: "SOL", eth: "ETH", btc: "BTC" };
+    return position.market === tokenMap[selectedToken as keyof typeof tokenMap];
   });
 
   const isActiveTrade = (trade && trade.status === "open") || !!currentPosition;
@@ -94,7 +94,7 @@ export const HomeScreen = () => {
             <LiveTradeView
               trade={
                 trade || {
-                  side: currentPosition?.direction || "long",
+                  side: currentPosition?.direction || "LONG",
                   entryPrice: currentPosition?.entryPrice || 0,
                   amount: currentPosition?.marginUsed || 0,
                   leverage: currentPosition?.leverage || 1,
@@ -110,7 +110,7 @@ export const HomeScreen = () => {
             <Row>
               <ShortButton
                 onPress={() => {
-                  setTradeSide("short");
+                  setTradeSide("SHORT");
                   router.push("/trade");
                 }}
                 title={t("Short")}
@@ -118,7 +118,7 @@ export const HomeScreen = () => {
               />
               <LongButton
                 onPress={() => {
-                  setTradeSide("long");
+                  setTradeSide("LONG");
                   router.push("/trade");
                 }}
                 title={t("Long")}

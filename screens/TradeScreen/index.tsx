@@ -78,12 +78,12 @@ export const TradeScreen = () => {
   const currentTrade = getCurrentTrade();
 
   // Use trade state or defaults
-  const tradeSide = currentTrade?.side || "short";
+  const tradeSide = currentTrade?.side || "SHORT";
   const amount = currentTrade?.amount || 10;
   const leverage = currentTrade?.leverage || 1;
 
   // Update trade state functions
-  const setTradeSide = (side: "long" | "short") => {
+  const setTradeSide = (side: "LONG" | "SHORT") => {
     setCurrentTrade({
       ...currentTrade,
       side,
@@ -98,7 +98,7 @@ export const TradeScreen = () => {
   const setAmount = (newAmount: number) => {
     setCurrentTrade({
       ...currentTrade,
-      side: currentTrade?.side || "short",
+      side: currentTrade?.side || "SHORT",
       amount: Math.max(10, newAmount),
       leverage: currentTrade?.leverage || 1,
       status: "draft",
@@ -107,22 +107,22 @@ export const TradeScreen = () => {
     });
   };
   // Convert token symbol to backend format
-  const getAssetSymbol = (): "SOL-PERP" | "BTC-PERP" | "ETH-PERP" => {
+  const getMarketSymbol = (): "SOL" | "BTC" | "ETH" => {
     switch (selectedToken) {
       case "sol":
-        return "SOL-PERP";
+        return "SOL";
       case "eth":
-        return "ETH-PERP";
+        return "ETH";
       case "btc":
-        return "BTC-PERP";
+        return "BTC";
       default:
-        return "SOL-PERP";
+        return "SOL";
     }
   };
 
   const handleTrade = async () => {
     const success = await openPosition(
-      getAssetSymbol(),
+      getMarketSymbol(),
       tradeSide,
       amount,
       leverage
@@ -218,14 +218,14 @@ export const TradeScreen = () => {
                   name: "arrow-bottom-right-thin-circle-outline",
                 }}
                 label={t("Short")}
-                selected={tradeSide === "short"}
+                selected={tradeSide === "SHORT"}
                 onPress={() => setTradeSide("short")}
               />
               <SegmentControl
                 Svg={MaterialCommunityIcons}
                 svgProps={{ name: "arrow-top-right-thin-circle-outline" }}
                 label={t("Long")}
-                selected={tradeSide === "long"}
+                selected={tradeSide === "LONG"}
                 onPress={() => setTradeSide("long")}
               />
             </SegmentContainer>
@@ -234,6 +234,7 @@ export const TradeScreen = () => {
 
           <AnimatedBannerRow items={perpSocials} />
         </View>
+
 
         {/* Dynamic middle section for PriceChartCard */}
         <View style={{ flex: 1, paddingHorizontal: 16 }}>
@@ -255,7 +256,7 @@ export const TradeScreen = () => {
               style={{ marginTop: 8 }}
             >
               {t("{{side}} {{token}}", {
-                side: tradeSide === "long" ? "Long" : "Short",
+                side: tradeSide === "LONG" ? "Long" : "Short",
                 token: selectedToken.toUpperCase(),
               })}
             </PrimaryButton>

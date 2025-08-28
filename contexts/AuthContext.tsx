@@ -26,6 +26,13 @@ interface AuthContextType {
   user: AuthUser | null;
   session: any | null;
   loading: boolean;
+  // OTP Authentication methods
+  sendOTP: (email: string) => Promise<{ success: boolean; error?: string }>;
+  verifyOTP: (
+    email: string,
+    token: string
+  ) => Promise<{ success: boolean; error?: string; user?: AuthUser }>;
+  // Legacy methods (deprecated but kept for compatibility)
   signUp: (
     email: string,
     password: string
@@ -79,7 +86,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_, session) => {
       setSession(session);
       if (session?.user) {
         const authUser: AuthUser = {
@@ -192,10 +199,65 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
+  const sendOTP = async (email: string) => {
+    try {
+      setLoading(true);
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: { shouldCreateUser: true },
+      });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error("Send Code error:", error);
+      return { success: false, error: "An unexpected error occurred" };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const verifyOTP = async (email: string, token: string) => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase.auth.verifyOtp({
+        email,
+        token,
+        type: "email",
+      });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      if (data.user) {
+        const authUser: AuthUser = {
+          id: data.user.id,
+          email: data.user.email!,
+          created_at: data.user.created_at,
+        };
+        setUser(authUser);
+        return { success: true, user: authUser };
+      }
+
+      return { success: false, error: "OTP verification failed" };
+    } catch (error) {
+      console.error("Verify OTP error:", error);
+      return { success: false, error: "An unexpected error occurred" };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const value: AuthContextType = {
     user,
     session,
     loading,
+    sendOTP,
+    verifyOTP,
     signUp,
     signIn,
     signOut,

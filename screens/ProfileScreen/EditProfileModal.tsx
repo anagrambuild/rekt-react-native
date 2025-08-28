@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { ActivityIndicator, Alert, Image, Keyboard } from "react-native";
 
 import {
@@ -16,9 +16,8 @@ import {
   Title4,
 } from "@/components";
 import { useAppContext, useProfileContext } from "@/contexts";
-import { useImagePicker } from "@/hooks";
+import { useImagePicker, useUsernameValidation } from "@/hooks";
 import {
-  checkUsernameAvailabilityPublic as checkUsernameAvailability,
   deleteAvatar,
   updateUserProfile,
   uploadAvatar,
@@ -33,11 +32,9 @@ import { Toast } from "toastify-react-native";
 export const EditProfileModal = ({
   visible,
   onRequestClose,
-  onSave,
 }: {
   visible: boolean;
   onRequestClose: () => void;
-  onSave?: () => void;
 }) => {
   const theme = useTheme();
   const { t } = useTranslation();
@@ -46,76 +43,16 @@ export const EditProfileModal = ({
   const [username, setUsername] = useState(userData.username);
   const [newImageUri, setNewImageUri] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [usernameError, setUsernameError] = useState("");
-  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
-  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(
-    null
-  );
   const { takePhoto, pickFromLibrary, isLoading } = useImagePicker();
 
-  // Debounced username checking (same logic as SignUpForm)
-  const checkUsername = useCallback(
-    async (usernameToCheck: string) => {
-      if (
-        !usernameToCheck ||
-        usernameToCheck.length < 3 ||
-        usernameToCheck === userData.username
-      ) {
-        setUsernameAvailable(null);
-        return;
-      }
-
-      // Check username format and length first
-      if (!/^[a-zA-Z0-9_]+$/.test(usernameToCheck)) {
-        setUsernameError(
-          t("Username can only contain letters, numbers, and underscores")
-        );
-        setUsernameAvailable(false);
-        return;
-      }
-
-      if (usernameToCheck.length < 3 || usernameToCheck.length > 20) {
-        setUsernameError(t("Username must be between 3-20 characters"));
-        setUsernameAvailable(false);
-        return;
-      }
-
-      setIsCheckingUsername(true);
-      try {
-        const result = await checkUsernameAvailability(usernameToCheck);
-        setUsernameAvailable(result.available);
-
-        if (!result.available) {
-          setUsernameError(t("Username is already taken"));
-        } else {
-          setUsernameError("");
-        }
-      } catch (error) {
-        console.error("Username check failed:", error);
-        setUsernameAvailable(null);
-      } finally {
-        setIsCheckingUsername(false);
-      }
-    },
-    [t, userData.username]
-  );
-
-  // Debounce username checking
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      if (username && username !== userData.username) {
-        checkUsername(username);
-      }
-    }, 500); // 500ms debounce
-
-    return () => clearTimeout(timeoutId);
-  }, [username, checkUsername, userData.username]);
+  // Use the unified username validation hook
+  const usernameValidation = useUsernameValidation(username, {
+    currentUsername: userData.username,
+  });
 
   const handleUsernameChange = (text: string) => {
     setUsername(text);
-    if (usernameError) setUsernameError("");
-    // Reset username validation state when user types
-    setUsernameAvailable(null);
+    // Error state will be managed by useEffect based on query results
   };
 
   const handleSave = async () => {
@@ -130,35 +67,33 @@ export const EditProfileModal = ({
 
     // Validate username if changed
     if (username !== userData.username) {
-      if (!username.trim()) {
-        setUsernameError(t("Username is required"));
+      // Check required validation first
+      if (!usernameValidation.validateRequired()) {
         return;
       }
 
-      if (username.length < 3 || username.length > 20) {
-        setUsernameError(t("Username must be between 3-20 characters"));
-        return;
-      }
-
-      if (!/^[a-zA-Z0-9_]+$/.test(username)) {
-        setUsernameError(
-          t("Username can only contain letters, numbers, and underscores")
-        );
-        return;
-      }
-
-      // Check username availability before proceeding
-      try {
-        const usernameCheck = await checkUsernameAvailability(username);
-        if (!usernameCheck.available) {
-          setUsernameError(t("Username is already taken"));
+      // Check username validation using the hook
+      if (!usernameValidation.isValid) {
+        if (usernameValidation.isChecking) {
+          Toast.show({
+            text1: t("Please wait"),
+            text2: t("Checking username availability..."),
+            type: "info",
+          });
           return;
         }
-      } catch (error) {
-        console.error("Username check failed:", error);
+        if (usernameValidation.hasError) {
+          Toast.show({
+            text1: t("Error"),
+            text2: usernameValidation.error,
+            type: "error",
+          });
+          return;
+        }
+        // Generic validation failure
         Toast.show({
           text1: t("Error"),
-          text2: t("Failed to verify username availability. Please try again."),
+          text2: t("Please check your username and try again"),
           type: "error",
         });
         return;
@@ -248,7 +183,6 @@ export const EditProfileModal = ({
         });
       }
 
-      onSave?.();
       onRequestClose();
     } catch (error) {
       console.error("Profile update failed:", error);
@@ -265,8 +199,6 @@ export const EditProfileModal = ({
   const handleClose = () => {
     setUsername(userData.username);
     setNewImageUri(null);
-    setUsernameError("");
-    setUsernameAvailable(null);
     onRequestClose();
   };
 
@@ -401,26 +333,27 @@ export const EditProfileModal = ({
                     onSubmitEditing={() => Keyboard.dismiss()}
                   />
                 </StyledInputContainer>
-                {isCheckingUsername && (
+                {usernameValidation.isChecking && (
                   <ActivityIndicator size="small" color={theme.colors.tint} />
                 )}
-                {!isCheckingUsername &&
-                  usernameAvailable === true &&
+                {usernameValidation.isAvailable === true &&
+                  !usernameValidation.hasError &&
                   username !== userData.username && (
                     <SuccessIndicator>✓</SuccessIndicator>
                   )}
-                {!isCheckingUsername && usernameAvailable === false && (
+                {(usernameValidation.isAvailable === false ||
+                  usernameValidation.hasError) && (
                   <ErrorIndicator>✗</ErrorIndicator>
                 )}
               </Row>
-              {usernameError ? <ErrorText>{usernameError}</ErrorText> : null}
+              {usernameValidation.hasError ? <ErrorText>{usernameValidation.error}</ErrorText> : null}
             </Column>
           </Card>
         </Column>
         <Column $gap={8}>
           <PrimaryButton
             onPress={handleSave}
-            disabled={!!usernameError || isSubmitting}
+            disabled={usernameValidation.hasError || isSubmitting}
             loading={isSubmitting}
           >
             {t("Save changes")}
