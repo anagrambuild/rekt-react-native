@@ -22,7 +22,7 @@ import { router } from "expo-router";
 import { useTranslation } from "react-i18next";
 import * as nacl from "tweetnacl";
 // Persistent wallet state outside React lifecycle
-let persistentWalletState = {
+export let persistentWalletState = {
   connected: false,
   publicKey: null as PublicKey | null,
   sharedSecret: null as Uint8Array | null,
@@ -59,10 +59,11 @@ export interface WalletContextState {
   transferState: TransferState;
 
   // Methods
-  connect: () => Promise<void>;
+  connect: (onSuccess?: () => void) => Promise<void>;
   connectForTransfer: () => Promise<void>; // New method for transfer-only connection
   disconnect: () => void;
   setShowWalletModal: (show: boolean) => void;
+  setConnectionSuccessCallback: (callback: (() => void) | null) => void;
   refreshUSDCBalance: () => Promise<void>;
   initiateTransfer: (amount: number, toAddress: string) => Promise<void>;
   resetTransfer: () => void;
@@ -87,6 +88,7 @@ const WalletContext = createContext<WalletContextState>({
   connectForTransfer: async () => {},
   disconnect: () => {},
   setShowWalletModal: () => {},
+  setConnectionSuccessCallback: () => {},
   refreshUSDCBalance: async () => {},
   initiateTransfer: async () => {},
   resetTransfer: () => {},
@@ -129,6 +131,7 @@ export const WalletProvider = ({
 
   // Track if component is mounted to prevent state updates after unmount
   const mountedRef = useRef(true);
+  const onSuccessCallbackRef = useRef<(() => void) | null>(null);
   useEffect(() => {
     return () => {
       mountedRef.current = false;
@@ -261,9 +264,12 @@ export const WalletProvider = ({
     if (isAndroid) return; // Only run on iOS
 
     const handleiOSUrl = async (url: string) => {
+      // Get the current scheme dynamically
+      const currentScheme = Constants.expoConfig?.scheme;
+
       // Handle wallet connection response from Phantom
       if (
-        url.includes("rektreactnative://") &&
+        url.includes(`${currentScheme}://`) &&
         url.includes("phantom_encryption_public_key")
       ) {
         try {
@@ -301,9 +307,9 @@ export const WalletProvider = ({
                 setPublicKey(pubKey);
                 setConnected(true);
                 setConnecting(false);
-                // Wallet connected successfully - no auth needed
-                // Note: Not navigating here to preserve modal context
-                // The user should already be on the profile tab with modal open
+                // Wallet connected successfully - call success callback
+                onSuccessCallbackRef.current?.();
+                onSuccessCallbackRef.current = null; // Clear the callback
               }
             }
           }
@@ -322,7 +328,7 @@ export const WalletProvider = ({
 
       // Handle transaction signing response from Phantom
       if (
-        url.includes("rektreactnative://") &&
+        url.includes(`${currentScheme}://`) &&
         url.includes("data") &&
         !url.includes("phantom_encryption_public_key") // Not a connection response
       ) {
@@ -481,31 +487,39 @@ export const WalletProvider = ({
     return () => subscription?.remove();
   }, [getDappKeyPair, t, sharedSecret, transferState, connection]);
 
-  const connect = useCallback(async () => {
-    if (connecting || connected) {
-      return;
-    }
-
-    setConnecting(true);
-
-    try {
-      if (isAndroid) {
-        const success = await connectAndroid();
-        if (!success) {
-          setConnecting(false);
-        } else {
-          setConnecting(false);
-        }
-      } else if (Platform.OS === "ios") {
-        // For iOS, show the wallet selection modal or handle as needed
-        setShowWalletModal(true);
-        setConnecting(false); // Reset connecting state, modal will handle it
+  const connect = useCallback(
+    async (onSuccess?: () => void) => {
+      if (connecting || connected) {
+        return;
       }
-    } catch (error) {
-      console.error("Wallet connection error:", error);
-      setConnecting(false);
-    }
-  }, [connecting, connected, connectAndroid]);
+
+      // Store the callback for iOS deep link response
+      onSuccessCallbackRef.current = onSuccess || null;
+
+      setConnecting(true);
+
+      try {
+        if (isAndroid) {
+          const success = await connectAndroid();
+          if (!success) {
+            setConnecting(false);
+          } else {
+            setConnecting(false);
+            // Call success callback for Android
+            onSuccess?.();
+          }
+        } else if (Platform.OS === "ios") {
+          // For iOS, show the wallet selection modal or handle as needed
+          setShowWalletModal(true);
+          setConnecting(false); // Reset connecting state, modal will handle it
+        }
+      } catch (error) {
+        console.error("Wallet connection error:", error);
+        setConnecting(false);
+      }
+    },
+    [connecting, connected, connectAndroid]
+  );
 
   // Transfer-only connection that doesn't trigger authentication flows
   const connectForTransfer = useCallback(async () => {
@@ -679,6 +693,13 @@ export const WalletProvider = ({
     setTransferState({ status: "idle" });
   }, []);
 
+  const setConnectionSuccessCallback = useCallback(
+    (callback: (() => void) | null) => {
+      onSuccessCallbackRef.current = callback;
+    },
+    []
+  );
+
   const value: WalletContextState = {
     connected,
     connecting,
@@ -697,6 +718,7 @@ export const WalletProvider = ({
     refreshUSDCBalance,
     initiateTransfer,
     resetTransfer,
+    setConnectionSuccessCallback,
   };
 
   return (

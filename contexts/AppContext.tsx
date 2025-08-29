@@ -42,6 +42,10 @@ type AppContextType = {
   hasBreeze: boolean;
   setHasBreeze: Dispatch<SetStateAction<boolean>>;
   authenticateWithBiometrics: () => Promise<boolean>;
+  expectingWalletConnection: boolean;
+  setExpectingWalletConnection: Dispatch<SetStateAction<boolean>>;
+  walletConnectionCallback: (() => void) | null;
+  setWalletConnectionCallback: Dispatch<SetStateAction<(() => void) | null>>;
 };
 
 export const AppContext = createContext<AppContextType>({
@@ -66,6 +70,10 @@ export const AppContext = createContext<AppContextType>({
   hasBreeze: false,
   setHasBreeze: () => {},
   authenticateWithBiometrics: async () => false,
+  expectingWalletConnection: false,
+  setExpectingWalletConnection: () => {},
+  walletConnectionCallback: null,
+  setWalletConnectionCallback: () => {},
 });
 
 export const AppProvider = ({ children }: { children: React.ReactNode }) => {
@@ -78,6 +86,8 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     enableBiometrics: false,
   });
   const [hasBreeze, setHasBreeze] = useState(false);
+  const [expectingWalletConnection, setExpectingWalletConnection] = useState(false);
+  const [walletConnectionCallback, setWalletConnectionCallback] = useState<(() => void) | null>(null);
 
   // Use the new hook for authentication logic
   const {
@@ -120,6 +130,19 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
           const language = detectLanguage();
           setCurrentLanguage(language);
           await initializeI18n();
+          
+          // Check for wallet connection race condition
+          if (expectingWalletConnection && walletConnectionCallback) {
+            // Import persistent wallet state dynamically to avoid circular imports
+            const { persistentWalletState } = await import('./WalletContext');
+            
+            if (persistentWalletState?.connected) {
+              setExpectingWalletConnection(false);
+              const callback = walletConnectionCallback;
+              setWalletConnectionCallback(null);
+              callback();
+            }
+          }
         }
         appState.current = nextAppState;
       }
@@ -128,7 +151,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     return () => {
       subscription.remove();
     };
-  }, []);
+  }, [expectingWalletConnection, walletConnectionCallback, setExpectingWalletConnection, setWalletConnectionCallback]);
 
   if (!i18nReady || checkingAuth) {
     return null; // or a loading spinner
@@ -153,6 +176,10 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         hasBreeze,
         setHasBreeze,
         authenticateWithBiometrics,
+        expectingWalletConnection,
+        setExpectingWalletConnection,
+        walletConnectionCallback,
+        setWalletConnectionCallback,
       }}
     >
       <AuthProvider>

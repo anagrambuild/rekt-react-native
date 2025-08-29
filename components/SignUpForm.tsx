@@ -37,7 +37,7 @@ interface SignUpFormProps {
 
 export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
   const { t } = useTranslation();
-  const { sendOTP, verifyOTP, loading: authLoading } = useAuth();
+  const { sendOTP, signOut, verifyOTP, loading: authLoading } = useAuth();
   const { publicKey, connected } = useWallet();
   const { takePhoto, pickFromLibrary, isLoading } = useImagePicker();
   const { isSupported, isEnrolled, biometricType, enableBiometrics } =
@@ -201,7 +201,7 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
       if (result.success) {
         setOtpSent(true);
         Toast.show({
-          text1: t("OTP Sent"),
+          text1: t("Code Sent"),
           text2: t("Check your email for the verification code"),
           type: "success",
         });
@@ -457,7 +457,7 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
           </Column>
         </Column>
 
-        {/* <PrimaryButton
+        <PrimaryButton
           onPress={async () => {
             try {
               await signOut();
@@ -468,7 +468,7 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
           }}
         >
           {t("Sign Out")}
-        </PrimaryButton> */}
+        </PrimaryButton>
 
         {/* Submit Button */}
         <PrimaryButton

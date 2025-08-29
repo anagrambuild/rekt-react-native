@@ -75,7 +75,7 @@ const Index = () => {
       }, 800); // Brief delay for smooth transition
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [connected, showSignUpForm]);
+  }, [connected]);
 
   const player = useVideoPlayer(midFireUrl, player => {
     player.loop = true;
@@ -137,7 +137,7 @@ const Index = () => {
     if (Platform.OS === "ios") {
       setShowWalletModal(true);
     } else {
-      connect();
+      connect(() => setShowSignUpForm(true));
     }
   };
 
@@ -228,6 +228,7 @@ const Index = () => {
         <WalletConnectionModal
           visible={showWalletModal}
           onRequestClose={() => setShowWalletModal(false)}
+          onConnectionSuccess={() => setShowSignUpForm(true)}
         />
       )}
     </ScreenContainer>

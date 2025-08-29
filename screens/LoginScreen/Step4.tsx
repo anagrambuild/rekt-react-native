@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Platform, View } from "react-native";
 
 import iphoneFrame from "@/assets/images/app-pngs/iphone-frame.png";
@@ -29,6 +30,8 @@ const isAndroid = Platform.OS === "android";
 export const Step4 = () => {
   const { t } = useTranslation();
   const theme = useTheme();
+
+  const [value, setvalue] = useState("200.00");
   return (
     <Column
       $padding={0}
@@ -91,19 +94,19 @@ export const Step4 = () => {
           <Column $gap={16}>
             <BodyMEmphasized>{t("Enter amount")}</BodyMEmphasized>
             <AmountInput
-              value={"200.00"}
+              value={value}
               onChangeText={() => {}}
               disabled
               editable={false}
             />
             <Gap height={8} />
             <ScrollRow $gap={8} keyboardShouldPersistTaps="always">
-              <PresetButton value={"$10"} onPress={() => {}} />
-              <PresetButton value={"$50"} onPress={() => {}} />
-              <PresetButton value={"$100"} onPress={() => {}} />
-              <PresetButton value={"$200"} onPress={() => {}} />
-              <PresetButton value={"$500"} onPress={() => {}} />
-              <PresetButton value={"$1000"} onPress={() => {}} />
+              <PresetButton value={"$10"} onPress={() => setvalue("$10")} />
+              <PresetButton value={"$50"} onPress={() => setvalue("$50")} />
+              <PresetButton value={"$100"} onPress={() => setvalue("$100")} />
+              <PresetButton value={"$200"} onPress={() => setvalue("$200")} />
+              <PresetButton value={"$500"} onPress={() => setvalue("$500")} />
+              <PresetButton value={"$1000"} onPress={() => setvalue("$1000")} />
             </ScrollRow>
             <Gap height={8} />
             <AppleGooglePayButton />

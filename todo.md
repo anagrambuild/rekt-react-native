@@ -1,10 +1,8 @@
 UI
 
+- account creation on android
 - add avatar on account creation
 - get swig wallet balance
-- add more interactivity to splash
-- add text to loading screen on account creation?
-- why is app crashing?????
 
 High Priority
 
