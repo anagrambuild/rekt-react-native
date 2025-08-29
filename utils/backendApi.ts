@@ -1192,12 +1192,6 @@ export const getOpenPositions = async (userId: string): Promise<Position[]> => {
       throw new Error(result.error || "Failed to get positions");
     }
 
-    // Debug: Log the raw response to understand the backend format
-    console.log(
-      "🔍 Raw positions response:",
-      JSON.stringify(result.data, null, 2)
-    );
-
     // The backend returns position summaries that need to be mapped to our Position format
     // Since the backend structure might be different, let's map it properly
     const backendPositions = result.data!.positions;
