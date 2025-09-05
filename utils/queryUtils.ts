@@ -17,6 +17,7 @@ import {
   fetchSingleTokenPrice,
   fetchTokenPrices,
   getOpenPositions,
+  getSwigWalletBalance,
   // Add trading-related imports
   getTradingBalance,
   getTradingHistory,
@@ -28,8 +29,11 @@ import {
   Position,
   SupportedTimeframe,
   SupportedToken,
+  SwigWalletBalanceResponse,
   TokenPrice,
   TradingBalance,
+  updateUserProfile,
+  uploadAvatar,
   User,
 } from "./backendApi";
 import { queryClient } from "./queryClient";
@@ -411,6 +415,108 @@ export const useUsernameAvailabilityQuery = (
     queryFn: () => checkUsernameAvailabilityPublic(username),
     enabled: !!username && username.length > 0,
     staleTime: 1000 * 60 * 5, // 5 minutes stale time
+    ...options,
+  });
+};
+
+// Profile update types
+export interface UpdateUserProfileRequest {
+  userId: string;
+  userData: {
+    username?: string;
+    email?: string;
+    avatar_url?: string;
+    profileImage?: string; // For avatar upload
+  };
+}
+
+// Hook to upload avatar
+export const useUploadAvatarMutation = (
+  options?: UseMutationOptions<string, Error, { imageUri: string; fileName: string }>
+) => {
+  return useMutation({
+    mutationFn: ({ imageUri, fileName }) => uploadAvatar(imageUri, fileName),
+    ...options,
+  });
+};
+
+// Hook to update user profile (including avatar)
+export const useUpdateUserProfileMutation = (
+  options?: UseMutationOptions<User, Error, UpdateUserProfileRequest>
+) => {
+  return useMutation({
+    mutationFn: ({ userId, userData }) => updateUserProfile(userId, userData),
+    onSuccess: (data, variables) => {
+      // Invalidate user profile queries to refresh data across the app
+      queryClient.invalidateQueries({ queryKey: queryKeys.userProfile(variables.userId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.user });
+      
+      // Update the specific user profile cache with new data
+      queryClient.setQueryData(queryKeys.userProfile(variables.userId), data);
+    },
+    ...options,
+  });
+};
+
+// Hook to get USDC balance from Swig wallet using Solana RPC
+export const useSwigWalletBalanceQuery = (
+  swigWalletAddress: string,
+  options?: Omit<
+    UseQueryOptions<SwigWalletBalanceResponse, Error>,
+    "queryKey" | "queryFn"
+  >
+) => {
+  return useQuery({
+    queryKey: ["swigWallet", "balance", swigWalletAddress],
+    queryFn: () => {
+      console.log("🔄 [REACT QUERY] Executing USDC balance query for swig_address:", swigWalletAddress);
+      return getSwigWalletBalance(swigWalletAddress);
+    },
+    enabled: !!swigWalletAddress && swigWalletAddress.length > 0,
+    staleTime: 1000 * 30, // 30 seconds stale time
+    refetchInterval: 1000 * 60, // Refetch every minute
+    retry: (failureCount, error: any) => {
+      console.log(`🔄 [REACT QUERY] Retry attempt ${failureCount} for USDC balance:`, error?.message);
+      // Don't retry on invalid address errors
+      if (error?.message?.includes("Invalid wallet address")) {
+        console.log("🚫 [REACT QUERY] Not retrying - invalid address error");
+        return false;
+      }
+      return failureCount < 2; // Only retry twice for network errors
+    },
+    retryDelay: (attemptIndex: number) =>
+      Math.min(1000 * 2 ** attemptIndex, 10000), // Exponential backoff, max 10s
+
+    ...options,
+  });
+};
+
+// Hook to get USDC balance directly from Solana (bypasses backend entirely)
+export const useUSDCBalanceFromSolanaQuery = (
+  walletAddress: string,
+  options?: Omit<
+    UseQueryOptions<SwigWalletBalanceResponse, Error>,
+    "queryKey" | "queryFn"
+  >
+) => {
+  return useQuery({
+    queryKey: ["solana", "usdc", "balance", walletAddress],
+    queryFn: async () => {
+      const { getUSDCBalanceFromSolana } = await import("./solanaUtils");
+      return getUSDCBalanceFromSolana(walletAddress);
+    },
+    enabled: !!walletAddress && walletAddress.length > 0,
+    staleTime: 1000 * 20, // 20 seconds stale time (more frequent for direct RPC)
+    refetchInterval: 1000 * 45, // Refetch every 45 seconds
+    retry: (failureCount, error: any) => {
+      // Don't retry on invalid address errors
+      if (error?.message?.includes("Invalid wallet address")) {
+        return false;
+      }
+      return failureCount < 3; // Retry more for direct RPC calls
+    },
+    retryDelay: (attemptIndex: number) =>
+      Math.min(1000 * 2 ** attemptIndex, 15000), // Exponential backoff, max 15s
     ...options,
   });
 };
