@@ -4,5 +4,6 @@ export * from "./backendApi";
 export * from "./queryClient";
 export * from "./queryKeys";
 export * from "./queryUtils";
+export * from "./solanaUtils";
 export * from "./supabase";
 export * from "./supabaseApi";

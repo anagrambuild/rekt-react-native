@@ -10,11 +10,12 @@ import {
 } from "react";
 import { Alert, Linking, Platform } from "react-native";
 
-import { getSwigWalletBalance } from "@/utils/backendApi";
+import { useSwigWalletBalanceQuery } from "@/utils/queryUtils";
 import { createTransferService, TransferState } from "@/utils/transferService";
 
 import { PublicKey, Transaction } from "@solana/web3.js";
 
+import { useAppContext } from "./AppContext";
 import { useSolana } from "./SolanaContext";
 import bs58 from "bs58";
 import Constants from "expo-constants";
@@ -119,6 +120,7 @@ export const WalletProvider = ({
 }: WalletProviderProps) => {
   const { t } = useTranslation();
   const { connection, cluster } = useSolana();
+  const { userProfile } = useAppContext();
   // Remove the useAppContext hook usage
   // const { isLoggedIn } = useAppContext();
 
@@ -141,7 +143,6 @@ export const WalletProvider = ({
 
   // USDC Balance state
   const [usdcBalance, setUsdcBalance] = useState<number | null>(null);
-  const [isLoadingBalance, setIsLoadingBalance] = useState(false);
 
   // Transfer state
   const [transferState, setTransferState] = useState<TransferState>({
@@ -559,46 +560,45 @@ export const WalletProvider = ({
     setSession(null);
   }, []);
 
-  // Refresh USDC balance from Swig wallet
+  // Get swig wallet address from user profile (not connected wallet)
+  const swigWalletAddress = userProfile?.swigWalletAddress || "";
+  const isQueryEnabled = !!isLoggedIn && swigWalletAddress.length > 0;
+
+  // Use React Query to fetch USDC balance
+  const {
+    data: balanceData,
+    isLoading: isLoadingBalance,
+    refetch: refetchBalance,
+  } = useSwigWalletBalanceQuery(swigWalletAddress, {
+    enabled: isQueryEnabled,
+  });
+
+  // Create a wrapper function for refreshUSDCBalance to match the expected interface
   const refreshUSDCBalance = useCallback(async () => {
-    if (!publicKey || !isLoggedIn) {
-      // Skip balance check for transfer-only connections
-      return;
+    if (refetchBalance) {
+      await refetchBalance();
     }
+  }, [refetchBalance]);
 
-    try {
-      setIsLoadingBalance(true);
-      // Get the user profile to get the swig wallet address
-      // This would typically come from your user context or API
-      // For now, we'll use a placeholder - you may need to adjust this
-      const swigWalletAddress = publicKey.toBase58(); // Placeholder
-
-      const balanceResult = await getSwigWalletBalance(swigWalletAddress);
-
-      if (balanceResult.status === "success") {
-        setUsdcBalance(balanceResult.balance);
+  // Update local state when balance data changes
+  useEffect(() => {
+    if (balanceData) {
+      if (balanceData.status === "success") {
+        setUsdcBalance(balanceData.balance);
       } else {
-        console.warn("Failed to get USDC balance:", balanceResult.error);
         setUsdcBalance(0);
       }
-    } catch (error) {
-      console.error("Error getting Swig wallet balance:", error);
-      setUsdcBalance(0);
-    } finally {
-      setIsLoadingBalance(false);
-    }
-  }, [publicKey, isLoggedIn]);
-
-  // Refresh USDC balance when wallet connects (but not for transfer-only connections)
-  useEffect(() => {
-    if (connected && publicKey && isLoggedIn) {
-      // Only refresh balance if user is fully authenticated
-      refreshUSDCBalance();
-    } else if (!connected) {
+    } else if (!isLoggedIn || !swigWalletAddress) {
       setUsdcBalance(null);
-      setIsLoadingBalance(false);
     }
-  }, [connected, publicKey, refreshUSDCBalance, isLoggedIn]);
+  }, [balanceData, swigWalletAddress, isLoggedIn]);
+
+  // Reset balance when wallet disconnects
+  useEffect(() => {
+    if (!connected) {
+      setUsdcBalance(null);
+    }
+  }, [connected]);
 
   // Transfer methods - assumes wallet is already connected
   const initiateTransfer = useCallback(
