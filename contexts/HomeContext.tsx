@@ -143,6 +143,7 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
     error: positionsQueryError,
     refetch: refetchPositions,
   } = useOpenPositionsQuery(userId || "", { enabled: !!userId });
+  console.log("openPositions", openPositions);
 
   const {
     data: tradingHistory = [],

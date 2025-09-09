@@ -40,8 +40,7 @@ export const LiveTradeView = ({ trade }: LiveTradeViewProps) => {
   // Find the actual position for this trade
   const currentPosition = openPositions.find(
     pos =>
-      pos.market === selectedToken.toUpperCase() &&
-      pos.direction === trade.side
+      pos.market === selectedToken.toUpperCase() && pos.direction === trade.side
   );
 
   // Use real position data only
@@ -126,7 +125,10 @@ export const LiveTradeView = ({ trade }: LiveTradeViewProps) => {
             </Row>
             <BodySEmphasized>
               {rektAt
-                ? `$${rektAt.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                ? `$${rektAt.toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}`
                 : t("N/A")}
             </BodySEmphasized>
           </Row>
