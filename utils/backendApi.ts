@@ -926,22 +926,30 @@ export const getSwigWalletBalance = async (
   swigWalletAddress: string
 ): Promise<SwigWalletBalanceResponse> => {
   try {
-    // Use the authenticated API client instead of raw fetch
-    const result = await apiClient.get<ApiResponse<SwigWalletBalanceResponse>>(
-      `/api/wallet/balance/${swigWalletAddress}`
-    );
-
-    if (!result.success) {
-      throw new Error(result.error || "Failed to get Swig wallet balance");
-    }
-    return result.data!;
+    console.log("🔄 [SWIG BALANCE] Using temporary Solana RPC implementation for:", swigWalletAddress);
+    
+    // TEMPORARY: Use Solana RPC directly until backend API is implemented
+    const { getUSDCBalanceFromSolana } = await import("./solanaUtils");
+    const result = await getUSDCBalanceFromSolana(swigWalletAddress);
+    
+    console.log("✅ [SWIG BALANCE] Got balance via Solana RPC:", result);
+    return result;
+    
+    // TODO: Restore backend API call when /api/wallet/balance/${swigWalletAddress} is implemented
+    // const result = await apiClient.get<ApiResponse<SwigWalletBalanceResponse>>(
+    //   `/api/wallet/balance/${swigWalletAddress}`
+    // );
+    // if (!result.success) {
+    //   throw new Error(result.error || "Failed to get Swig wallet balance");
+    // }
+    // return result.data!;
   } catch (error) {
     console.error("Error getting Swig wallet balance:", error);
     // Return zero balance on error to match backend behavior
     return {
       balance: 0,
       formatted: "$0.00",
-      source: "swig_wallet",
+      source: "solana_rpc_fallback",
       status: "error",
       error: error instanceof Error ? error.message : "Unknown error",
     };
@@ -1595,3 +1603,51 @@ export const breezeOptIn = async (): Promise<JobResponse> => {
     throw error;
   }
 };
+
+// Cancel Order Request Interface
+export interface CancelOrderRequest {
+  user_id: string;
+  order_id?: number;
+  user_order_id?: number;
+  order_ids?: number[];
+  market_symbol?: string;
+  market_index?: number;
+  direction?: string;
+  cancel_all?: boolean;
+}
+
+// Cancel Order Job Function
+export const cancelOrderJob = async (
+  cancelData: CancelOrderRequest
+): Promise<TradeJobResponse> => {
+  try {
+    console.log("📤 Sending cancel order request:", {
+      endpoint: "/api/trades/cancel-order",
+      data: cancelData,
+    });
+
+    const result = await apiClient.post<ApiResponse<TradeJobResponse>>(
+      `/api/trades/cancel-order`,
+      cancelData
+    );
+
+    console.log("📥 Cancel order response:", result);
+
+    if (!result.success || !result.data) {
+      throw new Error(result.error || "Failed to cancel order job");
+    }
+
+    return result.data;
+  } catch (error) {
+    console.error("Error cancelling order job:", error);
+
+    // Log more details about the error
+    if (error instanceof Error && error.message.includes("422")) {
+      console.error("🚨 422 Error Details - Request was:", cancelData);
+    }
+
+    throw error;
+  }
+};
+
+

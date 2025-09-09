@@ -7,6 +7,8 @@ import {
 
 import { apiClient } from "./apiClient";
 import {
+  cancelOrderJob,
+  CancelOrderRequest,
   ChartDataPoint,
   checkUsernameAvailabilityPublic,
   ClosePositionRequest,
@@ -31,6 +33,7 @@ import {
   SupportedToken,
   SwigWalletBalanceResponse,
   TokenPrice,
+  TradeJobResponse,
   TradingBalance,
   updateUserProfile,
   uploadAvatar,
@@ -402,6 +405,22 @@ export const useClosePositionMutation = (
   });
 };
 
+// Hook to cancel a pending order
+export const useCancelOrderMutation = (
+  options?: UseMutationOptions<TradeJobResponse, Error, CancelOrderRequest>
+) => {
+  return useMutation({
+    mutationFn: cancelOrderJob,
+    onSuccess: (data, variables) => {
+      // Invalidate position queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ["trading", "positions"] });
+      queryClient.invalidateQueries({ queryKey: ["trading", "history"] });
+      queryClient.invalidateQueries({ queryKey: ["trading", "balance"] });
+    },
+    ...options,
+  });
+};
+
 // Hook to check username availability with debouncing
 export const useUsernameAvailabilityQuery = (
   username: string,
@@ -432,7 +451,11 @@ export interface UpdateUserProfileRequest {
 
 // Hook to upload avatar
 export const useUploadAvatarMutation = (
-  options?: UseMutationOptions<string, Error, { imageUri: string; fileName: string }>
+  options?: UseMutationOptions<
+    string,
+    Error,
+    { imageUri: string; fileName: string }
+  >
 ) => {
   return useMutation({
     mutationFn: ({ imageUri, fileName }) => uploadAvatar(imageUri, fileName),
@@ -448,9 +471,11 @@ export const useUpdateUserProfileMutation = (
     mutationFn: ({ userId, userData }) => updateUserProfile(userId, userData),
     onSuccess: (data, variables) => {
       // Invalidate user profile queries to refresh data across the app
-      queryClient.invalidateQueries({ queryKey: queryKeys.userProfile(variables.userId) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.userProfile(variables.userId),
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.user });
-      
+
       // Update the specific user profile cache with new data
       queryClient.setQueryData(queryKeys.userProfile(variables.userId), data);
     },
@@ -469,14 +494,20 @@ export const useSwigWalletBalanceQuery = (
   return useQuery({
     queryKey: ["swigWallet", "balance", swigWalletAddress],
     queryFn: () => {
-      console.log("🔄 [REACT QUERY] Executing USDC balance query for swig_address:", swigWalletAddress);
+      console.log(
+        "🔄 [REACT QUERY] Executing USDC balance query for swig_address:",
+        swigWalletAddress
+      );
       return getSwigWalletBalance(swigWalletAddress);
     },
     enabled: !!swigWalletAddress && swigWalletAddress.length > 0,
     staleTime: 1000 * 30, // 30 seconds stale time
     refetchInterval: 1000 * 60, // Refetch every minute
     retry: (failureCount, error: any) => {
-      console.log(`🔄 [REACT QUERY] Retry attempt ${failureCount} for USDC balance:`, error?.message);
+      console.log(
+        `🔄 [REACT QUERY] Retry attempt ${failureCount} for USDC balance:`,
+        error?.message
+      );
       // Don't retry on invalid address errors
       if (error?.message?.includes("Invalid wallet address")) {
         console.log("🚫 [REACT QUERY] Not retrying - invalid address error");
