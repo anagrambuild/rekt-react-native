@@ -966,6 +966,7 @@ export interface PlaceTradeRequest {
   take_profit_price?: number;
   stop_loss_price?: number;
   leverage: number;
+  collateral_amount: string;
 }
 
 export interface OpenPositionRequest {
@@ -1096,6 +1097,10 @@ export const openTradingPosition = async (
       throw new Error("No authenticated user found");
     }
 
+    // Calculate required collateral based on trade amount and leverage
+    const tradeValue = request.amount; // This is the position size in USD
+    const requiredCollateral = 1;
+
     // Use the new format directly - no conversion needed
     const tradeRequest: PlaceTradeRequest = {
       user_id: request.userId,
@@ -1103,6 +1108,7 @@ export const openTradingPosition = async (
       trade_type: request.direction,
       quantity: request.amount,
       leverage: request.leverage,
+      collateral_amount: requiredCollateral.toString(), // Required by backend
       // Optional fields can be added later for limit orders, TP/SL
     };
 
@@ -1117,11 +1123,19 @@ export const openTradingPosition = async (
       throw new Error("No authenticated user found");
     }
 
+    console.log("🔄 [REALTIME] Setting up dual listeners for user:", userId);
+    console.log(
+      "📡 [REALTIME] Primary: Backend job events (trade_completed/trade_failed)"
+    );
+    console.log("🗄️ [REALTIME] Backup: Database position insertion events");
+
     return new Promise((resolve, reject) => {
       const channel = supabase
-        .channel(`trade:${userId}`)
-        .on("broadcast", { event: "trade_placed" }, async payload => {
-          console.log("🎉 Trade placed successfully:", payload);
+        .channel(`user:${userId}`)
+
+        // Primary: Listen for backend job completion events
+        .on("broadcast", { event: "trade_completed" }, async payload => {
+          console.log("🎉 [PRIMARY] Trade completed via backend job:", payload);
 
           try {
             // Step 3: Get the created position data from the payload or fetch from API
@@ -1154,22 +1168,97 @@ export const openTradingPosition = async (
             reject(error);
           }
         })
-        .on("broadcast", { event: "trade_placement_failed" }, payload => {
-          console.log("❌ Trade placement failed:", payload);
+        .on("broadcast", { event: "trade_failed" }, payload => {
+          console.log("❌ [PRIMARY] Trade failed via backend job:", payload);
           channel.unsubscribe();
-          reject(new Error(payload.error || "Trade placement failed"));
+          reject(new Error(payload.error || "Trade failed"));
         })
+
+        // Backup: Listen for database position insertion
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "position",
+            filter: `user_id=eq.${userId}`,
+          },
+          async payload => {
+            console.log(
+              "🎉 [BACKUP] New position detected via database:",
+              payload.new
+            );
+
+            // Check if this is a recent position (within last 2 minutes)
+            const positionCreatedAt = new Date(payload.new.created_at);
+            const timeDiff = Date.now() - positionCreatedAt.getTime();
+
+            if (timeDiff < 2 * 60 * 1000) {
+              console.log("✅ [BACKUP] Position is recent, resolving trade");
+              channel.unsubscribe();
+
+              // Convert database position to frontend Position format
+              const position: Position = {
+                id: payload.new.id,
+                market: payload.new.asset, // SOL, BTC, ETH
+                direction: "LONG", // Default, will be updated when we get actual position data
+                status: "OPEN",
+                size: 0, // Will be populated when we get actual position data
+                entryPrice: 0, // Will be populated when we get actual position data
+                exitPrice: null,
+                currentPrice: 0,
+                pnl: 0,
+                pnlPercentage: 0,
+                leverage: 1,
+                liquidationPrice: 0,
+                marginUsed: 0,
+                openedAt: payload.new.created_at,
+                closedAt: null,
+                duration: 0,
+                fees: 0,
+                points: 0,
+              };
+
+              resolve(position);
+            } else {
+              console.log("⏰ [BACKUP] Position is too old, ignoring");
+            }
+          }
+        )
+
         .subscribe(status => {
-          console.log("Realtime subscription status:", status);
+          console.log("📡 [REALTIME] Subscription status:", status);
         });
 
-      // Set up timeout for job completion (5 minutes)
+      // Set up warning at 30 seconds
       setTimeout(() => {
+        console.warn(
+          "⚠️ [TRADE DEBUG] Trade taking longer than expected (30s). Job ID:",
+          jobResponse.job_id
+        );
+        console.warn(
+          "🔄 [TRADE DEBUG] Waiting for backend job or database insertion..."
+        );
+      }, 30 * 1000);
+
+      // Set up timeout for job completion (2 minutes)
+      setTimeout(() => {
+        console.error(
+          "❌ [TRADE DEBUG] Trade placement timeout - no response from backend job or database"
+        );
+        console.error(
+          "🔍 [TRADE DEBUG] Neither backend job completion nor database insertion detected"
+        );
+        console.error(
+          "💡 [TRADE DEBUG] Possible issues: Insufficient balance, backend error, job queue stuck, or database insertion failed"
+        );
         channel.unsubscribe();
         reject(
-          new Error("Trade placement timeout - job took too long to complete")
+          new Error(
+            "Trade placement timeout - no response from backend or database. Check your balance and try again."
+          )
         );
-      }, 5 * 60 * 1000);
+      }, 2 * 60 * 1000);
     });
   } catch (error) {
     console.error("Error in trade placement flow:", error);
