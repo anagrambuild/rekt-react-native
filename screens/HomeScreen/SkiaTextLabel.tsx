@@ -49,7 +49,7 @@ export const SkiaTextGlowStyles = {
 
 export type SkiaTextGlowType = keyof typeof SkiaTextGlowStyles;
 
-interface PerformantTextLabelProps {
+interface SkiaTextLabelProps {
   text: string;
   x: number;
   y: number;
@@ -60,7 +60,7 @@ interface PerformantTextLabelProps {
 }
 
 // Optimized text label with single blur layer for better performance
-const PerformantTextLabelComponent: React.FC<PerformantTextLabelProps> = ({
+const SkiaTextLabelComponent: React.FC<SkiaTextLabelProps> = ({
   text,
   x,
   y,
@@ -125,6 +125,6 @@ const PerformantTextLabelComponent: React.FC<PerformantTextLabelProps> = ({
   );
 };
 
-PerformantTextLabelComponent.displayName = "PerformantTextLabel";
+SkiaTextLabelComponent.displayName = "SkiaTextLabel";
 
-export const PerformantTextLabel = React.memo(PerformantTextLabelComponent);
+export const SkiaTextLabel = React.memo(SkiaTextLabelComponent);

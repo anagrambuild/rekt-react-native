@@ -17,7 +17,7 @@ import {
   vec,
 } from "@shopify/react-native-skia";
 
-import { PerformantTextLabel } from "./PerformantTextLabel";
+import { SkiaTextLabel } from "./SkiaTextLabel";
 
 interface LiquidationLineProps {
   pricePositions: PricePositions;
@@ -166,7 +166,7 @@ export const LiquidationLine: React.FC<LiquidationLineProps> = ({
           const xPosition = chartBounds.right - estimatedWidth - 15;
 
           return (
-            <PerformantTextLabel
+            <SkiaTextLabel
               x={xPosition}
               y={pinnedY - 10}
               text={labelText}

@@ -2,7 +2,7 @@ import React from "react";
 
 import { ChartBounds, PricePositions } from "@/utils/chartUtils";
 
-import { PerformantTextLabel } from "./PerformantTextLabel";
+import { SkiaTextLabel } from "./SkiaTextLabel";
 
 interface LiquidationPriceLabelProps {
   pricePositions: PricePositions;
@@ -58,7 +58,5 @@ export const LiquidationPriceLabel: React.FC<LiquidationPriceLabelProps> = ({
     labelY = liquidationPriceY - 9;
   }
 
-  return (
-    <PerformantTextLabel text={labelText} x={labelX} y={labelY} type="red" />
-  );
+  return <SkiaTextLabel text={labelText} x={labelX} y={labelY} type="red" />;
 };

@@ -2,7 +2,7 @@ import React from "react";
 
 import { ChartBounds, PricePositions } from "@/utils/chartUtils";
 
-import { PerformantTextLabel } from "./PerformantTextLabel";
+import { SkiaTextLabel } from "./SkiaTextLabel";
 
 interface EntryPriceLabelProps {
   pricePositions: PricePositions;
@@ -47,7 +47,5 @@ export const EntryPriceLabel: React.FC<EntryPriceLabelProps> = ({
     return null;
   }
 
-  return (
-    <PerformantTextLabel text={labelText} x={labelX} y={labelY} type="dark" />
-  );
+  return <SkiaTextLabel text={labelText} x={labelX} y={labelY} type="dark" />;
 };

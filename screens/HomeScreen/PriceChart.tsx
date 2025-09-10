@@ -22,7 +22,7 @@ import {
 import { EntryPriceLabel } from "./EntryPriceLabel";
 import { LiquidationLine } from "./LiquidationLine";
 import { LiquidationPriceLabel } from "./LiquidationPriceLabel";
-import { PerformantTextLabel } from "./PerformantTextLabel";
+import { SkiaTextLabel } from "./SkiaTextLabel";
 import { useTranslation } from "react-i18next";
 import styled, { DefaultTheme, useTheme } from "styled-components/native";
 import {
@@ -356,7 +356,7 @@ export const PriceChart = ({
 
                 {/* Current price dot and label */}
                 {lastPoint && lastPoint.x != null && lastPoint.y != null && (
-                  <PerformantTextLabel
+                  <SkiaTextLabel
                     text={
                       showPercent && currentPosition
                         ? `${
