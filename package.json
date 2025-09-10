@@ -26,6 +26,7 @@
     "@react-navigation/bottom-tabs": "^7.3.10",
     "@react-navigation/elements": "^2.3.8",
     "@react-navigation/native": "^7.1.6",
+    "@shopify/react-native-skia": "^2.2.13",
     "@solana-mobile/mobile-wallet-adapter-protocol": "^2.2.2",
     "@solana-mobile/mobile-wallet-adapter-protocol-web3js": "^2.2.2",
     "@solana-mobile/wallet-adapter-mobile": "^2.2.2",
@@ -79,7 +80,8 @@
     "react-native-webview": "13.13.5",
     "styled-components": "^6.1.19",
     "toastify-react-native": "^7.2.1",
-    "tweetnacl": "^1.0.3"
+    "tweetnacl": "^1.0.3",
+    "victory-native": "^41.20.1"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
