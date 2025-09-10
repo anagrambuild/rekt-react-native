@@ -77,7 +77,7 @@ interface HomeContextType {
 export const HomeContext = createContext<HomeContextType>({
   selectedToken: "sol",
   setSelectedToken: () => {},
-  selectedTimeframe: "1m",
+  selectedTimeframe: "1s",
   setSelectedTimeframe: () => {},
   priceChartTimeframes: [],
   solTrade: null,
@@ -117,7 +117,7 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
   const { usdcBalance } = useWallet();
   const { userId } = useProfileContext();
   const [selectedToken, setSelectedToken] = useState<string>("sol");
-  const [selectedTimeframe, setSelectedTimeframe] = useState<string>("1m");
+  const [selectedTimeframe, setSelectedTimeframe] = useState<string>("1s");
   const [solTrade, setSolTrade] = useState<Trade | null>(null);
   const [ethTrade, setEthTrade] = useState<Trade | null>(null);
   const [btcTrade, setBtcTrade] = useState<Trade | null>(null);
@@ -245,8 +245,7 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
       });
 
       // Update local trade state to reflect the successful trade
-      const token =
-        market === "SOL" ? "sol" : market === "ETH" ? "eth" : "btc";
+      const token = market === "SOL" ? "sol" : market === "ETH" ? "eth" : "btc";
       const currentTrade =
         token === "sol" ? solTrade : token === "eth" ? ethTrade : btcTrade;
       const updatedTrade = {
@@ -439,6 +438,7 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
 };
 
 const priceChartTimeframes = [
+  { label: "live", value: "1s" },
   { label: "1m", value: "1m" },
   { label: "5m", value: "5m" },
   { label: "1h", value: "1h" },

@@ -1,7 +1,8 @@
-import { Card, Picker, ScrollRow, TokenTab } from "@/components";
+import { Card, ScrollRow, TokenTab } from "@/components";
 import { useHomeContext } from "@/contexts";
 
 import { PriceChart } from "./PriceChart";
+import { TimeframeSelector } from "./TimeframeSelector";
 import styled from "styled-components/native";
 
 // Generate dummy SOL chart data for login screen that matches the design
@@ -117,31 +118,21 @@ export const PriceChartCard = ({
         />
       </ScrollRow>
       <ChartContainer>
-        <PickerContainer>
-          <Picker
-            options={priceChartTimeframes}
-            selectedValue={selectedTimeframe}
-            onValueChange={setSelectedTimeframe}
-          />
-        </PickerContainer>
         <PriceChart
           showLiquidation={showLiquidation}
           trade={currentTrade}
           dummyData={loginScreen ? dummySolData : undefined}
         />
       </ChartContainer>
+      <TimeframeSelector
+        timeframes={priceChartTimeframes}
+        selectedTimeframe={selectedTimeframe}
+        onTimeframeChange={setSelectedTimeframe}
+      />
     </Card>
   );
 };
 
 const ChartContainer = styled.View`
   flex: 1;
-`;
-
-const PickerContainer = styled.View`
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  z-index: 1;
-  opacity: 0.92;
 `;
