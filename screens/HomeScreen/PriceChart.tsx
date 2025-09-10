@@ -84,6 +84,9 @@ export const PriceChart = ({
   const theme = useTheme();
   const [chartHeight] = useState(200);
   const { selectedToken, selectedTimeframe, openPositions } = useHomeContext();
+  
+  // Optimize animation duration based on timeframe
+  const animationDuration = selectedTimeframe === "1s" ? 200 : 60;
 
   // Initialize chart press state here (before any conditional returns)
   const chartPressState = useChartPressState({
@@ -174,8 +177,11 @@ export const PriceChart = ({
   );
 
   // Format data for Victory Native (requires x and y fields)
+  // For real-time timeframes, use timestamp-based x values to enable sliding
   const chartData = data.map((item, index) => ({
-    x: index,
+    x: selectedTimeframe === "1s" || selectedTimeframe === "1m" 
+      ? (item.timestamp || Date.now() - (data.length - 1 - index) * 1000) // Use timestamp for sliding
+      : index, // Use index for static charts
     y: item.value,
   }));
 
@@ -247,7 +253,7 @@ export const PriceChart = ({
   }
 
   // Show loading state if data is not available and no dummy data is provided
-  if ((!dummyData && isChartLoading) || data.length === 0 || !font) {
+  if ((!dummyData && isChartLoading) || (!dummyData && data.length === 0 && !chartError) || !font) {
     return (
       <Wrapper>
         <ChartContainer
@@ -265,8 +271,14 @@ export const PriceChart = ({
     );
   }
 
-  // Show error state only if no dummy data is provided
+  // Show error state only if no dummy data is provided and there's an actual error
   if (!dummyData && chartError) {
+    const errorMessage = chartError.message?.includes("Failed to fetch historical data") 
+      ? t("Chart data temporarily unavailable")
+      : chartError.message?.includes("network") || chartError.message?.includes("fetch")
+      ? t("Connection error - check your internet")
+      : t("Failed to load chart data");
+      
     return (
       <Wrapper>
         <ChartContainer
@@ -278,7 +290,7 @@ export const PriceChart = ({
           }}
         >
           <BodyXSEmphasized style={{ color: theme.colors.textSecondary }}>
-            {t("Failed to load chart data")}
+            {errorMessage}
           </BodyXSEmphasized>
         </ChartContainer>
       </Wrapper>
@@ -300,6 +312,10 @@ export const PriceChart = ({
           }}
           domain={{
             y: getDynamicDomain(),
+            // For real-time timeframes, set x domain to show sliding window
+            x: selectedTimeframe === "1s" || selectedTimeframe === "1m" 
+              ? undefined // Let Victory Native auto-scale x-axis for timestamps
+              : undefined // Use default for index-based charts
           }}
           chartPressState={chartPressState.state}
           yAxis={[
@@ -383,7 +399,7 @@ export const PriceChart = ({
                 y0={chartBounds.bottom}
                 color={chartColor}
                 curveType="natural"
-                animate={{ type: "timing", duration: 60 }}
+                animate={{ type: "timing", duration: animationDuration }}
               >
                 <LinearGradient
                   start={vec(0, chartBounds.top)}
@@ -403,7 +419,7 @@ export const PriceChart = ({
                 color={chartColor}
                 strokeWidth={2}
                 curveType="natural"
-                animate={{ type: "timing", duration: 60 }}
+                animate={{ type: "timing", duration: animationDuration }}
               />
 
               <Scatter
@@ -411,14 +427,14 @@ export const PriceChart = ({
                 radius={8}
                 style="fill"
                 color={`${chartColor}30`}
-                animate={{ type: "timing", duration: 60 }}
+                animate={{ type: "timing", duration: animationDuration }}
               />
               <Scatter
                 points={[points.y[points.y.length - 1]]}
                 radius={5}
                 style="fill"
                 color={chartColor}
-                animate={{ type: "timing", duration: 60 }}
+                animate={{ type: "timing", duration: animationDuration }}
               />
 
               {/* Liquidation Line */}

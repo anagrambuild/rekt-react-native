@@ -208,11 +208,57 @@ export const useHistoricalDataQuery = (
     "queryKey" | "queryFn"
   >
 ) => {
+  // Dynamic intervals based on timeframe - match the actual timeframe intervals
+  const getRefreshIntervals = (timeframe: SupportedTimeframe) => {
+    switch (timeframe) {
+      case "1s":
+        return { staleTime: 500, refetchInterval: 1000 }; // Update every 1 second
+      case "1m":
+        return { staleTime: 30000, refetchInterval: 60000 }; // Update every 1 minute
+      case "2m":
+        return { staleTime: 60000, refetchInterval: 120000 }; // Update every 2 minutes
+      case "5m":
+        return { staleTime: 150000, refetchInterval: 300000 }; // Update every 5 minutes
+      case "10m":
+        return { staleTime: 300000, refetchInterval: 600000 }; // Update every 10 minutes
+      case "1h":
+        return { staleTime: 1800000, refetchInterval: 3600000 }; // Update every 1 hour
+      case "4h":
+        return { staleTime: 7200000, refetchInterval: 14400000 }; // Update every 4 hours
+      case "1d":
+        return { staleTime: 43200000, refetchInterval: 86400000 }; // Update every 1 day
+      default:
+        return { staleTime: 30000, refetchInterval: 60000 }; // Default: 1 minute
+    }
+  };
+
+  const { staleTime, refetchInterval } = getRefreshIntervals(timeframe);
+
   return useQuery({
     queryKey: ["historicalData", token, timeframe],
-    queryFn: () => fetchHistoricalData(token, timeframe),
-    staleTime: 1000 * 60, // 1 minute stale time
-    refetchInterval: 1000 * 60, // Refetch every minute
+    queryFn: () => {
+      return fetchHistoricalData(token, timeframe);
+    },
+    staleTime,
+    refetchInterval,
+    refetchIntervalInBackground: true, // Keep updating even when app is in background
+    structuralSharing: false, // Disable structural sharing to ensure UI updates when data changes
+    retry: (failureCount, error: any) => {
+      // Don't retry on client errors
+      if (
+        error?.message?.includes("400") || // Bad request
+        error?.message?.includes("404") || // Not found
+        error?.message?.includes("429")
+      ) {
+        // Rate limited
+        console.log("🚫 Not retrying client error:", error.message);
+        return false;
+      }
+      // Retry up to 2 times for network/server errors
+      return failureCount < 2;
+    },
+    retryDelay: (attemptIndex: number) =>
+      Math.min(1000 * 2 ** attemptIndex, 10000), // Exponential backoff, max 10s
     ...options,
   });
 };
@@ -354,8 +400,6 @@ export const useOpenPositionMutation = (
   return useMutation({
     mutationFn: openTradingPosition,
     onSuccess: (data, variables) => {
-      console.log("🔄 [REACT QUERY] Position mutation succeeded, updating cache");
-      
       // Only invalidate queries, don't immediately update cache to prevent re-renders during operation
       // The queries will refetch automatically and update the UI
       queryClient.invalidateQueries({ queryKey: ["trading", "positions"] });

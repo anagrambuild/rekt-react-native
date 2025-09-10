@@ -179,9 +179,9 @@ export const fetchTokenPrices = async (
         const confidence =
           parseFloat(priceData.price.conf) * Math.pow(10, priceData.price.expo);
 
-        // Calculate a mock 24h change (we'll use confidence as a proxy for now)
-        // In a real implementation, you'd need historical data or a different endpoint
-        const mockChange24h =
+        // Calculate 24h change using confidence as a rough estimate
+        // Note: Pyth doesn't provide 24h change, so this is an approximation
+        const estimatedChange24h =
           (confidence / price) * 100 * (Math.random() > 0.5 ? 1 : -1);
 
         result[token] = {
@@ -194,8 +194,8 @@ export const fetchTokenPrices = async (
               ? "Ethereum"
               : "Bitcoin",
           current_price: price,
-          price_change_24h: mockChange24h,
-          price_change_percentage_24h: mockChange24h,
+          price_change_24h: estimatedChange24h,
+          price_change_percentage_24h: estimatedChange24h,
           market_cap: 0, // Not provided by Pyth
           total_volume: 0, // Not provided by Pyth
           last_updated: new Date(
@@ -245,63 +245,202 @@ export type SupportedTimeframe =
   | "4h"
   | "1d";
 
+// CoinGecko ID mapping
+const COINGECKO_ID_MAP = {
+  sol: "solana",
+  eth: "ethereum",
+  btc: "bitcoin",
+} as const;
+
+// Timeframe to days mapping for CoinGecko (optimized for real-time updates)
+const COINGECKO_CONFIG = {
+  "1s": { days: 1 }, // Auto: 5-minute granularity (best we can get for real-time)
+  "1m": { days: 1 }, // Auto: 5-minute granularity
+  "2m": { days: 1 }, // Auto: 5-minute granularity
+  "5m": { days: 1 }, // Auto: 5-minute granularity
+  "10m": { days: 2 }, // Auto: hourly granularity (2 days for more recent data)
+  "1h": { days: 7 }, // Auto: hourly granularity
+  "4h": { days: 30 }, // Auto: hourly granularity
+  "1d": { days: 90 }, // Auto: daily granularity (3 months for better chart)
+} as const;
+
+// Fetch historical data from CoinGecko
+const fetchHistoricalDataFromCoinGecko = async (
+  token: SupportedToken,
+  timeframe: SupportedTimeframe
+): Promise<ChartDataPoint[]> => {
+  const coinId = COINGECKO_ID_MAP[token];
+  const config = COINGECKO_CONFIG[timeframe];
+
+  if (!coinId) {
+    throw new Error(`Unsupported token: ${token}`);
+  }
+
+  // Build URL with auto-granularity (CoinGecko free tier doesn't support interval parameter)
+  const url = `https://api.coingecko.com/api/v3/coins/${coinId}/market_chart?vs_currency=usd&days=${config.days}`;
+
+  const response = await fetch(url, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    // Handle specific CoinGecko errors
+    if (response.status === 429) {
+      throw new Error(`CoinGecko API rate limited (429) - too many requests`);
+    } else if (response.status >= 500) {
+      throw new Error(
+        `CoinGecko API server error (${response.status}) - service temporarily unavailable`
+      );
+    } else {
+      throw new Error(
+        `CoinGecko API error: ${response.status} ${response.statusText}`
+      );
+    }
+  }
+
+  const data = await response.json();
+
+  if (!data.prices || !Array.isArray(data.prices)) {
+    throw new Error("Invalid response format from CoinGecko API");
+  }
+
+  // Convert CoinGecko prices to ChartDataPoint format
+  // CoinGecko format: [[timestamp, price], ...]
+  let chartData: ChartDataPoint[] = data.prices.map(
+    (pricePoint: [number, number]) => ({
+      value: pricePoint[1], // price
+      timestamp: pricePoint[0], // timestamp
+    })
+  );
+
+  // Sample data based on timeframe - use fewer points for better performance
+  const maxPoints = timeframe === "1s" ? 20 : timeframe === "1m" ? 30 : 25;
+  if (chartData.length > maxPoints) {
+    const step = Math.ceil(chartData.length / maxPoints);
+    chartData = chartData.filter((_, index) => index % step === 0);
+  }
+  return chartData;
+};
+
+// Global cache to maintain sliding window data for each token/timeframe
+const chartDataCache = new Map<string, ChartDataPoint[]>();
+
+// Clear cache for a specific token/timeframe (useful when switching timeframes)
+export const clearChartDataCache = (
+  token?: SupportedToken,
+  timeframe?: SupportedTimeframe
+) => {
+  if (token && timeframe) {
+    const cacheKey = `${token}-${timeframe}`;
+    chartDataCache.delete(cacheKey);
+    chartInitialized.delete(cacheKey);
+  } else {
+    chartDataCache.clear();
+    chartInitialized.clear();
+  }
+};
+
+// Track initialization state to avoid refetching historical data
+const chartInitialized = new Map<string, boolean>();
+
+// Create real-time sliding window data (optimized)
+const createRealTimeData = async (
+  token: SupportedToken,
+  timeframe: SupportedTimeframe,
+  historicalData: ChartDataPoint[]
+): Promise<ChartDataPoint[]> => {
+  const cacheKey = `${token}-${timeframe}`;
+
+  try {
+    // Get current price from Pyth (always fresh, real-time)
+    const currentPrices = await fetchTokenPrices([token]);
+    const currentPrice = currentPrices[token]?.current_price;
+
+    if (currentPrice) {
+      const now = Date.now();
+
+      // Get existing cached data or initialize with historical data
+      let cachedData = chartDataCache.get(cacheKey);
+      if (!cachedData) {
+        cachedData = [...historicalData];
+        chartDataCache.set(cacheKey, cachedData);
+        chartInitialized.set(cacheKey, true);
+      }
+
+      // For real-time timeframes, add new point and maintain sliding window
+      if (timeframe === "1s" || timeframe === "1m") {
+        // Add new data point on the right with CURRENT real-time price
+        const newPoint: ChartDataPoint = {
+          value: currentPrice,
+          timestamp: now,
+        };
+
+        // Add to the end (right side of chart)
+        cachedData.push(newPoint);
+
+        // Maintain fixed window size - remove old points from the left
+        const maxPoints = 20;
+        if (cachedData.length > maxPoints) {
+          cachedData.shift(); // Remove oldest point from left
+        }
+
+        // Update cache
+        chartDataCache.set(cacheKey, cachedData);
+
+        return [...cachedData]; // Return copy to trigger React re-render
+      } else {
+        // For longer timeframes, just update the last point
+        cachedData[cachedData.length - 1] = {
+          value: currentPrice,
+          timestamp: now,
+        };
+
+        return [...cachedData];
+      }
+    }
+  } catch (error) {
+    console.warn(`⚠️ Failed to get current price: ${error}`);
+  }
+
+  return historicalData;
+};
+
 export const fetchHistoricalData = async (
   token: SupportedToken,
   timeframe: SupportedTimeframe = "1m"
 ): Promise<ChartDataPoint[]> => {
-  // Generate dynamic mock historical data based on real current price from Pyth
-  const currentPrices = await fetchTokenPrices([token]);
-  const currentPrice = currentPrices[token]?.current_price || 100;
+  const cacheKey = `${token}-${timeframe}`;
 
-  // Generate 7 mock data points with realistic price movement
-  const chartData: ChartDataPoint[] = [];
-  const now = Date.now();
-  const timeframeMs =
-    {
-      "1s": 1000,
-      "1m": 60000,
-      "2m": 120000,
-      "5m": 300000,
-      "10m": 600000,
-      "1h": 3600000,
-      "4h": 14400000,
-      "1d": 86400000,
-    }[timeframe] || 60000;
-
-  // Create more realistic price movement with trend
-  const maxVariation = 0.025; // ±2.5% max variation
-  let previousPrice = currentPrice;
-
-  for (let i = 6; i >= 0; i--) {
-    const timestamp = now - i * timeframeMs;
-
-    if (i === 0) {
-      // Last point should be the actual current price
-      chartData.push({
-        value: Math.round(currentPrice * 100) / 100,
-        timestamp,
-      });
-    } else {
-      // Generate realistic price movement with some momentum
-      const trendFactor = (6 - i) / 6; // 0 to 1, stronger trend towards current price
-      const randomWalk =
-        (Math.random() - 0.5) * maxVariation * (1 - trendFactor * 0.5);
-      const trendTowardsCurrent =
-        (currentPrice - previousPrice) * trendFactor * 0.1;
-
-      const price = previousPrice * (1 + randomWalk) + trendTowardsCurrent;
-      const roundedPrice = Math.round(price * 100) / 100;
-
-      chartData.push({
-        value: roundedPrice,
-        timestamp,
-      });
-
-      previousPrice = roundedPrice;
-    }
+  // For real-time timeframes, check if we already have cached data
+  if (
+    (timeframe === "1s" || timeframe === "1m") &&
+    chartInitialized.get(cacheKey)
+  ) {
+    // Just get current price and update sliding window - no need to refetch historical data
+    return await createRealTimeData(token, timeframe, []);
   }
 
-  return chartData;
+  try {
+    // Use CoinGecko as primary (and only) source
+    const data = await fetchHistoricalDataFromCoinGecko(token, timeframe);
+
+    // For short timeframes, enhance with real-time current price
+    if (timeframe === "1s" || timeframe === "1m") {
+      return await createRealTimeData(token, timeframe, data);
+    }
+
+    return data;
+  } catch (coinGeckoError) {
+    console.error(`❌ CoinGecko failed: ${coinGeckoError}`);
+
+    // No fallback - throw error to show proper error state
+    throw new Error(
+      `Failed to fetch historical data from CoinGecko: ${coinGeckoError}`
+    );
+  }
 };
 
 // Get current price from historical data (most recent point)
@@ -438,7 +577,6 @@ export const checkUsernameAvailabilityPublic = async (
     const url = `${apiClient.getBaseURL()}/api/users/username/${encodeURIComponent(
       username
     )}/availability`;
-    console.log("🌐 Using API URL:", url);
 
     const response = await fetch(url, {
       method: "GET", // Changed from POST
@@ -507,17 +645,10 @@ export const createUserJob = async (
   userData: CreateUserJobRequest
 ): Promise<JobResponse> => {
   try {
-    console.log("📤 Sending user creation request:", {
-      endpoint: "/api/users",
-      data: userData,
-    });
-
     const result = await apiClient.post<ApiResponse<JobResponse>>(
       `/api/users`,
       userData
     );
-
-    console.log("📥 User creation response:", result);
 
     if (!result.success || !result.data) {
       throw new Error(result.error || "Failed to create user job");
@@ -541,17 +672,10 @@ export const placeTradeJob = async (
   tradeData: PlaceTradeRequest
 ): Promise<TradeJobResponse> => {
   try {
-    console.log("📤 Sending trade placement request:", {
-      endpoint: "/api/trades/place",
-      data: tradeData,
-    });
-
     const result = await apiClient.post<ApiResponse<TradeJobResponse>>(
       `/api/trades/place`,
       tradeData
     );
-
-    console.log("📥 Trade placement response:", result);
 
     if (!result.success || !result.data) {
       throw new Error(result.error || "Failed to place trade job");
@@ -575,17 +699,10 @@ export const cancelTradeJob = async (
   cancelData: CancelTradeRequest
 ): Promise<TradeJobResponse> => {
   try {
-    console.log("📤 Sending trade cancellation request:", {
-      endpoint: "/api/trades/cancel",
-      data: cancelData,
-    });
-
     const result = await apiClient.post<ApiResponse<TradeJobResponse>>(
       `/api/trades/cancel`,
       cancelData
     );
-
-    console.log("📥 Trade cancellation response:", result);
 
     if (!result.success || !result.data) {
       throw new Error(result.error || "Failed to cancel trade job");
@@ -636,16 +753,6 @@ export const createUser = async (
     if (!user) {
       throw new Error("No authenticated user found");
     }
-
-    // Step 1: Start user creation job
-    const jobResponse = await createUserJob({
-      user_id: user.id,
-      username: userData.username,
-      wallet_address: userData.walletAddress,
-    });
-
-    console.log("User creation job started:", jobResponse.job_id);
-
     // Step 2: Set up realtime subscription for job completion
     const userId = (await supabase.auth.getUser()).data.user?.id;
     if (!userId) {
@@ -656,8 +763,6 @@ export const createUser = async (
       const channel = supabase
         .channel(`user:${userId}`)
         .on("broadcast", { event: "user_created" }, async payload => {
-          console.log("🎉 User created successfully:", payload);
-
           try {
             // Step 3: Upload avatar if provided
             if (userData.profileImage) {
@@ -667,7 +772,6 @@ export const createUser = async (
                   `avatar_${Date.now()}.jpg`
                 );
                 await updateUserAvatar(avatarUrl);
-                console.log("✅ Avatar uploaded successfully");
               } catch (avatarError) {
                 console.warn("⚠️ Avatar upload failed:", avatarError);
                 // Continue without avatar
@@ -747,9 +851,6 @@ export const uploadAvatar = async (
   fileName: string
 ): Promise<string> => {
   try {
-    console.log("📤 Uploading avatar to Supabase storage...");
-    console.log("📷 Image URI:", imageUri);
-
     // Get current user ID for folder structure
     const {
       data: { user },
@@ -762,15 +863,11 @@ export const uploadAvatar = async (
     const response = await fetch(imageUri);
     const arrayBuffer = await response.arrayBuffer();
 
-    console.log("📊 File size:", arrayBuffer.byteLength, "bytes");
-
     // Generate unique filename with user folder structure
     const fileExt = fileName.split(".").pop() || "jpg";
     const uniqueFileName = `${user.id}/${Date.now()}-${Math.random()
       .toString(36)
       .substring(2)}.${fileExt}`;
-
-    console.log("📁 Upload path:", uniqueFileName);
 
     // Upload to Supabase storage (full size)
     const { data, error } = await supabase.storage
@@ -784,8 +881,6 @@ export const uploadAvatar = async (
       console.error("❌ Supabase upload error:", error);
       throw new Error(`Supabase upload failed: ${error.message}`);
     }
-
-    console.log("✅ Upload successful:", data);
 
     // Get public URL with transformation for 80x80 avatar
     const {
@@ -1099,10 +1194,8 @@ export const getUSDCBalanceByUserId = async (
 export const openTradingPosition = async (
   request: OpenPositionRequest
 ): Promise<Position> => {
-  const requestId = `${request.market}-${request.direction}-${Date.now()}`;
-  console.log(`🎯 [BACKEND API] openTradingPosition called with requestId: ${requestId}`);
   console.log(`🎯 [BACKEND API] Request details:`, request);
-  
+
   try {
     // Get user ID from current session
     const {
@@ -1113,7 +1206,6 @@ export const openTradingPosition = async (
     }
 
     // Calculate required collateral based on trade amount and leverage
-    const tradeValue = request.amount; // This is the position size in USD
     const requiredCollateral = 1;
 
     // Use the new format directly - no conversion needed
@@ -1130,19 +1222,11 @@ export const openTradingPosition = async (
     // Step 1: Start trade placement job
     const jobResponse = await placeTradeJob(tradeRequest);
 
-    console.log("Trade placement job started:", jobResponse.job_id);
-
     // Step 2: Set up realtime subscription for job completion
     const userId = (await supabase.auth.getUser()).data.user?.id;
     if (!userId) {
       throw new Error("No authenticated user found");
     }
-
-    console.log("🔄 [REALTIME] Setting up dual listeners for user:", userId);
-    console.log(
-      "📡 [REALTIME] Primary: Backend job events (trade_completed/trade_failed)"
-    );
-    console.log("🗄️ [REALTIME] Backup: Database position insertion events");
 
     return new Promise((resolve, reject) => {
       const channel = supabase
@@ -1150,8 +1234,6 @@ export const openTradingPosition = async (
 
         // Primary: Listen for backend job completion events
         .on("broadcast", { event: "trade_completed" }, async payload => {
-          console.log("🎉 [PRIMARY] Trade completed via backend job:", payload);
-
           try {
             // Extract position ID from nested payload structure
             const positionId =
@@ -1159,28 +1241,16 @@ export const openTradingPosition = async (
               payload.position_id ||
               payload.payload?.data?.position_id;
 
-            console.log("🔍 [REALTIME] Extracted position ID:", positionId);
-
             // Step 3: Get the created position data from the payload or fetch from API
             if (payload.position) {
-              console.log("✅ [REALTIME] Using position data from payload");
               channel.unsubscribe();
               resolve(payload.position as Position);
             } else if (positionId) {
-              console.log(
-                "🔄 [REALTIME] Fetching position details for ID:",
-                positionId
-              );
               // Fetch position details if only ID is provided
               try {
                 const positions = await getOpenPositions(request.userId);
-                console.log("📊 [REALTIME] Found positions:", positions.length);
                 const newPosition = positions.find(p => p.id === positionId);
                 if (newPosition) {
-                  console.log(
-                    "✅ [REALTIME] Found matching position:",
-                    newPosition.id
-                  );
                   channel.unsubscribe();
                   resolve(newPosition);
                 } else {
@@ -1209,7 +1279,6 @@ export const openTradingPosition = async (
           }
         })
         .on("broadcast", { event: "trade_failed" }, payload => {
-          console.log("❌ [PRIMARY] Trade failed via backend job:", payload);
           channel.unsubscribe();
           reject(new Error(payload.error || "Trade failed"));
         })
@@ -1224,17 +1293,11 @@ export const openTradingPosition = async (
             filter: `user_id=eq.${userId}`,
           },
           async payload => {
-            console.log(
-              "🎉 [BACKUP] New position detected via database:",
-              payload.new
-            );
-
             // Check if this is a recent position (within last 2 minutes)
             const positionCreatedAt = new Date(payload.new.created_at);
             const timeDiff = Date.now() - positionCreatedAt.getTime();
 
             if (timeDiff < 2 * 60 * 1000) {
-              console.log("✅ [BACKUP] Position is recent, resolving trade");
               channel.unsubscribe();
 
               // Convert database position to frontend Position format
@@ -1261,7 +1324,6 @@ export const openTradingPosition = async (
 
               resolve(position);
             } else {
-              console.log("⏰ [BACKUP] Position is too old, ignoring");
             }
           }
         )
@@ -1294,17 +1356,9 @@ export const openTradingPosition = async (
 // Get open positions for a user
 export const getOpenPositions = async (userId: string): Promise<Position[]> => {
   try {
-    console.log("🌐 Making API call to /api/trades/positions/" + userId);
-
     // Use the authenticated API client with new endpoint
     const result = await apiClient.get<ApiResponse<CurrentPositionsResponse>>(
       `/api/trades/positions/${userId}`
-    );
-
-    console.log("📡 API response received:", result.success);
-    console.log(
-      "📊 [POSITIONS API] Full response:",
-      JSON.stringify(result, null, 2)
     );
 
     if (!result.success) {
@@ -1315,14 +1369,6 @@ export const getOpenPositions = async (userId: string): Promise<Position[]> => {
     // The backend returns position summaries that need to be mapped to our Position format
     // Since the backend structure might be different, let's map it properly
     const backendPositions = result.data!.positions;
-    console.log(
-      "📊 [POSITIONS API] Backend positions array:",
-      backendPositions
-    );
-    console.log(
-      "📊 [POSITIONS API] Backend positions length:",
-      backendPositions?.length || 0
-    );
 
     if (!backendPositions || !Array.isArray(backendPositions)) {
       console.warn(
@@ -1336,8 +1382,6 @@ export const getOpenPositions = async (userId: string): Promise<Position[]> => {
     // Otherwise, we might need to map them similar to how we do in getTradingHistoryPaginated
     const mappedPositions: Position[] = backendPositions.map(
       (pos: any, index: number) => {
-        console.log(`📊 [POSITIONS API] Mapping position ${index}:`, pos);
-
         // Always map from backend format to ensure consistency
         const mappedPosition = {
           id: pos.id || pos.position_id || "",
@@ -1362,26 +1406,16 @@ export const getOpenPositions = async (userId: string): Promise<Position[]> => {
           fees: pos.fees || 0,
           points: pos.points || 0,
         } as Position;
-
-        console.log(
-          `✅ [POSITIONS API] Mapped position ${index}:`,
-          mappedPosition
-        );
         return mappedPosition;
       }
     );
 
-    console.log("✅ Mapped positions:", mappedPositions.length, "positions");
-    console.log("📊 [POSITIONS API] Final mapped positions:", mappedPositions);
     return mappedPositions;
   } catch (error) {
     console.error("❌ Error getting open positions:", error);
 
     // If it's a 500 error, return empty array instead of crashing the app
     if (error instanceof Error && error.message.includes("500")) {
-      console.log(
-        "🔄 Backend endpoint not ready, returning empty positions array"
-      );
       return [];
     }
 
@@ -1423,8 +1457,6 @@ export const closeTradingPosition = async (
       const channel = supabase
         .channel(`trade:${userId}`)
         .on("broadcast", { event: "trade_cancelled" }, async payload => {
-          console.log("🎉 Trade cancelled successfully:", payload);
-
           try {
             // Step 3: Get the updated position data from the payload or fetch from API
             if (payload.position) {
@@ -1461,7 +1493,6 @@ export const closeTradingPosition = async (
           }
         })
         .on("broadcast", { event: "trade_cancellation_failed" }, payload => {
-          console.log("❌ Trade cancellation failed:", payload);
           channel.unsubscribe();
           reject(new Error(payload.error || "Trade cancellation failed"));
         })
@@ -1520,15 +1551,10 @@ export const getTradingHistory = async (
     if (status) {
       endpoint += `&status=${status}`;
     }
-
-    console.log("🌐 Making API call to trading history:", endpoint);
-
     // Use the authenticated API client with new endpoint
     const result = await apiClient.get<
       ApiResponse<PaginatedResponse<PositionHistory>>
     >(endpoint);
-
-    console.log("📡 Trading history API response received:", result.success);
 
     if (!result.success) {
       console.error("❌ Trading history API call failed:", result.error);
@@ -1669,17 +1695,10 @@ export const cancelOrderJob = async (
   cancelData: CancelOrderRequest
 ): Promise<TradeJobResponse> => {
   try {
-    console.log("📤 Sending cancel order request:", {
-      endpoint: "/api/trades/cancel-order",
-      data: cancelData,
-    });
-
     const result = await apiClient.post<ApiResponse<TradeJobResponse>>(
       `/api/trades/cancel-order`,
       cancelData
     );
-
-    console.log("📥 Cancel order response:", result);
 
     if (!result.success || !result.data) {
       throw new Error(result.error || "Failed to cancel order job");
