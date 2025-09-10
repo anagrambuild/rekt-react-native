@@ -17,11 +17,11 @@ import {
 } from "@/components";
 import { useAppContext, useProfileContext } from "@/contexts";
 import { useImagePicker, useUsernameValidation } from "@/hooks";
+import { deleteAvatar } from "@/utils/backendApi";
 import {
-  deleteAvatar,
-  updateUserProfile,
-  uploadAvatar,
-} from "@/utils/backendApi";
+  useUpdateUserProfileMutation,
+  useUploadAvatarMutation,
+} from "@/utils/queryUtils";
 
 import MaterialIcon from "@expo/vector-icons/MaterialIcons";
 
@@ -42,8 +42,45 @@ export const EditProfileModal = ({
   const { setUserProfile } = useAppContext();
   const [username, setUsername] = useState(userData.username);
   const [newImageUri, setNewImageUri] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const { takePhoto, pickFromLibrary, isLoading } = useImagePicker();
+
+  // React Query mutations
+  const uploadAvatarMutation = useUploadAvatarMutation({
+    onError: error => {
+      console.warn("Avatar upload failed:", error);
+      Toast.show({
+        text1: t("Warning"),
+        text2: t(
+          "Failed to upload new profile picture, but other changes were saved."
+        ),
+        type: "error",
+      });
+    },
+  });
+
+  const updateProfileMutation = useUpdateUserProfileMutation({
+    onSuccess: updatedUser => {
+      // Update the app context with new user data
+      setUserProfile(updatedUser);
+      Toast.show({
+        text1: t("Success"),
+        text2: t("Profile updated successfully"),
+        type: "success",
+      });
+      onRequestClose();
+    },
+    onError: error => {
+      console.error("Profile update failed:", error);
+      Toast.show({
+        text1: t("Error"),
+        text2: t("Failed to update profile. Please try again."),
+        type: "error",
+      });
+    },
+  });
+
+  const isSubmitting =
+    uploadAvatarMutation.isPending || updateProfileMutation.isPending;
 
   // Use the unified username validation hook
   const usernameValidation = useUsernameValidation(username, {
@@ -100,17 +137,16 @@ export const EditProfileModal = ({
       }
     }
 
-    setIsSubmitting(true);
     try {
       let avatarUrl: string | undefined;
 
       // Upload new image if one was selected
-      if (newImageUri) {
+      if (newImageUri && newImageUri !== "") {
         try {
-          avatarUrl = await uploadAvatar(
-            newImageUri,
-            `avatar_${Date.now()}.jpg`
-          );
+          avatarUrl = await uploadAvatarMutation.mutateAsync({
+            imageUri: newImageUri,
+            fileName: `avatar_${Date.now()}.jpg`,
+          });
 
           // Only delete old avatar after successful upload of new one
           if (
@@ -127,15 +163,10 @@ export const EditProfileModal = ({
               );
             });
           }
-        } catch (avatarError) {
-          console.warn("Avatar upload failed:", avatarError);
-          Toast.show({
-            text1: t("Warning"),
-            text2: t(
-              "Failed to upload new profile picture, but other changes were saved."
-            ),
-            type: "error",
-          });
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        } catch (error) {
+          // Error handling is done in the mutation's onError callback
+          return; // Don't proceed with profile update if avatar upload fails
         }
       }
 
@@ -158,7 +189,7 @@ export const EditProfileModal = ({
         avatarUrl = ""; // Set to empty string to remove avatar
       }
 
-      // Update profile with new data
+      // Prepare update data
       const updateData: { username?: string; avatar_url?: string } = {};
 
       if (username !== userData.username) {
@@ -171,28 +202,21 @@ export const EditProfileModal = ({
 
       // Only make API call if there are changes
       if (Object.keys(updateData).length > 0) {
-        const updatedUser = await updateUserProfile(userId, updateData);
-
-        // Update the app context with new user data
-        setUserProfile(updatedUser);
-
-        Toast.show({
-          text1: t("Success"),
-          text2: t("Profile updated successfully"),
-          type: "success",
+        updateProfileMutation.mutate({
+          userId,
+          userData: updateData,
         });
+      } else {
+        // No changes to save
+        onRequestClose();
       }
-
-      onRequestClose();
     } catch (error) {
-      console.error("Profile update failed:", error);
+      console.error("Unexpected error in handleSave:", error);
       Toast.show({
         text1: t("Error"),
-        text2: t("Failed to update profile. Please try again."),
+        text2: t("An unexpected error occurred. Please try again."),
         type: "error",
       });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -280,7 +304,7 @@ export const EditProfileModal = ({
                 ) : (
                   <ModalIconButton
                     onPress={handleImageUploadModal}
-                    disabled={isLoading}
+                    disabled={isLoading || uploadAvatarMutation.isPending}
                     icon={
                       <MaterialIcon
                         name="upload"
@@ -289,7 +313,9 @@ export const EditProfileModal = ({
                       />
                     }
                   >
-                    {isLoading ? "..." : t("Upload")}
+                    {isLoading || uploadAvatarMutation.isPending
+                      ? "..."
+                      : t("Upload")}
                   </ModalIconButton>
                 )}
               </Column>
@@ -346,7 +372,9 @@ export const EditProfileModal = ({
                   <ErrorIndicator>✗</ErrorIndicator>
                 )}
               </Row>
-              {usernameValidation.hasError ? <ErrorText>{usernameValidation.error}</ErrorText> : null}
+              {usernameValidation.hasError ? (
+                <ErrorText>{usernameValidation.error}</ErrorText>
+              ) : null}
             </Column>
           </Card>
         </Column>
