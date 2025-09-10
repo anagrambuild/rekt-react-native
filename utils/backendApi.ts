@@ -926,15 +926,18 @@ export const getSwigWalletBalance = async (
   swigWalletAddress: string
 ): Promise<SwigWalletBalanceResponse> => {
   try {
-    console.log("🔄 [SWIG BALANCE] Using temporary Solana RPC implementation for:", swigWalletAddress);
-    
+    console.log(
+      "🔄 [SWIG BALANCE] Using temporary Solana RPC implementation for:",
+      swigWalletAddress
+    );
+
     // TEMPORARY: Use Solana RPC directly until backend API is implemented
     const { getUSDCBalanceFromSolana } = await import("./solanaUtils");
     const result = await getUSDCBalanceFromSolana(swigWalletAddress);
-    
+
     console.log("✅ [SWIG BALANCE] Got balance via Solana RPC:", result);
     return result;
-    
+
     // TODO: Restore backend API call when /api/wallet/balance/${swigWalletAddress} is implemented
     // const result = await apiClient.get<ApiResponse<SwigWalletBalanceResponse>>(
     //   `/api/wallet/balance/${swigWalletAddress}`
@@ -1096,6 +1099,10 @@ export const getUSDCBalanceByUserId = async (
 export const openTradingPosition = async (
   request: OpenPositionRequest
 ): Promise<Position> => {
+  const requestId = `${request.market}-${request.direction}-${Date.now()}`;
+  console.log(`🎯 [BACKEND API] openTradingPosition called with requestId: ${requestId}`);
+  console.log(`🎯 [BACKEND API] Request details:`, request);
+  
   try {
     // Get user ID from current session
     const {
@@ -1146,29 +1153,54 @@ export const openTradingPosition = async (
           console.log("🎉 [PRIMARY] Trade completed via backend job:", payload);
 
           try {
+            // Extract position ID from nested payload structure
+            const positionId =
+              payload.payload?.position_id ||
+              payload.position_id ||
+              payload.payload?.data?.position_id;
+
+            console.log("🔍 [REALTIME] Extracted position ID:", positionId);
+
             // Step 3: Get the created position data from the payload or fetch from API
             if (payload.position) {
+              console.log("✅ [REALTIME] Using position data from payload");
               channel.unsubscribe();
               resolve(payload.position as Position);
-            } else if (payload.position_id) {
+            } else if (positionId) {
+              console.log(
+                "🔄 [REALTIME] Fetching position details for ID:",
+                positionId
+              );
               // Fetch position details if only ID is provided
               try {
                 const positions = await getOpenPositions(request.userId);
-                const newPosition = positions.find(
-                  p => p.id === payload.position_id
-                );
+                console.log("📊 [REALTIME] Found positions:", positions.length);
+                const newPosition = positions.find(p => p.id === positionId);
                 if (newPosition) {
+                  console.log(
+                    "✅ [REALTIME] Found matching position:",
+                    newPosition.id
+                  );
                   channel.unsubscribe();
                   resolve(newPosition);
                 } else {
-                  throw new Error("Position not found after creation");
+                  console.warn(
+                    "⚠️ [REALTIME] Position not found in current positions, will rely on database listener..."
+                  );
+                  // Don't reject here - let the database listener handle it or the main timeout
+                  // The 2-minute timeout in the main promise will handle ultimate failure
                 }
               } catch (error) {
+                console.error("❌ [REALTIME] Error fetching positions:", error);
                 throw new Error(
                   "Failed to retrieve created position: " + error
                 );
               }
             } else {
+              console.error(
+                "❌ [REALTIME] No position ID found in payload:",
+                JSON.stringify(payload, null, 2)
+              );
               throw new Error("No position data in trade completion payload");
             }
           } catch (error) {
@@ -1249,24 +1281,9 @@ export const openTradingPosition = async (
         );
       }, 30 * 1000);
 
-      // Set up timeout for job completion (2 minutes)
-      setTimeout(() => {
-        console.error(
-          "❌ [TRADE DEBUG] Trade placement timeout - no response from backend job or database"
-        );
-        console.error(
-          "🔍 [TRADE DEBUG] Neither backend job completion nor database insertion detected"
-        );
-        console.error(
-          "💡 [TRADE DEBUG] Possible issues: Insufficient balance, backend error, job queue stuck, or database insertion failed"
-        );
-        channel.unsubscribe();
-        reject(
-          new Error(
-            "Trade placement timeout - no response from backend or database. Check your balance and try again."
-          )
-        );
-      }, 2 * 60 * 1000);
+      // REMOVED: 2-minute timeout that was causing promise rejection and automatic retries
+      // The realtime listener will handle success/failure, no need for artificial timeout
+      // This was causing the double execution issue
     });
   } catch (error) {
     console.error("Error in trade placement flow:", error);
@@ -1285,6 +1302,10 @@ export const getOpenPositions = async (userId: string): Promise<Position[]> => {
     );
 
     console.log("📡 API response received:", result.success);
+    console.log(
+      "📊 [POSITIONS API] Full response:",
+      JSON.stringify(result, null, 2)
+    );
 
     if (!result.success) {
       console.error("❌ API call failed:", result.error);
@@ -1294,37 +1315,64 @@ export const getOpenPositions = async (userId: string): Promise<Position[]> => {
     // The backend returns position summaries that need to be mapped to our Position format
     // Since the backend structure might be different, let's map it properly
     const backendPositions = result.data!.positions;
+    console.log(
+      "📊 [POSITIONS API] Backend positions array:",
+      backendPositions
+    );
+    console.log(
+      "📊 [POSITIONS API] Backend positions length:",
+      backendPositions?.length || 0
+    );
+
+    if (!backendPositions || !Array.isArray(backendPositions)) {
+      console.warn(
+        "⚠️ [POSITIONS API] Backend positions is not an array:",
+        typeof backendPositions
+      );
+      return [];
+    }
 
     // If positions are already in the correct format, return them
     // Otherwise, we might need to map them similar to how we do in getTradingHistoryPaginated
-    const mappedPositions: Position[] = backendPositions.map((pos: any) => {
-      // Always map from backend format to ensure consistency
-      return {
-        id: pos.id || pos.position_id || "",
-        market: pos.market || "",
-        direction: pos.trade_type
-          ? (pos.trade_type as "LONG" | "SHORT")
-          : pos.direction || "LONG",
-        status: pos.status || "open",
-        size: pos.quantity || pos.size || 0,
-        entryPrice: pos.entry_price || pos.entryPrice || 0,
-        exitPrice: pos.exit_price || pos.exitPrice || null,
-        currentPrice:
-          pos.current_price || pos.currentPrice || pos.entry_price || 0,
-        pnl: pos.unrealized_pnl || pos.pnl || 0,
-        pnlPercentage: pos.pnl_percentage || pos.pnlPercentage || 0,
-        leverage: pos.leverage || 1,
-        liquidationPrice: pos.liquidation_price || pos.liquidationPrice || 0,
-        marginUsed: pos.margin_used || pos.marginUsed || 0,
-        openedAt: pos.created_at || pos.openedAt || new Date().toISOString(),
-        closedAt: pos.closed_at || pos.closedAt || null,
-        duration: pos.duration || 0,
-        fees: pos.fees || 0,
-        points: pos.points || 0,
-      } as Position;
-    });
+    const mappedPositions: Position[] = backendPositions.map(
+      (pos: any, index: number) => {
+        console.log(`📊 [POSITIONS API] Mapping position ${index}:`, pos);
+
+        // Always map from backend format to ensure consistency
+        const mappedPosition = {
+          id: pos.id || pos.position_id || "",
+          market: pos.market || "",
+          direction: pos.trade_type
+            ? (pos.trade_type as "LONG" | "SHORT")
+            : pos.direction || "LONG",
+          status: pos.status || "open",
+          size: pos.quantity || pos.size || 0,
+          entryPrice: pos.entry_price || pos.entryPrice || 0,
+          exitPrice: pos.exit_price || pos.exitPrice || null,
+          currentPrice:
+            pos.current_price || pos.currentPrice || pos.entry_price || 0,
+          pnl: pos.unrealized_pnl || pos.pnl || 0,
+          pnlPercentage: pos.pnl_percentage || pos.pnlPercentage || 0,
+          leverage: pos.leverage || 1,
+          liquidationPrice: pos.liquidation_price || pos.liquidationPrice || 0,
+          marginUsed: pos.margin_used || pos.marginUsed || 0,
+          openedAt: pos.created_at || pos.openedAt || new Date().toISOString(),
+          closedAt: pos.closed_at || pos.closedAt || null,
+          duration: pos.duration || 0,
+          fees: pos.fees || 0,
+          points: pos.points || 0,
+        } as Position;
+
+        console.log(
+          `✅ [POSITIONS API] Mapped position ${index}:`,
+          mappedPosition
+        );
+        return mappedPosition;
+      }
+    );
 
     console.log("✅ Mapped positions:", mappedPositions.length, "positions");
+    console.log("📊 [POSITIONS API] Final mapped positions:", mappedPositions);
     return mappedPositions;
   } catch (error) {
     console.error("❌ Error getting open positions:", error);
@@ -1649,5 +1697,3 @@ export const cancelOrderJob = async (
     throw error;
   }
 };
-
-

@@ -37,35 +37,39 @@ export const LiveTradeView = ({ trade }: LiveTradeViewProps) => {
     isTrading,
   } = useHomeContext();
 
-  // Find the actual position for this trade
+  // Find the actual position for this token (don't require direction match)
   const currentPosition = openPositions.find(
-    pos =>
-      pos.market === selectedToken.toUpperCase() && pos.direction === trade.side
+    pos => pos.market === selectedToken.toUpperCase()
   );
 
-  // Use real position data only
+  // Use real position data only - no mock data or fallbacks
   const rektAt = currentPosition?.liquidationPrice;
 
   // Current value = initial margin + PnL (what the investment is worth now)
   const currentValue = currentPosition
     ? currentPosition.marginUsed + currentPosition.pnl
     : trade.amount;
-  const profitPercent = currentPosition?.pnlPercentage || 128.22;
+  const profitPercent = currentPosition?.pnlPercentage || 0;
   const isProfit = currentPosition ? currentPosition.pnl >= 0 : null;
 
   const handleClose = async () => {
-    if (currentPosition?.id) {
+    // Try to get position ID from local trade first, then backend position
+    const positionId = trade.positionId || currentPosition?.id;
+    
+    if (positionId) {
+      console.log(`🔄 [CLOSE] Closing position ${positionId} for ${selectedToken.toUpperCase()}`);
       // Close the actual position via backend
-      const success = await closePosition(currentPosition.id);
+      const success = await closePosition(positionId);
       if (success) {
         // Clear local trade state after successful close
+        console.log(`✅ [CLOSE] Position closed, clearing local ${selectedToken.toUpperCase()} trade state`);
         if (selectedToken === "sol") setSolTrade(null);
         else if (selectedToken === "eth") setEthTrade(null);
         else setBtcTrade(null);
       }
     } else {
-      // Fallback: just clear local state if no backend position found
-      console.warn("No backend position found, clearing local state only");
+      // Fallback: just clear local state if no position ID found
+      console.warn(`⚠️ [CLOSE] No position ID found for ${selectedToken.toUpperCase()}, clearing local state only`);
       if (selectedToken === "sol") setSolTrade(null);
       else if (selectedToken === "eth") setEthTrade(null);
       else setBtcTrade(null);

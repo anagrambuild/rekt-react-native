@@ -286,8 +286,8 @@ export const useOpenPositionsQuery = (
       }
     },
     enabled: !!userId,
-    staleTime: 1000 * 10, // 10 seconds stale time (shorter for more frequent updates)
-    refetchInterval: false, // Disable auto-refetch until backend is stable
+    staleTime: 1000 * 5, // 5 seconds stale time (very short for immediate updates)
+    refetchInterval: 1000 * 10, // Refetch every 10 seconds to catch new positions
     retry: (failureCount, error: any) => {
       // Don't retry on 500 errors - backend issue
       if (error?.message?.includes("500")) {
@@ -354,18 +354,15 @@ export const useOpenPositionMutation = (
   return useMutation({
     mutationFn: openTradingPosition,
     onSuccess: (data, variables) => {
-      // Invalidate position queries to refresh data
+      console.log("🔄 [REACT QUERY] Position mutation succeeded, updating cache");
+      
+      // Only invalidate queries, don't immediately update cache to prevent re-renders during operation
+      // The queries will refetch automatically and update the UI
       queryClient.invalidateQueries({ queryKey: ["trading", "positions"] });
       queryClient.invalidateQueries({ queryKey: ["trading", "history"] });
       queryClient.invalidateQueries({ queryKey: ["trading", "balance"] });
 
-      // Optionally update the positions cache with the new position
-      queryClient.setQueryData(
-        queryKeys.openPositions(variables.userId),
-        (oldData: Position[] | undefined) => {
-          return oldData ? [...oldData, data] : [data];
-        }
-      );
+      console.log("✅ [REACT QUERY] Cache invalidation completed");
     },
     ...options,
   });
