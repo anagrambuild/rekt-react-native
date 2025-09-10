@@ -5,7 +5,7 @@ import { BodyXSEmphasized } from "@/components";
 import { Trade, useHomeContext } from "@/contexts";
 import {
   calculatePriceChange,
-  getCurrentPriceFromHistorical,
+  // getCurrentPriceFromHistorical,
   SupportedTimeframe,
   SupportedToken,
   useHistoricalDataQuery,
@@ -13,7 +13,7 @@ import {
 import { calculatePricePositions } from "@/utils/chartUtils";
 
 import {
-  DashPathEffect,
+  // DashPathEffect,
   LinearGradient,
   useFont,
   vec,
@@ -83,8 +83,7 @@ export const PriceChart = ({
   const { t } = useTranslation();
   const theme = useTheme();
   const [chartHeight] = useState(200);
-  const { selectedToken, selectedTimeframe, tokenPrices, openPositions } =
-    useHomeContext();
+  const { selectedToken, selectedTimeframe, openPositions } = useHomeContext();
 
   // Initialize chart press state here (before any conditional returns)
   const chartPressState = useChartPressState({
