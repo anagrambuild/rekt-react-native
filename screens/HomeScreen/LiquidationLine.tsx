@@ -11,8 +11,10 @@ import {
   DashPathEffect,
   Paragraph,
   Path,
+  RadialGradient,
   Skia,
   useFonts,
+  vec,
 } from "@shopify/react-native-skia";
 
 import { PerformantTextLabel } from "./PerformantTextLabel";
@@ -103,21 +105,41 @@ export const LiquidationLine: React.FC<LiquidationLineProps> = ({
         <DashPathEffect intervals={[3, 8]} />
       </Path>
 
-      {/* Bomb emoji background circle */}
+      {/* Bottom glow with radial gradient offset downward */}
+      <Circle
+        cx={bombX}
+        cy={pinnedY + 8} // Offset downward to create bottom glow
+        r={20}
+        style="fill"
+      >
+        <RadialGradient
+          c={vec(bombX, pinnedY + 8)}
+          r={20}
+          colors={[
+            "rgba(252, 153, 123, 0.25)", // Center of glow
+            "rgba(252, 153, 123, 0.15)", // Mid glow
+            "rgba(252, 153, 123, 0.05)", // Fade out
+            "rgba(252, 153, 123, 0)", // Transparent edge
+          ]}
+          positions={[0, 0.4, 0.7, 1]}
+        />
+      </Circle>
+
+      {/* Inner filled circle */}
       <Circle
         cx={bombX}
         cy={pinnedY}
         r={15}
-        color="rgba(255, 87, 34, 0.2)"
+        color="rgba(133, 46, 19, 0.4)"
         style="fill"
       />
 
-      {/* Bomb emoji border circle */}
+      {/* Outline circle */}
       <Circle
         cx={bombX}
         cy={pinnedY}
         r={15}
-        color="#FF5722"
+        color="rgba(255, 87, 34, 0.6)"
         style="stroke"
         strokeWidth={1}
       />
