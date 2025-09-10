@@ -105,10 +105,8 @@ export const PriceChart = ({
   // Use dummy data if provided, otherwise use real data or fallback to loading state
   const data = dummyData || historicalData || [];
 
-  // Get current price from real-time data or historical data
-  const currentPrice =
-    tokenPrices?.[selectedToken as SupportedToken]?.current_price ||
-    getCurrentPriceFromHistorical(data);
+  // Get current price from data to match the chart data
+  const currentPrice = data.length > 0 ? data[data.length - 1].value : 0;
 
   // Calculate price change percentage
   const { changePercent } = calculatePriceChange(data);
@@ -164,7 +162,7 @@ export const PriceChart = ({
 
   // Toggle state for price/percentage view
   const [showPercent, setShowPercent] = useState(false);
-  
+
   // Toggle percentage display when chart is pressed
   const handleChartPress = () => {
     setShowPercent(prev => !prev);
@@ -172,7 +170,7 @@ export const PriceChart = ({
 
   // Load font for chart
   const font = useFont(
-    require("@/assets/fonts/GeistMono-VariableFont_wght.ttf"),
+    require("@/assets/fonts/Geist-VariableFont_wght.ttf"),
     12
   );
 
@@ -295,11 +293,6 @@ export const PriceChart = ({
           data={chartData}
           xKey="x"
           yKeys={["y"]}
-          frame={{
-            lineWidth: 1,
-            lineColor: "red",
-            linePathEffect: <DashPathEffect intervals={[4, 4]} />,
-          }}
           padding={styles.chartPadding}
           domainPadding={{
             top: domainPaddingTop,
@@ -397,14 +390,15 @@ export const PriceChart = ({
                   start={vec(0, chartBounds.top)}
                   end={vec(0, chartBounds.bottom)}
                   colors={[
-                    `${fillColor}40`,  // More opacity at top (40% = 66/255)
-                    `${fillColor}20`,  // Mid-range opacity
-                    `${fillColor}08`,  // Very subtle at bottom
-                    `${fillColor}00`,  // Fully transparent at bottom
+                    `${fillColor}40`, // More opacity at top (40% = 66/255)
+                    `${fillColor}20`, // Mid-range opacity
+                    `${fillColor}08`, // Very subtle at bottom
+                    `${fillColor}00`, // Fully transparent at bottom
                   ]}
                   positions={[0, 0.3, 0.7, 1]}
                 />
               </Area>
+
               <Line
                 points={points.y}
                 color={chartColor}
@@ -417,14 +411,14 @@ export const PriceChart = ({
                 points={[points.y[points.y.length - 1]]}
                 radius={8}
                 style="fill"
-                color="rgba(255, 255, 255, 0.2)"
+                color={`${chartColor}30`}
                 animate={{ type: "timing", duration: 60 }}
               />
               <Scatter
                 points={[points.y[points.y.length - 1]]}
                 radius={5}
                 style="fill"
-                color="#FFFFFF"
+                color={chartColor}
                 animate={{ type: "timing", duration: 60 }}
               />
 
@@ -443,18 +437,18 @@ export const PriceChart = ({
             </>
           )}
         </CartesianChart>
-        
+
         {/* Pressable overlay for current price label */}
         <Pressable
           onPress={handleChartPress}
           style={{
-            position: 'absolute',
+            position: "absolute",
             right: 0,
             top: 0,
             bottom: 0,
             width: 100,
-            justifyContent: 'center',
-            alignItems: 'flex-end',
+            justifyContent: "center",
+            alignItems: "flex-end",
             zIndex: 100,
           }}
         />

@@ -236,6 +236,7 @@ export interface HistoricalDataResponse {
 
 // Supported timeframes for chart data
 export type SupportedTimeframe =
+  | "1s"
   | "1m"
   | "2m"
   | "5m"
@@ -257,6 +258,7 @@ export const fetchHistoricalData = async (
   const now = Date.now();
   const timeframeMs =
     {
+      "1s": 1000,
       "1m": 60000,
       "2m": 120000,
       "5m": 300000,
