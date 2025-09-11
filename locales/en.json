@@ -305,5 +305,15 @@
   "Username must be at least 3 characters": "Username must be at least 3 characters",
   "Username must be 20 characters or less": "Username must be 20 characters or less",
   "Skip for now": "Skip for now",
-  "Account creation failed": "Account creation failed"
+  "Account creation failed": "Account creation failed",
+  "Scan QR code": "Scan QR code",
+  "Requesting camera permission...": "Requesting camera permission...",
+  "Camera Permission Required": "Camera Permission Required",
+  "Please enable camera access in your device settings to scan QR codes.": "Please enable camera access in your device settings to scan QR codes.",
+  "Position the QR code within the frame": "Position the QR code within the frame",
+  "The code will be scanned automatically": "The code will be scanned automatically",
+  "Invalid QR Code": "Invalid QR Code",
+  "The scanned QR code does not appear to contain a valid Solana wallet address.": "The scanned QR code does not appear to contain a valid Solana wallet address.",
+  "Scan Wallet Address": "Scan Wallet Address",
+  "Position the QR code containing the Solana wallet address within the frame": "Position the QR code containing the Solana wallet address within the frame"
 }

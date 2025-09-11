@@ -106,6 +106,7 @@ export const Balance = ({
   }, [usdcIconPosition, earningAmountPosition]);
 
   const showBreeze = hasBreeze || loginScreen;
+  const showWithdraw = userData.balance > 0 || loginScreen;
 
   return (
     <Column>
@@ -164,30 +165,29 @@ export const Balance = ({
               </Row>
             </Column>
 
-            {userData.balance > 0 ||
-              (loginScreen && (
-                <Row $width="auto" $gap={8}>
-                  <ModalIconButton
-                    onPress={goToWithdraw}
-                    icon={
-                      <AntDesign
-                        name="minuscircle"
-                        size={12}
-                        color={theme.colors.textPrimary}
-                      />
-                    }
-                  >
-                    {t("Withdraw")}
-                  </ModalIconButton>
-                  <IconButton
-                    name="history"
-                    size={12}
-                    color={theme.colors.textPrimary}
-                    onPress={handleHistory}
-                    disabled={loginScreen}
-                  />
-                </Row>
-              ))}
+            {showWithdraw && (
+              <Row $width="auto" $gap={8}>
+                <ModalIconButton
+                  onPress={goToWithdraw}
+                  icon={
+                    <AntDesign
+                      name="minuscircle"
+                      size={12}
+                      color={theme.colors.textPrimary}
+                    />
+                  }
+                >
+                  {t("Withdraw")}
+                </ModalIconButton>
+                <IconButton
+                  name="history"
+                  size={12}
+                  color={theme.colors.textPrimary}
+                  onPress={handleHistory}
+                  disabled={loginScreen}
+                />
+              </Row>
+            )}
           </Row>
         </Column>
 

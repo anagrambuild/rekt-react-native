@@ -12,6 +12,7 @@ import {
   Gap,
   PressableOpacity,
   PrimaryButton,
+  QRCodeScanner,
   Row,
   Title5,
 } from "@/components";
@@ -43,6 +44,12 @@ export const WithdrawalAddress = ({
   } = useProfileContext();
 
   const [address, setAddress] = useState(withdrawalAddress);
+  const [showQRScanner, setShowQRScanner] = useState(false);
+
+  const shortAddress =
+    address.length > 10
+      ? address.slice(0, 6) + "..." + address.slice(-4)
+      : address;
 
   const handleBack = () => setView("withdraw");
 
@@ -58,6 +65,22 @@ export const WithdrawalAddress = ({
     } catch (error) {
       console.error("Error pasting from clipboard:", error);
     }
+  };
+
+  const handleScanQRCode = () => {
+    setShowQRScanner(true);
+  };
+
+  const handleQRCodeScanned = (scannedData: string) => {
+    setAddress(scannedData);
+    setShowQRScanner(false);
+    // Reset acknowledgments when address changes
+    setAcknowledgeValidAddress(false);
+    setAcknowledgeNoReversal(false);
+  };
+
+  const handleCloseQRScanner = () => {
+    setShowQRScanner(false);
   };
 
   const handleConfirm = () => {
@@ -76,6 +99,19 @@ export const WithdrawalAddress = ({
 
   const isConfirmDisabled =
     !address.trim() || !acknowledgeValidAddress || !acknowledgeNoReversal;
+
+  if (showQRScanner) {
+    return (
+      <QRCodeScanner
+        onScan={handleQRCodeScanned}
+        onClose={handleCloseQRScanner}
+        title={t("Scan Wallet Address")}
+        description={t(
+          "Position the QR code containing the Solana wallet address within the frame"
+        )}
+      />
+    );
+  }
 
   return (
     <Column $gap={16} $alignItems="center" $padding={4}>
@@ -119,10 +155,27 @@ export const WithdrawalAddress = ({
             onSubmitEditing={() => Keyboard.dismiss()}
           />
         </AddressInputContainer>
-        <PasteButton onPress={handlePaste}>
-          <Octicons name="paste" size={16} color={theme.colors.textSecondary} />
-          <BodySSecondary>{t("Paste")}</BodySSecondary>
-        </PasteButton>
+        <Row $justifyContent="center">
+          <BodyMSecondary>{shortAddress ? shortAddress : ""}</BodyMSecondary>
+        </Row>
+        <Row $justifyContent="flex-start" $gap={8}>
+          <PasteButton onPress={handlePaste}>
+            <Octicons
+              name="paste"
+              size={16}
+              color={theme.colors.textSecondary}
+            />
+            <BodySSecondary>{t("Paste")}</BodySSecondary>
+          </PasteButton>
+          <PasteButton onPress={handleScanQRCode}>
+            <MaterialIcon
+              name="qr-code-scanner"
+              size={16}
+              color={theme.colors.textSecondary}
+            />
+            <BodySSecondary>{t("Scan QR code")}</BodySSecondary>
+          </PasteButton>
+        </Row>
       </Column>
 
       <Divider />
