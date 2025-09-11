@@ -1,3 +1,6 @@
+/* eslint-disable simple-import-sort/imports */
+import "../polyfills"; // Must be imported first
+
 import { I18nManager } from "react-native";
 
 import { darkTheme, lightTheme } from "@/constants/theme";
@@ -10,8 +13,6 @@ import {
   ThemeProvider as NavigationThemeProvider,
 } from "@react-navigation/native";
 import { QueryClientProvider } from "@tanstack/react-query";
-
-import "../polyfills";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import { GestureHandlerRootView } from "react-native-gesture-handler";

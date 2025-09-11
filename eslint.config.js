@@ -14,7 +14,9 @@ module.exports = defineConfig([
         "warn",
         {
           groups: [
-            // React and React Native first
+            // Polyfills must come first
+            ["^\\.\\.?\\/polyfills"],
+            // React and React Native
             ["^react$", "^react-native$"],
             // @imports (e.g., @components, @/)
             ["^@components", "^@/"],
@@ -31,6 +33,9 @@ module.exports = defineConfig([
       ],
       "simple-import-sort/exports": "error",
       "import/no-named-as-default": "off",
+      // Allow require() for polyfills
+      "@typescript-eslint/no-var-requires": "off",
+      "global-require": "off",
     },
   },
 ]);
