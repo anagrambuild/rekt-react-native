@@ -2,6 +2,7 @@ export * from "./addressUtils";
 export * from "./apiClient";
 export * from "./backendApi";
 export * from "./chartUtils";
+export * from "./pythPriceService";
 export * from "./queryClient";
 export * from "./queryKeys";
 export * from "./queryUtils";

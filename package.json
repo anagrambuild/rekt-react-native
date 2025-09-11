@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
+    "@pythnetwork/hermes-client": "^2.0.0",
     "@react-native-async-storage/async-storage": "2.1.2",
     "@react-native-community/slider": "4.5.6",
     "@react-navigation/bottom-tabs": "^7.3.10",
@@ -67,6 +68,7 @@
     "react-dom": "19.0.0",
     "react-i18next": "^15.5.3",
     "react-native": "0.79.5",
+    "react-native-event-source": "^1.1.0",
     "react-native-gesture-handler": "~2.24.0",
     "react-native-get-random-values": "^1.11.0",
     "react-native-gifted-charts": "^1.4.61",
@@ -89,6 +91,7 @@
     "@react-native-community/cli": "^19.1.0",
     "@types/debug": "^4",
     "@types/react": "~19.0.10",
+    "@types/react-native-event-source": "^1.1.2",
     "@types/styled-components-react-native": "^5.2.5",
     "babel-plugin-module-resolver": "^5.0.2",
     "eslint": "^9.25.0",
