@@ -190,7 +190,8 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
               setRequiresBiometric={setRequiresBiometric}
               isLoggedIn={isLoggedIn}
               userProfile={userProfile}
-            >            <ProfileProvider userProfile={userProfile}>
+            >
+            <ProfileProvider userProfile={userProfile}>
               <HomeProvider>
                 <MiniGameProvider>{children}</MiniGameProvider>
               </HomeProvider>
