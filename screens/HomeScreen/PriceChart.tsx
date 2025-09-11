@@ -4,8 +4,9 @@ import { Pressable, StyleSheet } from "react-native";
 import { BodyXSEmphasized } from "@/components";
 import { Trade, useHomeContext } from "@/contexts";
 import {
+  calculateLiquidationPrice,
   calculatePriceChange,
-  // getCurrentPriceFromHistorical,
+  formatPrice,
   SupportedTimeframe,
   SupportedToken,
   useHistoricalDataQuery,
@@ -32,44 +33,6 @@ import {
   Scatter,
   useChartPressState,
 } from "victory-native";
-
-export const formatPrice = (price: number) => {
-  const decimalPlaces = price > 100000 ? 1 : 3;
-  const formatted = price.toFixed(decimalPlaces);
-  const parts = formatted.split(".");
-  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  return parts.join(".");
-};
-
-/**
- * Calculate liquidation price based on position parameters
- *
- * @param entryPrice - Entry price of the position
- * @param leverage - Leverage used
- * @param direction - Trade direction (long/short)
- * @param maintenanceMargin - Maintenance margin ratio (default 0.5%)
- * @returns Liquidation price
- */
-export const calculateLiquidationPrice = (
-  entryPrice: number,
-  leverage: number,
-  direction: "LONG" | "SHORT",
-  maintenanceMargin: number = 0.005
-): number => {
-  // Initial margin = 1 / leverage
-  const initialMargin = 1 / leverage;
-
-  // Maximum loss before liquidation
-  const maxLoss = initialMargin - maintenanceMargin;
-
-  if (direction === "LONG") {
-    // Long position liquidates when price drops
-    return entryPrice * (1 - maxLoss);
-  } else {
-    // Short position liquidates when price rises
-    return entryPrice * (1 + maxLoss);
-  }
-};
 
 export const PriceChart = ({
   showLiquidation = false,
