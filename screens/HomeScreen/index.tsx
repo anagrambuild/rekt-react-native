@@ -25,6 +25,7 @@ export const HomeScreen = () => {
     btcTrade,
     setBtcTrade,
     openPositions,
+    tradingStates,
   } = useHomeContext();
 
   usePreventRemove(true, () => {});
@@ -61,13 +62,17 @@ export const HomeScreen = () => {
     }
   };
 
-  // Check for active trades - either from local state or actual open positions
+  // Check for active trades - BACKEND-ONLY approach (no mock data)
   const currentPosition = openPositions.find(position => {
     const tokenMap = { sol: "SOL", eth: "ETH", btc: "BTC" };
     return position.market === tokenMap[selectedToken as keyof typeof tokenMap];
   });
 
-  const isActiveTrade = (trade && trade.status === "open") || !!currentPosition;
+  // Only show LiveTradeView when we have real backend position data
+  // Show Long/Short buttons (with loading state) until backend data is available
+  const isActiveTrade = !!currentPosition;
+
+  // Add comprehensive logging for UI state debugging
 
   return (
     <View style={{ flex: 1 }}>
@@ -114,7 +119,13 @@ export const HomeScreen = () => {
                   router.push("/trade");
                 }}
                 title={t("Short")}
-                subtitle={t("Price will go down")}
+                subtitle={
+                  tradingStates[
+                    selectedToken.toUpperCase() as keyof typeof tradingStates
+                  ]
+                    ? t("Processing...")
+                    : t("Price will go down")
+                }
               />
               <LongButton
                 onPress={() => {
@@ -122,7 +133,13 @@ export const HomeScreen = () => {
                   router.push("/trade");
                 }}
                 title={t("Long")}
-                subtitle={t("Price will go up")}
+                subtitle={
+                  tradingStates[
+                    selectedToken.toUpperCase() as keyof typeof tradingStates
+                  ]
+                    ? t("Processing...")
+                    : t("Price will go up")
+                }
               />
             </Row>
           )}

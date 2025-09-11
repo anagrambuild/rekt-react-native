@@ -252,7 +252,7 @@ export const TradeScreen = () => {
             <PrimaryButton
               onPress={handleTrade}
               loading={isTrading}
-              style={{ marginTop: 8 }}
+              style={{ margin: 8 }}
             >
               {t("{{side}} {{token}}", {
                 side: tradeSide === "LONG" ? "Long" : "Short",

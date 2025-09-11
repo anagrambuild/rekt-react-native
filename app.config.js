@@ -1,5 +1,5 @@
 // Default (development) settings
-const BASE_URL = "https://nocap-api.onrender.com";
+const BASE_URL = "https://nocap-api-cqt3.onrender.com";
 let name = "rekt-react-native";
 let slug = "rekt-react-native";
 let owner = "anagram-xyz";

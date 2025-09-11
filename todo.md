@@ -3,6 +3,7 @@ UI
 - account creation on android
 - add avatar on account creation
 - get swig wallet balance
+- handle errors from create user - ex: already used wallet address
 
 High Priority
 

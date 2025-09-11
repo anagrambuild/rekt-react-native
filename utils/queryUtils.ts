@@ -7,6 +7,8 @@ import {
 
 import { apiClient } from "./apiClient";
 import {
+  cancelOrderJob,
+  CancelOrderRequest,
   ChartDataPoint,
   checkUsernameAvailabilityPublic,
   ClosePositionRequest,
@@ -17,6 +19,7 @@ import {
   fetchSingleTokenPrice,
   fetchTokenPrices,
   getOpenPositions,
+  getSwigWalletBalance,
   // Add trading-related imports
   getTradingBalance,
   getTradingHistory,
@@ -28,8 +31,12 @@ import {
   Position,
   SupportedTimeframe,
   SupportedToken,
+  SwigWalletBalanceResponse,
   TokenPrice,
+  TradeJobResponse,
   TradingBalance,
+  updateUserProfile,
+  uploadAvatar,
   User,
 } from "./backendApi";
 import { queryClient } from "./queryClient";
@@ -201,11 +208,57 @@ export const useHistoricalDataQuery = (
     "queryKey" | "queryFn"
   >
 ) => {
+  // Dynamic intervals based on timeframe - match the actual timeframe intervals
+  const getRefreshIntervals = (timeframe: SupportedTimeframe) => {
+    switch (timeframe) {
+      case "1s":
+        return { staleTime: 500, refetchInterval: 1000 }; // Update every 1 second
+      case "1m":
+        return { staleTime: 30000, refetchInterval: 60000 }; // Update every 1 minute
+      case "2m":
+        return { staleTime: 60000, refetchInterval: 120000 }; // Update every 2 minutes
+      case "5m":
+        return { staleTime: 150000, refetchInterval: 300000 }; // Update every 5 minutes
+      case "10m":
+        return { staleTime: 300000, refetchInterval: 600000 }; // Update every 10 minutes
+      case "1h":
+        return { staleTime: 1800000, refetchInterval: 3600000 }; // Update every 1 hour
+      case "4h":
+        return { staleTime: 7200000, refetchInterval: 14400000 }; // Update every 4 hours
+      case "1d":
+        return { staleTime: 43200000, refetchInterval: 86400000 }; // Update every 1 day
+      default:
+        return { staleTime: 30000, refetchInterval: 60000 }; // Default: 1 minute
+    }
+  };
+
+  const { staleTime, refetchInterval } = getRefreshIntervals(timeframe);
+
   return useQuery({
     queryKey: ["historicalData", token, timeframe],
-    queryFn: () => fetchHistoricalData(token, timeframe),
-    staleTime: 1000 * 60, // 1 minute stale time
-    refetchInterval: 1000 * 60, // Refetch every minute
+    queryFn: () => {
+      return fetchHistoricalData(token, timeframe);
+    },
+    staleTime,
+    refetchInterval,
+    refetchIntervalInBackground: true, // Keep updating even when app is in background
+    structuralSharing: false, // Disable structural sharing to ensure UI updates when data changes
+    retry: (failureCount, error: any) => {
+      // Don't retry on client errors
+      if (
+        error?.message?.includes("400") || // Bad request
+        error?.message?.includes("404") || // Not found
+        error?.message?.includes("429")
+      ) {
+        // Rate limited
+        console.log("🚫 Not retrying client error:", error.message);
+        return false;
+      }
+      // Retry up to 2 times for network/server errors
+      return failureCount < 2;
+    },
+    retryDelay: (attemptIndex: number) =>
+      Math.min(1000 * 2 ** attemptIndex, 10000), // Exponential backoff, max 10s
     ...options,
   });
 };
@@ -279,8 +332,8 @@ export const useOpenPositionsQuery = (
       }
     },
     enabled: !!userId,
-    staleTime: 1000 * 10, // 10 seconds stale time (shorter for more frequent updates)
-    refetchInterval: false, // Disable auto-refetch until backend is stable
+    staleTime: 1000 * 5, // 5 seconds stale time (very short for immediate updates)
+    refetchInterval: 1000 * 10, // Refetch every 10 seconds to catch new positions
     retry: (failureCount, error: any) => {
       // Don't retry on 500 errors - backend issue
       if (error?.message?.includes("500")) {
@@ -347,18 +400,13 @@ export const useOpenPositionMutation = (
   return useMutation({
     mutationFn: openTradingPosition,
     onSuccess: (data, variables) => {
-      // Invalidate position queries to refresh data
+      // Only invalidate queries, don't immediately update cache to prevent re-renders during operation
+      // The queries will refetch automatically and update the UI
       queryClient.invalidateQueries({ queryKey: ["trading", "positions"] });
       queryClient.invalidateQueries({ queryKey: ["trading", "history"] });
       queryClient.invalidateQueries({ queryKey: ["trading", "balance"] });
 
-      // Optionally update the positions cache with the new position
-      queryClient.setQueryData(
-        queryKeys.openPositions(variables.userId),
-        (oldData: Position[] | undefined) => {
-          return oldData ? [...oldData, data] : [data];
-        }
-      );
+      console.log("✅ [REACT QUERY] Cache invalidation completed");
     },
     ...options,
   });
@@ -398,6 +446,22 @@ export const useClosePositionMutation = (
   });
 };
 
+// Hook to cancel a pending order
+export const useCancelOrderMutation = (
+  options?: UseMutationOptions<TradeJobResponse, Error, CancelOrderRequest>
+) => {
+  return useMutation({
+    mutationFn: cancelOrderJob,
+    onSuccess: (data, variables) => {
+      // Invalidate position queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ["trading", "positions"] });
+      queryClient.invalidateQueries({ queryKey: ["trading", "history"] });
+      queryClient.invalidateQueries({ queryKey: ["trading", "balance"] });
+    },
+    ...options,
+  });
+};
+
 // Hook to check username availability with debouncing
 export const useUsernameAvailabilityQuery = (
   username: string,
@@ -411,6 +475,120 @@ export const useUsernameAvailabilityQuery = (
     queryFn: () => checkUsernameAvailabilityPublic(username),
     enabled: !!username && username.length > 0,
     staleTime: 1000 * 60 * 5, // 5 minutes stale time
+    ...options,
+  });
+};
+
+// Profile update types
+export interface UpdateUserProfileRequest {
+  userId: string;
+  userData: {
+    username?: string;
+    email?: string;
+    avatar_url?: string;
+    profileImage?: string; // For avatar upload
+  };
+}
+
+// Hook to upload avatar
+export const useUploadAvatarMutation = (
+  options?: UseMutationOptions<
+    string,
+    Error,
+    { imageUri: string; fileName: string }
+  >
+) => {
+  return useMutation({
+    mutationFn: ({ imageUri, fileName }) => uploadAvatar(imageUri, fileName),
+    ...options,
+  });
+};
+
+// Hook to update user profile (including avatar)
+export const useUpdateUserProfileMutation = (
+  options?: UseMutationOptions<User, Error, UpdateUserProfileRequest>
+) => {
+  return useMutation({
+    mutationFn: ({ userId, userData }) => updateUserProfile(userId, userData),
+    onSuccess: (data, variables) => {
+      // Invalidate user profile queries to refresh data across the app
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.userProfile(variables.userId),
+      });
+      queryClient.invalidateQueries({ queryKey: queryKeys.user });
+
+      // Update the specific user profile cache with new data
+      queryClient.setQueryData(queryKeys.userProfile(variables.userId), data);
+    },
+    ...options,
+  });
+};
+
+// Hook to get USDC balance from Swig wallet using Solana RPC
+export const useSwigWalletBalanceQuery = (
+  swigWalletAddress: string,
+  options?: Omit<
+    UseQueryOptions<SwigWalletBalanceResponse, Error>,
+    "queryKey" | "queryFn"
+  >
+) => {
+  return useQuery({
+    queryKey: ["swigWallet", "balance", swigWalletAddress],
+    queryFn: () => {
+      console.log(
+        "🔄 [REACT QUERY] Executing USDC balance query for swig_address:",
+        swigWalletAddress
+      );
+      return getSwigWalletBalance(swigWalletAddress);
+    },
+    enabled: !!swigWalletAddress && swigWalletAddress.length > 0,
+    staleTime: 1000 * 30, // 30 seconds stale time
+    refetchInterval: 1000 * 60, // Refetch every minute
+    retry: (failureCount, error: any) => {
+      console.log(
+        `🔄 [REACT QUERY] Retry attempt ${failureCount} for USDC balance:`,
+        error?.message
+      );
+      // Don't retry on invalid address errors
+      if (error?.message?.includes("Invalid wallet address")) {
+        console.log("🚫 [REACT QUERY] Not retrying - invalid address error");
+        return false;
+      }
+      return failureCount < 2; // Only retry twice for network errors
+    },
+    retryDelay: (attemptIndex: number) =>
+      Math.min(1000 * 2 ** attemptIndex, 10000), // Exponential backoff, max 10s
+
+    ...options,
+  });
+};
+
+// Hook to get USDC balance directly from Solana (bypasses backend entirely)
+export const useUSDCBalanceFromSolanaQuery = (
+  walletAddress: string,
+  options?: Omit<
+    UseQueryOptions<SwigWalletBalanceResponse, Error>,
+    "queryKey" | "queryFn"
+  >
+) => {
+  return useQuery({
+    queryKey: ["solana", "usdc", "balance", walletAddress],
+    queryFn: async () => {
+      const { getUSDCBalanceFromSolana } = await import("./solanaUtils");
+      return getUSDCBalanceFromSolana(walletAddress);
+    },
+    enabled: !!walletAddress && walletAddress.length > 0,
+    staleTime: 1000 * 20, // 20 seconds stale time (more frequent for direct RPC)
+    refetchInterval: 1000 * 45, // Refetch every 45 seconds
+    retry: (failureCount, error: any) => {
+      // Don't retry on invalid address errors
+      if (error?.message?.includes("Invalid wallet address")) {
+        return false;
+      }
+      return failureCount < 3; // Retry more for direct RPC calls
+    },
+    retryDelay: (attemptIndex: number) =>
+      Math.min(1000 * 2 ** attemptIndex, 15000), // Exponential backoff, max 15s
     ...options,
   });
 };

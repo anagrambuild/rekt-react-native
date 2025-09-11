@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 
 import { fetchTokenPrices, SupportedToken, TokenPrice } from "@/utils";
 import {
@@ -31,6 +31,7 @@ export interface Trade {
   pnl?: number; // optional, for display
   timestamp?: number;
   isMaxLeverageOn?: boolean; // for slider max leverage toggle
+  positionId?: string; // backend position ID for closing trades
 }
 
 interface HomeContextType {
@@ -60,7 +61,12 @@ interface HomeContextType {
   tradingHistory: Position[];
   isLoadingHistory: boolean;
   historyError: string | null;
-  isTrading: boolean;
+  tradingStates: {
+    SOL: boolean;
+    ETH: boolean;
+    BTC: boolean;
+  };
+  isTrading: boolean; // Deprecated: use tradingStates instead
   openPosition: (
     market: "SOL" | "BTC" | "ETH",
     direction: "LONG" | "SHORT",
@@ -99,6 +105,11 @@ export const HomeContext = createContext<HomeContextType>({
   tradingHistory: [],
   isLoadingHistory: false,
   historyError: null,
+  tradingStates: {
+    SOL: false,
+    ETH: false,
+    BTC: false,
+  },
   isTrading: false,
   openPosition: async () => false,
   closePosition: async () => false,
@@ -121,6 +132,16 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
   const [solTrade, setSolTrade] = useState<Trade | null>(null);
   const [ethTrade, setEthTrade] = useState<Trade | null>(null);
   const [btcTrade, setBtcTrade] = useState<Trade | null>(null);
+  
+  // Market-specific trading states
+  const [tradingStates, setTradingStates] = useState({
+    SOL: false,
+    ETH: false,
+    BTC: false,
+  });
+
+  // Use refs to track ongoing operations and prevent double execution
+  const ongoingOperations = useRef<Set<string>>(new Set());
 
   // Fetch real token prices from backend API
   const [tokenPrices, setTokenPrices] = useState<
@@ -143,6 +164,7 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
     error: positionsQueryError,
     refetch: refetchPositions,
   } = useOpenPositionsQuery(userId || "", { enabled: !!userId });
+  console.log("openPositions", openPositions);
 
   const {
     data: tradingHistory = [],
@@ -162,9 +184,10 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
   const positionsError = positionsQueryError?.message || null;
   const historyError = historyQueryError?.message || null;
 
-  // Trading action state
+  // Trading action state (deprecated - use tradingStates instead)
   const isTrading =
-    openPositionMutation.isPending || closePositionMutation.isPending;
+    openPositionMutation.isPending || closePositionMutation.isPending ||
+    tradingStates.SOL || tradingStates.ETH || tradingStates.BTC;
 
   // Refresh functions using React Query refetch
   const refreshBalance = async () => {
@@ -195,6 +218,13 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
     amount: number,
     leverage: number
   ): Promise<boolean> => {
+    // Create unique operation key for tracking
+    const operationKey = `${market}-${direction}-${amount}-${leverage}-${Date.now()}`;
+    const callStack = new Error().stack;
+    
+    console.log(`🚀 [TRADE CALL] openPosition called with key: ${operationKey}`);
+    console.log(`📍 [TRADE CALL] Call stack:`, callStack?.split('\n').slice(0, 5).join('\n'));
+    
     if (!userId) {
       Toast.show({
         text1: t("Error"),
@@ -203,8 +233,26 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
       });
       return false;
     }
+    
+    // Prevent double execution using multiple guards
+    if (tradingStates[market] || ongoingOperations.current.has(market)) {
+      console.warn(`🚫 [TRADE GUARD] ${market} trade already in progress, ignoring duplicate call`);
+      console.warn(`🚫 [TRADE GUARD] tradingStates[${market}]:`, tradingStates[market]);
+      console.warn(`🚫 [TRADE GUARD] ongoingOperations.has(${market}):`, ongoingOperations.current.has(market));
+      return false;
+    }
 
     try {
+      // Mark operation as ongoing
+      ongoingOperations.current.add(market);
+      setTradingStates(prev => ({ ...prev, [market]: true }));
+
+      console.log(`🚀 [TRADE START] Starting ${market} ${direction} trade:`, {
+        amount,
+        leverage,
+        operationKey
+      });
+
       // Validate inputs
       const validAmount = Number(amount);
       const validLeverage = Number(leverage);
@@ -238,37 +286,22 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
 
       const position = await openPositionMutation.mutateAsync(openRequest);
 
+      console.log(`✅ [TRADE SUCCESS] ${market} trade completed:`, position.id);
+
       Toast.show({
         text1: t("Position Opened"),
         text2: t("Position opened successfully!"),
         type: "success",
       });
 
-      // Update local trade state to reflect the successful trade
-      const token = market === "SOL" ? "sol" : market === "ETH" ? "eth" : "btc";
-      const currentTrade =
-        token === "sol" ? solTrade : token === "eth" ? ethTrade : btcTrade;
-      const updatedTrade = {
-        ...currentTrade,
-        side: direction,
-        entryPrice: position.entryPrice,
-        amount: validAmount,
-        leverage: validLeverage,
-        status: "open" as TradeStatus,
-        timestamp: Date.now(),
-      };
+      // Force refresh positions to get real backend data
+      console.log(`🔄 [TRADE SUCCESS] Refreshing positions data to show LiveTradeView...`);
+      await refreshPositions();
 
-      if (token === "sol") {
-        setSolTrade(updatedTrade);
-      } else if (token === "eth") {
-        setEthTrade(updatedTrade);
-      } else {
-        setBtcTrade(updatedTrade);
-      }
-
+      console.log(`✅ [TRADE SUCCESS] ${market} positions refreshed, UI should update when backend data loads`);
       return true;
     } catch (error) {
-      console.error("Error opening position:", error);
+      console.error(`❌ [TRADE ERROR] ${market} trade failed:`, error);
       Toast.show({
         text1: t("Trade Failed"),
         text2:
@@ -276,6 +309,11 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
         type: "error",
       });
       return false;
+    } finally {
+      // Always cleanup both guards
+      ongoingOperations.current.delete(market);
+      setTradingStates(prev => ({ ...prev, [market]: false }));
+      console.log(`🧹 [TRADE CLEANUP] ${market} operation completed`);
     }
   };
 
@@ -290,7 +328,22 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
       return false;
     }
 
+    // Find the position to determine which market it belongs to
+    const position = openPositions.find(p => p.id === positionId);
+    const market = position?.market as "SOL" | "BTC" | "ETH" | undefined;
+
+    // Prevent double execution if we know the market
+    if (market && tradingStates[market]) {
+      console.warn(`🚫 [CLOSE GUARD] ${market} close already in progress, ignoring duplicate call`);
+      return false;
+    }
+
     try {
+      // Set market-specific trading state to true if we know the market
+      if (market) {
+        setTradingStates(prev => ({ ...prev, [market]: true }));
+      }
+
       // Use React Query mutation for closing position
       const closeRequest: ClosePositionRequest = {
         userId,
@@ -330,6 +383,11 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
         type: "error",
       });
       return false;
+    } finally {
+      // Always reset the trading state for this market if we know it
+      if (market) {
+        setTradingStates(prev => ({ ...prev, [market]: false }));
+      }
     }
   };
 
@@ -423,6 +481,7 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
         tradingHistory,
         isLoadingHistory,
         historyError,
+        tradingStates,
         isTrading,
         openPosition,
         closePosition,
