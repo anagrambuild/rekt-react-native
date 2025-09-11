@@ -333,8 +333,8 @@ export const useOpenPositionsQuery = (
       }
     },
     enabled: !!userId,
-    staleTime: 1000 * 5, // 5 seconds stale time (very short for immediate updates)
-    refetchInterval: 1000 * 10, // Refetch every 10 seconds to catch new positions
+    staleTime: 1000 * 30, // 30 seconds stale time
+    refetchInterval: 1000 * 60, // Refetch every 60 seconds
     retry: (failureCount, error: any) => {
       // Don't retry on 500 errors - backend issue
       if (error?.message?.includes("500")) {
@@ -543,8 +543,8 @@ export const useSwigWalletBalanceQuery = (
       return getSwigWalletBalance(swigWalletAddress);
     },
     enabled: !!swigWalletAddress && swigWalletAddress.length > 0,
-    staleTime: 1000 * 30, // 30 seconds stale time
-    refetchInterval: 1000 * 60, // Refetch every minute
+    staleTime: 1000 * 60, // 60 seconds stale time
+    refetchInterval: 1000 * 120, // Refetch every 2 minutes
     retry: (failureCount, error: any) => {
       console.log(
         `🔄 [REACT QUERY] Retry attempt ${failureCount} for USDC balance:`,
@@ -579,8 +579,8 @@ export const useUSDCBalanceFromSolanaQuery = (
       return getUSDCBalanceFromSolana(walletAddress);
     },
     enabled: !!walletAddress && walletAddress.length > 0,
-    staleTime: 1000 * 20, // 20 seconds stale time (more frequent for direct RPC)
-    refetchInterval: 1000 * 45, // Refetch every 45 seconds
+    staleTime: 1000 * 60, // 60 seconds stale time
+    refetchInterval: 1000 * 120, // Refetch every 2 minutes
     retry: (failureCount, error: any) => {
       // Don't retry on invalid address errors
       if (error?.message?.includes("Invalid wallet address")) {
