@@ -209,10 +209,11 @@ export const useHistoricalDataQuery = (
   >
 ) => {
   // Dynamic intervals based on timeframe - match the actual timeframe intervals
-  const getRefreshIntervals = (timeframe: SupportedTimeframe) => {
+  const getRefreshIntervals = (timeframe: SupportedTimeframe): { staleTime: number; refetchInterval: number | false } => {
     switch (timeframe) {
       case "1s":
-        return { staleTime: 500, refetchInterval: 1000 }; // Update every 1 second
+        // Disable refetch for 1s - using Pyth streaming service instead
+        return { staleTime: Infinity, refetchInterval: false as const };
       case "1m":
         return { staleTime: 30000, refetchInterval: 60000 }; // Update every 1 minute
       case "2m":

@@ -3,21 +3,17 @@ import { Pressable, StyleSheet } from "react-native";
 
 import { BodyXSEmphasized } from "@/components";
 import { Trade, useHomeContext } from "@/contexts";
+import { useLiveChartData } from "@/hooks";
 import {
+  calculateLiquidationPrice,
   calculatePriceChange,
-  // getCurrentPriceFromHistorical,
+  calculatePricePositions,
+  formatPrice,
   SupportedTimeframe,
   SupportedToken,
-  useHistoricalDataQuery,
 } from "@/utils";
-import { calculatePricePositions } from "@/utils/chartUtils";
 
-import {
-  // DashPathEffect,
-  LinearGradient,
-  useFont,
-  vec,
-} from "@shopify/react-native-skia";
+import { LinearGradient, useFont, vec } from "@shopify/react-native-skia";
 
 import { EntryPriceLabel } from "./EntryPriceLabel";
 import { LiquidationLine } from "./LiquidationLine";
@@ -33,44 +29,6 @@ import {
   useChartPressState,
 } from "victory-native";
 
-export const formatPrice = (price: number) => {
-  const decimalPlaces = price > 100000 ? 1 : 3;
-  const formatted = price.toFixed(decimalPlaces);
-  const parts = formatted.split(".");
-  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  return parts.join(".");
-};
-
-/**
- * Calculate liquidation price based on position parameters
- *
- * @param entryPrice - Entry price of the position
- * @param leverage - Leverage used
- * @param direction - Trade direction (long/short)
- * @param maintenanceMargin - Maintenance margin ratio (default 0.5%)
- * @returns Liquidation price
- */
-export const calculateLiquidationPrice = (
-  entryPrice: number,
-  leverage: number,
-  direction: "LONG" | "SHORT",
-  maintenanceMargin: number = 0.005
-): number => {
-  // Initial margin = 1 / leverage
-  const initialMargin = 1 / leverage;
-
-  // Maximum loss before liquidation
-  const maxLoss = initialMargin - maintenanceMargin;
-
-  if (direction === "LONG") {
-    // Long position liquidates when price drops
-    return entryPrice * (1 - maxLoss);
-  } else {
-    // Short position liquidates when price rises
-    return entryPrice * (1 + maxLoss);
-  }
-};
-
 export const PriceChart = ({
   showLiquidation = false,
   trade = null,
@@ -84,9 +42,9 @@ export const PriceChart = ({
   const theme = useTheme();
   const [chartHeight] = useState(200);
   const { selectedToken, selectedTimeframe, openPositions } = useHomeContext();
-  
+
   // Optimize animation duration based on timeframe
-  const animationDuration = selectedTimeframe === "1s" ? 200 : 60;
+  const animationDuration = 60;
 
   // Initialize chart press state here (before any conditional returns)
   const chartPressState = useChartPressState({
@@ -94,18 +52,15 @@ export const PriceChart = ({
     y: { y: 0 },
   });
 
-  // Fetch historical chart data only if no dummy data is provided
   const {
-    data: historicalData,
+    data,
     isLoading: isChartLoading,
     error: chartError,
-  } = useHistoricalDataQuery(
+  } = useLiveChartData(
     selectedToken as SupportedToken,
-    selectedTimeframe as SupportedTimeframe
+    selectedTimeframe as SupportedTimeframe,
+    dummyData
   );
-
-  // Use dummy data if provided, otherwise use real data or fallback to loading state
-  const data = dummyData || historicalData || [];
 
   // Get current price from data to match the chart data
   const currentPrice = data.length > 0 ? data[data.length - 1].value : 0;
@@ -177,11 +132,9 @@ export const PriceChart = ({
   );
 
   // Format data for Victory Native (requires x and y fields)
-  // For real-time timeframes, use timestamp-based x values to enable sliding
+  // Use timestamp as x value for all timeframes for accurate representation
   const chartData = data.map((item, index) => ({
-    x: selectedTimeframe === "1s" || selectedTimeframe === "1m" 
-      ? (item.timestamp || Date.now() - (data.length - 1 - index) * 1000) // Use timestamp for sliding
-      : index, // Use index for static charts
+    x: item.timestamp || Date.now() - (data.length - 1 - index) * 1000,
     y: item.value,
   }));
 
@@ -252,8 +205,12 @@ export const PriceChart = ({
     }
   }
 
-  // Show loading state if data is not available and no dummy data is provided
-  if ((!dummyData && isChartLoading) || (!dummyData && data.length === 0 && !chartError) || !font) {
+  // Show loading state if data is not available, only one point, or no dummy data is provided
+  if (
+    (!dummyData && isChartLoading) ||
+    (!dummyData && data.length <= 1 && !chartError) ||
+    !font
+  ) {
     return (
       <Wrapper>
         <ChartContainer
@@ -273,12 +230,15 @@ export const PriceChart = ({
 
   // Show error state only if no dummy data is provided and there's an actual error
   if (!dummyData && chartError) {
-    const errorMessage = chartError.message?.includes("Failed to fetch historical data") 
+    const errorMessage = chartError.message?.includes(
+      "Failed to fetch historical data"
+    )
       ? t("Chart data temporarily unavailable")
-      : chartError.message?.includes("network") || chartError.message?.includes("fetch")
+      : chartError.message?.includes("network") ||
+        chartError.message?.includes("fetch")
       ? t("Connection error - check your internet")
       : t("Failed to load chart data");
-      
+
     return (
       <Wrapper>
         <ChartContainer
@@ -312,10 +272,6 @@ export const PriceChart = ({
           }}
           domain={{
             y: getDynamicDomain(),
-            // For real-time timeframes, set x domain to show sliding window
-            x: selectedTimeframe === "1s" || selectedTimeframe === "1m" 
-              ? undefined // Let Victory Native auto-scale x-axis for timestamps
-              : undefined // Use default for index-based charts
           }}
           chartPressState={chartPressState.state}
           yAxis={[

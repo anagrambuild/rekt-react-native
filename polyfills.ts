@@ -4,8 +4,130 @@ import "react-native-get-random-values";
 import { Buffer } from "buffer";
 // Crypto polyfill for digest functions (required by Solana/Swig)
 // Use expo-crypto for better Expo compatibility
-import * as Crypto from "expo-crypto";
+import * as Crypto from 'expo-crypto';
+// EventSource polyfill for SSE (Server-Sent Events) support
+import RNEventSource from 'react-native-event-source';
+
 global.Buffer = Buffer;
+
+// Polyfill EventTarget for React Native
+class EventTargetPolyfill {
+  private listeners: Map<string, Set<Function>> = new Map();
+
+  addEventListener(type: string, listener: Function) {
+    if (!this.listeners.has(type)) {
+      this.listeners.set(type, new Set());
+    }
+    this.listeners.get(type)!.add(listener);
+  }
+
+  removeEventListener(type: string, listener: Function) {
+    const listeners = this.listeners.get(type);
+    if (listeners) {
+      listeners.delete(listener);
+    }
+  }
+
+  dispatchEvent(event: any): boolean {
+    const listeners = this.listeners.get(event.type);
+    if (listeners) {
+      listeners.forEach(listener => {
+        try {
+          listener.call(this, event);
+        } catch (e) {
+          console.error('Event listener error:', e);
+        }
+      });
+    }
+    return true;
+  }
+}
+
+// Polyfill Event class for React Native
+class EventPolyfill {
+  type: string;
+  bubbles: boolean;
+  cancelable: boolean;
+  defaultPrevented: boolean = false;
+  
+  constructor(type: string, options?: any) {
+    this.type = type;
+    this.bubbles = options?.bubbles || false;
+    this.cancelable = options?.cancelable || false;
+  }
+
+  preventDefault() {
+    this.defaultPrevented = true;
+  }
+
+  stopPropagation() {
+    // No-op for basic implementation
+  }
+
+  stopImmediatePropagation() {
+    // No-op for basic implementation
+  }
+}
+
+// Polyfill MessageEvent for React Native
+class MessageEventPolyfill extends EventPolyfill {
+  data: any;
+  origin: string;
+  lastEventId: string;
+  
+  constructor(type: string, options?: any) {
+    super(type, options);
+    this.data = options?.data;
+    this.origin = options?.origin || '';
+    this.lastEventId = options?.lastEventId || '';
+  }
+}
+
+// Set the polyfills globally
+if (!global.EventTarget) {
+  global.EventTarget = EventTargetPolyfill as any;
+}
+
+if (!global.Event) {
+  global.Event = EventPolyfill as any;
+}
+
+if (!global.MessageEvent) {
+  global.MessageEvent = MessageEventPolyfill as any;
+}
+
+// Polyfill EventSource for libraries like @pythnetwork/hermes-client
+global.EventSource = RNEventSource as any;
+
+// Polyfill AbortSignal.timeout for React Native
+if (global.AbortSignal && !global.AbortSignal.timeout) {
+  global.AbortSignal.timeout = function(milliseconds: number): AbortSignal {
+    const controller = new AbortController();
+    setTimeout(() => controller.abort(), milliseconds);
+    return controller.signal;
+  };
+}
+
+// Polyfill AbortSignal.any for React Native
+if (global.AbortSignal && !global.AbortSignal.any) {
+  global.AbortSignal.any = function(signals: AbortSignal[]): AbortSignal {
+    const controller = new AbortController();
+    
+    // Abort if any of the input signals abort
+    for (const signal of signals) {
+      if (signal.aborted) {
+        controller.abort(signal.reason);
+        break;
+      }
+      
+      signal.addEventListener('abort', () => {
+        controller.abort(signal.reason);
+      });
+    }
+    
+    return controller.signal;
+  };
+}
 
 // Polyfill crypto.subtle for digest operations
 if (!global.crypto.subtle) {

@@ -11,6 +11,7 @@ import { AppState } from "react-native";
 
 import { useAuthInitialization } from "../hooks/useAuthInitialization";
 import { detectLanguage, initializeI18n } from "../i18n";
+import { pythPriceService } from "../utils";
 import { AuthProvider } from "./AuthContext";
 import { HomeProvider } from "./HomeContext";
 import { MiniGameProvider } from "./MiniGameContext";
@@ -86,8 +87,11 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     enableBiometrics: false,
   });
   const [hasBreeze, setHasBreeze] = useState(false);
-  const [expectingWalletConnection, setExpectingWalletConnection] = useState(false);
-  const [walletConnectionCallback, setWalletConnectionCallback] = useState<(() => void) | null>(null);
+  const [expectingWalletConnection, setExpectingWalletConnection] =
+    useState(false);
+  const [walletConnectionCallback, setWalletConnectionCallback] = useState<
+    (() => void) | null
+  >(null);
 
   // Use the new hook for authentication logic
   const {
@@ -118,6 +122,11 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     initializeI18n().then(() => setI18nReady(true));
     setCurrentLanguage(detectLanguage());
 
+    // Start Pyth price service
+    pythPriceService.startStreaming().catch(error => {
+      console.error("Failed to start price streaming:", error);
+    });
+
     // Listen for app state changes
     const subscription = AppState.addEventListener(
       "change",
@@ -130,12 +139,12 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
           const language = detectLanguage();
           setCurrentLanguage(language);
           await initializeI18n();
-          
+
           // Check for wallet connection race condition
           if (expectingWalletConnection && walletConnectionCallback) {
             // Import persistent wallet state dynamically to avoid circular imports
-            const { persistentWalletState } = await import('./WalletContext');
-            
+            const { persistentWalletState } = await import("./WalletContext");
+
             if (persistentWalletState?.connected) {
               setExpectingWalletConnection(false);
               const callback = walletConnectionCallback;
@@ -150,8 +159,15 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 
     return () => {
       subscription.remove();
+      // Stop price service when app unmounts
+      pythPriceService.stopStreaming();
     };
-  }, [expectingWalletConnection, walletConnectionCallback, setExpectingWalletConnection, setWalletConnectionCallback]);
+  }, [
+    expectingWalletConnection,
+    walletConnectionCallback,
+    setExpectingWalletConnection,
+    setWalletConnectionCallback,
+  ]);
 
   if (!i18nReady || checkingAuth) {
     return null; // or a loading spinner
@@ -184,13 +200,14 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     >
       <AuthProvider>
         <SolanaProvider>
-            <WalletProvider
-              setIsLoggedIn={setIsLoggedIn}
-              setUserProfile={setUserProfile}
-              setRequiresBiometric={setRequiresBiometric}
-              isLoggedIn={isLoggedIn}
-              userProfile={userProfile}
-            >            <ProfileProvider userProfile={userProfile}>
+          <WalletProvider
+            setIsLoggedIn={setIsLoggedIn}
+            setUserProfile={setUserProfile}
+            setRequiresBiometric={setRequiresBiometric}
+            isLoggedIn={isLoggedIn}
+            userProfile={userProfile}
+          >
+            <ProfileProvider userProfile={userProfile}>
               <HomeProvider>
                 <MiniGameProvider>{children}</MiniGameProvider>
               </HomeProvider>
