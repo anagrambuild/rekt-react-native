@@ -7,8 +7,6 @@ import {
 
 import { apiClient } from "./apiClient";
 import {
-  cancelOrderJob,
-  CancelOrderRequest,
   ChartDataPoint,
   checkUsernameAvailabilityPublic,
   ClosePositionRequest,
@@ -33,7 +31,6 @@ import {
   SupportedToken,
   SwigWalletBalanceResponse,
   TokenPrice,
-  TradeJobResponse,
   TradingBalance,
   updateUserProfile,
   uploadAvatar,
@@ -209,7 +206,9 @@ export const useHistoricalDataQuery = (
   >
 ) => {
   // Dynamic intervals based on timeframe - match the actual timeframe intervals
-  const getRefreshIntervals = (timeframe: SupportedTimeframe): { staleTime: number; refetchInterval: number | false } => {
+  const getRefreshIntervals = (
+    timeframe: SupportedTimeframe
+  ): { staleTime: number; refetchInterval: number | false } => {
     switch (timeframe) {
       case "1s":
         // Disable refetch for 1s - using Pyth streaming service instead
@@ -442,22 +441,6 @@ export const useClosePositionMutation = (
           return oldData ? [data, ...oldData] : [data];
         }
       );
-    },
-    ...options,
-  });
-};
-
-// Hook to cancel a pending order
-export const useCancelOrderMutation = (
-  options?: UseMutationOptions<TradeJobResponse, Error, CancelOrderRequest>
-) => {
-  return useMutation({
-    mutationFn: cancelOrderJob,
-    onSuccess: (data, variables) => {
-      // Invalidate position queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ["trading", "positions"] });
-      queryClient.invalidateQueries({ queryKey: ["trading", "history"] });
-      queryClient.invalidateQueries({ queryKey: ["trading", "balance"] });
     },
     ...options,
   });
