@@ -1216,7 +1216,7 @@ export const openTradingPosition = async (
       throw new Error("No authenticated user found");
     }
 
-    // Calculate required collateral based on trade amount and leverage
+    //TODO - set this to the amount of the trade
     const requiredCollateral = 1;
 
     // Use the new format directly - no conversion needed
