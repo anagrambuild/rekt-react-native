@@ -1038,16 +1038,10 @@ export const getSwigWalletBalance = async (
   swigWalletAddress: string
 ): Promise<SwigWalletBalanceResponse> => {
   try {
-    console.log(
-      "🔄 [SWIG BALANCE] Using temporary Solana RPC implementation for:",
-      swigWalletAddress
-    );
-
     // TEMPORARY: Use Solana RPC directly until backend API is implemented
     const { getUSDCBalanceFromSolana } = await import("./solanaUtils");
     const result = await getUSDCBalanceFromSolana(swigWalletAddress);
 
-    console.log("✅ [SWIG BALANCE] Got balance via Solana RPC:", result);
     return result;
 
     // TODO: Restore backend API call when /api/wallet/balance/${swigWalletAddress} is implemented
