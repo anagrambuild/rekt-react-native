@@ -521,7 +521,9 @@ export const useSwigWalletBalanceQuery = (
     queryFn: () => {
       console.log(
         "🔄 [REACT QUERY] Executing USDC balance query for swig_address:",
-        swigWalletAddress
+        swigWalletAddress,
+        "at",
+        new Date().toISOString()
       );
       return getSwigWalletBalance(swigWalletAddress);
     },
