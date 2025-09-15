@@ -3,6 +3,7 @@ import { useHomeContext, useMiniGameContext } from "@/contexts";
 import { usePreventRemove } from "@react-navigation/native";
 
 import {
+  BodyM,
   Column,
   Gap,
   LogoBanner,
@@ -41,7 +42,11 @@ export const MiniGameScreen = () => {
     <ScreenContainer>
       <Column $gap={16}>
         <LogoBanner />
-
+        <Row>
+          <BodyM style={{ backgroundColor: "#333333" }}>
+            {t("This screen is under development and this is not real data")}
+          </BodyM>
+        </Row>
         <CandleChartCard />
       </Column>
       <Gap height={12} />

@@ -1,6 +1,6 @@
 import { FlatList, Platform } from "react-native";
 
-import { Column, Gap, Row, Title2 } from "@/components";
+import { BodyM, Column, Gap, Row, Title2 } from "@/components";
 
 import {
   FirstPlaceCardComponent,
@@ -45,6 +45,11 @@ export const LeaderboardScreen = () => {
     >
       <Column $gap={4} $alignItems="flex-start">
         <Title2>{t("Leaderboard")}</Title2>
+        <Row>
+          <BodyM style={{ backgroundColor: "#333333" }}>
+            {t("This screen is under development and this is not real data")}
+          </BodyM>
+        </Row>
         <Gap height={36} />
         {renderTopThree()}
       </Column>

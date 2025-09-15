@@ -16,9 +16,7 @@ export const LogoBanner = () => {
         <TokenChip Icon={PointsIcon} value="58K" />
         <TokenChip
           Icon={UsdcIcon}
-          value={
-            isLoadingBalance ? "..." : (usdcBalance || 6900).toLocaleString()
-          }
+          value={isLoadingBalance ? "..." : (usdcBalance || 0).toLocaleString()}
         />
       </Row>
     </Row>

@@ -559,11 +559,6 @@ export interface CreateUserJobRequest {
   wallet_address?: string;
 }
 
-export interface CancelTradeRequest {
-  user_id: string;
-  position_id: string;
-}
-
 export interface UpdateAvatarRequest {
   avatar_url: string;
 }
@@ -694,6 +689,19 @@ export const placeTradeJob = async (
   }
 };
 
+export interface CancelTradeRequest {
+  user_id: string;
+  position_id: string;
+  position_amount?: string;
+}
+
+// Legacy interface for backward compatibility
+export interface ClosePositionRequest {
+  userId: string;
+  positionId: string;
+  positionAmount?: string;
+}
+
 // Job-based trade cancellation for NoCap backend
 export const cancelTradeJob = async (
   cancelData: CancelTradeRequest
@@ -753,12 +761,21 @@ export const createUser = async (
     if (!user) {
       throw new Error("No authenticated user found");
     }
-    // Step 2: Set up realtime subscription for job completion
-    const userId = (await supabase.auth.getUser()).data.user?.id;
-    if (!userId) {
-      throw new Error("No authenticated user found");
-    }
 
+    const userId = user.id;
+
+    // Step 1: Start the user creation job (this was missing!)
+    const jobRequest: CreateUserJobRequest = {
+      user_id: userId,
+      username: userData.username,
+      wallet_address: userData.walletAddress,
+    };
+
+    console.log("🚀 Starting user creation job:", jobRequest);
+    const jobResponse = await createUserJob(jobRequest);
+    console.log("✅ User creation job started:", jobResponse.job_id);
+
+    // Step 2: Set up realtime subscription for job completion
     return new Promise((resolve, reject) => {
       const channel = supabase
         .channel(`user:${userId}`)
@@ -1122,12 +1139,6 @@ export interface OpenPositionResponse {
   message: string;
 }
 
-// Legacy interface for backward compatibility
-export interface ClosePositionRequest {
-  userId: string;
-  positionId: string;
-}
-
 export interface ClosePositionResponse {
   success: boolean;
   data?: {
@@ -1205,7 +1216,7 @@ export const openTradingPosition = async (
       throw new Error("No authenticated user found");
     }
 
-    // Calculate required collateral based on trade amount and leverage
+    //TODO - set this to the amount of the trade
     const requiredCollateral = 1;
 
     // Use the new format directly - no conversion needed
@@ -1440,6 +1451,7 @@ export const closeTradingPosition = async (
     const cancelRequest: CancelTradeRequest = {
       user_id: request.userId,
       position_id: request.positionId,
+      position_amount: request.positionAmount,
     };
 
     // Step 1: Start trade cancellation job
@@ -1512,29 +1524,6 @@ export const closeTradingPosition = async (
     });
   } catch (error) {
     console.error("Error in trade cancellation flow:", error);
-    throw error;
-  }
-};
-
-// Pulled from backend but probably not needed
-// Submit signed transaction to blockchain
-export const submitSignedTransaction = async (
-  request: SubmitTransactionRequest
-): Promise<SubmitTransactionResponse> => {
-  try {
-    // Use the authenticated API client instead of raw fetch
-    const result = await apiClient.post<SubmitTransactionResponse>(
-      `/api/trading/submit`,
-      request
-    );
-
-    if (!result.success) {
-      throw new Error(result.message || "Failed to submit transaction");
-    }
-
-    return result;
-  } catch (error) {
-    console.error("Error submitting signed transaction:", error);
     throw error;
   }
 };
@@ -1674,45 +1663,6 @@ export const breezeOptIn = async (): Promise<JobResponse> => {
     return result.data;
   } catch (error) {
     console.error("Error starting Breeze opt-in:", error);
-    throw error;
-  }
-};
-
-// Cancel Order Request Interface
-export interface CancelOrderRequest {
-  user_id: string;
-  order_id?: number;
-  user_order_id?: number;
-  order_ids?: number[];
-  market_symbol?: string;
-  market_index?: number;
-  direction?: string;
-  cancel_all?: boolean;
-}
-
-// Cancel Order Job Function
-export const cancelOrderJob = async (
-  cancelData: CancelOrderRequest
-): Promise<TradeJobResponse> => {
-  try {
-    const result = await apiClient.post<ApiResponse<TradeJobResponse>>(
-      `/api/trades/cancel-order`,
-      cancelData
-    );
-
-    if (!result.success || !result.data) {
-      throw new Error(result.error || "Failed to cancel order job");
-    }
-
-    return result.data;
-  } catch (error) {
-    console.error("Error cancelling order job:", error);
-
-    // Log more details about the error
-    if (error instanceof Error && error.message.includes("422")) {
-      console.error("🚨 422 Error Details - Request was:", cancelData);
-    }
-
     throw error;
   }
 };
