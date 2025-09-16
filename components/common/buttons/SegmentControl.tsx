@@ -3,7 +3,7 @@ import { PressableOpacity } from "./PressableOpacity";
 import styled, { DefaultTheme, useTheme } from "styled-components/native";
 
 interface SegmentControlProps {
-  Svg: React.ComponentType<any>;
+  Svg?: React.ComponentType<any>;
   svgProps?: Record<string, any>;
   SecondarySvg?: React.ComponentType<any>;
   label?: string;
@@ -98,13 +98,11 @@ export const SegmentControl: React.FC<SegmentControlProps> = ({
         selected && boxShadow ? { boxShadow } : null,
       ]}
     >
-      {selected ? (
-        <Svg color={svgColor} size={20} {...svgProps} />
-      ) : (
-        SecondarySvg && (
-          <SecondarySvg color={svgColor} size={20} {...svgProps} />
-        )
-      )}
+      {selected
+        ? Svg && <Svg color={svgColor} size={20} {...svgProps} />
+        : SecondarySvg && (
+            <SecondarySvg color={svgColor} size={20} {...svgProps} />
+          )}
       {label && <SegmentLabel $selected={selected}>{label}</SegmentLabel>}
     </SegmentButton>
   );
