@@ -82,11 +82,17 @@ export const PnlView: React.FC<{
         <Section>
           <SectionHeader onPress={() => setView("rekt")}>
             <Title3>{t("Rekt")}</Title3>
-            <MaterialCommunityIcons
-              name="chevron-right"
-              size={24}
-              color={theme.colors.textSecondary}
-            />
+            <Row $width="auto" $gap={8}>
+              <UserRankIndicator>
+                <UserAvatar source={hasImage ? defaultAvatar : defaultAvatar} />
+                <BodyXSMonoSecondary>#1200</BodyXSMonoSecondary>
+              </UserRankIndicator>
+              <MaterialCommunityIcons
+                name="chevron-right"
+                size={24}
+                color={theme.colors.textSecondary}
+              />
+            </Row>
           </SectionHeader>
           <FlatList
             data={losersPnlMockData}

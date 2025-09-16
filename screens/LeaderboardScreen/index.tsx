@@ -99,8 +99,14 @@ export const LeaderboardScreen = () => {
             </SegmentContainer>
           </Row>
           <Gap>
-            <Row $width="auto">
-              <BodyM style={{ backgroundColor: "#333333" }}>
+            <Row>
+              <BodyM
+                style={{
+                  backgroundColor: "#3d3d3d",
+                  borderRadius: 8,
+                  padding: 2,
+                }}
+              >
                 {t(
                   "This screen is under development and this is not real data"
                 )}
