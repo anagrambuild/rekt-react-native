@@ -21,6 +21,7 @@ import {
 } from "./LeaderboardCards";
 import { LeaderboardEntry, leaderboardMockData } from "./leaderboardMockData";
 import { PnlView } from "./PnlView";
+import Ranks from "./Ranks";
 import { useTranslation } from "react-i18next";
 import styled from "styled-components/native";
 
@@ -61,8 +62,11 @@ export const LeaderboardScreen = () => {
   const { t } = useTranslation();
   const remainingEntries = leaderboardMockData.slice(3);
 
-  const [view, setView] = useState<"leaderboard" | "pnl">("leaderboard");
+  const [view, setView] = useState<"leaderboard" | "pnl" | "winners" | "rekt">(
+    "leaderboard"
+  );
 
+  const isRanks = view === "winners" || view === "rekt";
   return (
     <Column
       style={{
@@ -73,34 +77,38 @@ export const LeaderboardScreen = () => {
       }}
       alignItems="flex-start"
     >
-      <Column $gap={4} $alignItems="flex-start">
-        <Row>
-          <Title2>{t("Stats")}</Title2>
-          <SegmentContainer>
-            <SegmentControl
-              Svg={PointsWhiteIcon}
-              SecondarySvg={PointsWhiteOutlineIcon}
-              label={t("Leaderboard")}
-              selected={view === "leaderboard"}
-              onPress={() => setView("leaderboard")}
-            />
-            <SegmentControl
-              Svg={DollarIcon}
-              SecondarySvg={DollarOutlineIcon}
-              label={t("P&L")}
-              selected={view === "pnl"}
-              onPress={() => setView("pnl")}
-            />
-          </SegmentContainer>
-        </Row>
-        <Gap>
-          <Row $width="auto">
-            <BodyM style={{ backgroundColor: "#333333" }}>
-              {t("This screen is under development and this is not real data")}
-            </BodyM>
+      {!isRanks && (
+        <Column $gap={4} $alignItems="flex-start">
+          <Row>
+            <Title2>{t("Stats")}</Title2>
+            <SegmentContainer>
+              <SegmentControl
+                Svg={PointsWhiteIcon}
+                SecondarySvg={PointsWhiteOutlineIcon}
+                label={t("Leaderboard")}
+                selected={view === "leaderboard"}
+                onPress={() => setView("leaderboard")}
+              />
+              <SegmentControl
+                Svg={DollarIcon}
+                SecondarySvg={DollarOutlineIcon}
+                label={t("P&L")}
+                selected={view === "pnl"}
+                onPress={() => setView("pnl")}
+              />
+            </SegmentContainer>
           </Row>
-        </Gap>
-      </Column>
+          <Gap>
+            <Row $width="auto">
+              <BodyM style={{ backgroundColor: "#333333" }}>
+                {t(
+                  "This screen is under development and this is not real data"
+                )}
+              </BodyM>
+            </Row>
+          </Gap>
+        </Column>
+      )}
       {view === "leaderboard" && (
         <>
           {renderTopThree()}
@@ -117,7 +125,8 @@ export const LeaderboardScreen = () => {
           </FlatListContainer>
         </>
       )}
-      {view === "pnl" && <PnlView />}
+      {view === "pnl" && <PnlView setView={setView} />}
+      {isRanks && <Ranks view={view} setView={setView} />}
     </Column>
   );
 };

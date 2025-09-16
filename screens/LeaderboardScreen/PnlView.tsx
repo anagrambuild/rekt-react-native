@@ -1,5 +1,5 @@
 import React from "react";
-import { FlatList, Image, View } from "react-native";
+import { FlatList, Image } from "react-native";
 
 import defaultAvatar from "@/assets/images/app-pngs/avatar.png";
 import {
@@ -41,17 +41,20 @@ const renderPnlCard = ({ item }: { item: PnlEntry }) => {
   );
 };
 
-export const PnlView: React.FC = () => {
+export const PnlView: React.FC<{
+  setView: (view: "winners" | "rekt") => void;
+}> = ({ setView }) => {
   const { t } = useTranslation();
   const { userImage } = useProfileContext();
   const hasImage = userImage && userImage !== "" && userImage !== null;
   const theme = useTheme();
+
   return (
     <PnlContainer>
       <Column $gap={16} style={{ flex: 1 }}>
         {/* Winners Section */}
         <Section>
-          <SectionHeader>
+          <SectionHeader onPress={() => setView("winners")}>
             <Title3>{t("Winners")}</Title3>
             <Row $width="auto" $gap={8}>
               <UserRankIndicator>
@@ -77,7 +80,7 @@ export const PnlView: React.FC = () => {
 
         {/* Losers Section */}
         <Section>
-          <SectionHeader>
+          <SectionHeader onPress={() => setView("rekt")}>
             <Title3>{t("Rekt")}</Title3>
             <MaterialCommunityIcons
               name="chevron-right"
