@@ -3,6 +3,7 @@ import UsdcIcon from "@/assets/images/app-svgs/usdc.svg";
 import RektLogo from "@/assets/images/rekt-logo.svg";
 import { useWallet } from "@/contexts/WalletContext";
 
+import { PressableOpacity } from "./common/buttons";
 import { Row } from "./common/containers";
 import { BodyMSecondary } from "./common/texts";
 import styled, { DefaultTheme } from "styled-components/native";
@@ -14,10 +15,14 @@ export const LogoBanner = () => {
       <RektLogo width={60} height={60} />
       <Row $justifyContent="flex-end" $gap={16} $width="auto">
         <TokenChip Icon={PointsIcon} value="58K" />
-        <TokenChip
-          Icon={UsdcIcon}
-          value={isLoadingBalance ? "..." : (usdcBalance || 0).toLocaleString()}
-        />
+        <PressableOpacity onPress={() => console.log("usdcBalance")}>
+          <TokenChip
+            Icon={UsdcIcon}
+            value={
+              isLoadingBalance ? "..." : (usdcBalance || 0).toLocaleString()
+            }
+          />
+        </PressableOpacity>
       </Row>
     </Row>
   );
