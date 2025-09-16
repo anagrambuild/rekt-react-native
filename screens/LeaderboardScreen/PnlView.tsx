@@ -2,7 +2,13 @@ import React from "react";
 import { FlatList, Image, View } from "react-native";
 
 import defaultAvatar from "@/assets/images/app-pngs/avatar.png";
-import { BodyXSMonoSecondary, Column, Row, Title3 } from "@/components";
+import {
+  BodyXSMonoSecondary,
+  Column,
+  PressableOpacity,
+  Row,
+  Title3,
+} from "@/components";
 import { useProfileContext } from "@/contexts";
 
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
@@ -42,7 +48,7 @@ export const PnlView: React.FC = () => {
   const theme = useTheme();
   return (
     <PnlContainer>
-      <Column $gap={24} style={{ flex: 1 }}>
+      <Column $gap={16} style={{ flex: 1 }}>
         {/* Winners Section */}
         <Section>
           <SectionHeader>
@@ -73,6 +79,11 @@ export const PnlView: React.FC = () => {
         <Section>
           <SectionHeader>
             <Title3>{t("Rekt")}</Title3>
+            <MaterialCommunityIcons
+              name="chevron-right"
+              size={24}
+              color={theme.colors.textSecondary}
+            />
           </SectionHeader>
           <FlatList
             data={losersPnlMockData}
@@ -94,16 +105,15 @@ const PnlContainer = styled.View`
 `;
 
 const Section = styled.View`
-  margin-bottom: 8px;
   width: 100%;
   flex: 1;
 `;
 
-const SectionHeader = styled.View`
+const SectionHeader = styled(PressableOpacity)`
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
 `;
 
 const UserRankIndicator = styled.View`
