@@ -34,7 +34,7 @@ export const ProfileInfoCards = () => {
     0
   );
   const isProfit = totalPnl > 0;
-  const { setIsOnOffRampModalVisible } = useProfileContext();
+  const { setIsOnOffRampModalVisible, setShowStatsView } = useProfileContext();
   const { usdcBalance, isLoadingBalance } = useWallet();
   return (
     <Column $gap={6}>
@@ -94,7 +94,7 @@ export const ProfileInfoCards = () => {
         </Card>
 
         <Card style={{ flex: 0.5, borderRadius }}>
-          <PressableOpacity>
+          <PressableOpacity onPress={() => setShowStatsView(true)}>
             <Column $padding={16} $gap={8} $width="auto">
               <BodyXSMonoSecondary>
                 {t("More").toUpperCase()}

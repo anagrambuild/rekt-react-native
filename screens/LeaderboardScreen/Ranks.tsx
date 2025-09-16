@@ -133,7 +133,7 @@ const Ranks = ({
             padding: 2,
           }}
         >
-          {t("This screen is under development and this is not real data")}
+          {"This screen is under development and this is not real data"}
         </BodyM>
       </Row>
       <Gap />

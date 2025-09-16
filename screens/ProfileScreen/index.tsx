@@ -27,6 +27,7 @@ import { NoActivity } from "./NoActivity";
 import { OnOffRampModal } from "./OnOffRampModal";
 import { ProfileHeader } from "./ProfileHeader";
 import { ProfileInfoCards } from "./ProfileInfoCards";
+import { StatsView } from "./StatsView";
 import { TradeActivityModal } from "./TradeAcivityModal";
 import { TradeActivityCard } from "./TradeActivityCard";
 import { useTranslation } from "react-i18next";
@@ -60,6 +61,8 @@ export const ProfileScreen = () => {
     savedOnOffRampView,
     savedTransferAmount,
     wasInTransferFlow,
+    showStatsView,
+    setShowStatsView,
   } = useProfileContext();
 
   const { connected } = useWallet();
@@ -84,10 +87,7 @@ export const ProfileScreen = () => {
   // Map Position to TradeActivityCard props
   const mapPositionToTradeCard = (position: Position) => {
     // Extract symbol from market (e.g., "SOL" -> "sol")
-    const symbol = position.market.toLowerCase() as
-      | "btc"
-      | "eth"
-      | "sol";
+    const symbol = position.market.toLowerCase() as "btc" | "eth" | "sol";
 
     // Format duration from seconds to readable format
     const formatDuration = (seconds: number) => {
@@ -157,6 +157,11 @@ export const ProfileScreen = () => {
         onBack={() => setShowExplorer(false)}
       />
     );
+  }
+
+  // Show stats view if active
+  if (showStatsView) {
+    return <StatsView onBack={() => setShowStatsView(false)} />;
   }
 
   return (

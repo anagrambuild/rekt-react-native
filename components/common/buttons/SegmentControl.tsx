@@ -98,11 +98,14 @@ export const SegmentControl: React.FC<SegmentControlProps> = ({
         selected && boxShadow ? { boxShadow } : null,
       ]}
     >
-      {selected
-        ? Svg && <Svg color={svgColor} size={20} {...svgProps} />
-        : SecondarySvg && (
-            <SecondarySvg color={svgColor} size={20} {...svgProps} />
-          )}
+      {/* some svgs can handle color props, some cannot - so if they cannot then we can pass a secondary svg */}
+      {selected ? (
+        Svg && <Svg color={svgColor} size={20} {...svgProps} />
+      ) : SecondarySvg ? (
+        <SecondarySvg color={svgColor} size={20} {...svgProps} />
+      ) : (
+        Svg && <Svg color={svgColor} size={20} {...svgProps} />
+      )}
       {label && <SegmentLabel $selected={selected}>{label}</SegmentLabel>}
     </SegmentButton>
   );
