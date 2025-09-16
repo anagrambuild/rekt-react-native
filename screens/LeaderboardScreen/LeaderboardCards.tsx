@@ -1,8 +1,10 @@
 import { Image } from "react-native";
 
+import GreenArrowUp from "@/assets/images/app-svgs/green-arrow-up.svg";
 import LeaderLeavesLeft from "@/assets/images/app-svgs/leader-leaves-left.svg";
 import LeaderLeavesRight from "@/assets/images/app-svgs/leader-leaves-right.svg";
 import PointsNoBg from "@/assets/images/app-svgs/points-no-bg.svg";
+import RedArrowDown from "@/assets/images/app-svgs/red-arrow-down.svg";
 import {
   BodyM,
   BodySMono,
@@ -64,18 +66,36 @@ export const SecondThirdCardComponent: React.FC<SecondThirdCardProps> = ({
 
 interface GenericCardProps {
   entry: LeaderboardEntry;
+  isWinner: boolean;
+  isPnl: boolean;
 }
 
-export const GenericCardComponent: React.FC<GenericCardProps> = ({ entry }) => (
+export const GenericCardComponent: React.FC<GenericCardProps> = ({
+  entry,
+  isWinner,
+  isPnl,
+}) => (
   <GenericCard>
     <GenericAvatar source={entry.avatar} />
     <Column $gap={4} $alignItems="flex-start" style={{ flex: 1 }}>
       <BodyXSMonoSecondary>#{entry.rank}</BodyXSMonoSecondary>
       <Row $justifyContent="space-between">
         <BodyM>{entry.username}</BodyM>
-        <Row $gap={4} $width="auto" $justifyContent="flex-end">
-          <PointsNoBg />
-          <BodySMono>{entry.score.toLocaleString()}</BodySMono>
+        <Row $gap={8} $width="auto" $justifyContent="flex-end">
+          {isPnl ? (
+            isWinner ? (
+              <GreenArrowUp />
+            ) : (
+              <RedArrowDown />
+            )
+          ) : (
+            <PointsNoBg />
+          )}
+          <BodySMono>
+            {isPnl
+              ? `$${entry.score.toLocaleString()}`
+              : entry.score.toLocaleString()}
+          </BodySMono>
         </Row>
       </Row>
     </Column>
