@@ -208,7 +208,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
             userProfile={userProfile}
           >
             <ProfileProvider userProfile={userProfile}>
-              <HomeProvider>
+              <HomeProvider userProfile={userProfile}>
                 <MiniGameProvider>{children}</MiniGameProvider>
               </HomeProvider>
             </ProfileProvider>

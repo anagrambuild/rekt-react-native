@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { Alert, StyleSheet } from "react-native";
 
+import { PrimaryButton } from "@/components/common/buttons";
+import { Column } from "@/components/common/containers";
 import {
   BodyMEmphasized,
   BodyMSecondary,
-  Column,
-  PrimaryButton,
   Title5,
-} from "@/components";
+} from "@/components/common/texts";
 
 import MaterialIcon from "@expo/vector-icons/MaterialIcons";
 
