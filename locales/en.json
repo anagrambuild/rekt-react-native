@@ -315,5 +315,9 @@
   "Invalid QR Code": "Invalid QR Code",
   "The scanned QR code does not appear to contain a valid Solana wallet address.": "The scanned QR code does not appear to contain a valid Solana wallet address.",
   "Scan Wallet Address": "Scan Wallet Address",
-  "Position the QR code containing the Solana wallet address within the frame": "Position the QR code containing the Solana wallet address within the frame"
+  "Position the QR code containing the Solana wallet address within the frame": "Position the QR code containing the Solana wallet address within the frame",
+  "Stats": "Stats",
+  "P&L": "P&L",
+  "Winners": "Winners",
+  "Rekt": "Rekt"
 }
