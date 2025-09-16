@@ -43,8 +43,14 @@ export const MiniGameScreen = () => {
       <Column $gap={16}>
         <LogoBanner />
         <Row>
-          <BodyM style={{ backgroundColor: "#333333" }}>
-            {t("This screen is under development and this is not real data")}
+          <BodyM
+            style={{
+              backgroundColor: "#3d3d3d",
+              borderRadius: 8,
+              padding: 2,
+            }}
+          >
+            {"This screen is under development and this is not real data"}
           </BodyM>
         </Row>
         <CandleChartCard />

@@ -16,7 +16,6 @@ import {
   useTradingHistoryQuery,
 } from "@/utils/queryUtils";
 
-import { useAppContext } from "./AppContext";
 import { useProfileContext } from "./ProfileContext";
 import { useWallet } from "./WalletContext";
 import { useTranslation } from "react-i18next";
@@ -125,11 +124,16 @@ export const useHomeContext = () => {
   return useContext(HomeContext);
 };
 
-export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
+export const HomeProvider = ({
+  children,
+  userProfile,
+}: {
+  children: React.ReactNode;
+  userProfile: any | null;
+}) => {
   const { t } = useTranslation();
   const { usdcBalance } = useWallet();
   const { userId } = useProfileContext();
-  const { userProfile } = useAppContext();
   const [selectedToken, setSelectedToken] = useState<string>("sol");
   const [selectedTimeframe, setSelectedTimeframe] = useState<string>("1s");
   const [solTrade, setSolTrade] = useState<Trade | null>(null);
