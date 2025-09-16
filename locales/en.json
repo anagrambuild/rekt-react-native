@@ -319,5 +319,20 @@
   "Stats": "Stats",
   "P&L": "P&L",
   "Winners": "Winners",
-  "Rekt": "Rekt"
+  "Rekt": "Rekt",
+  "My stats": "My stats",
+  "All time": "All time",
+  "Summary": "Summary",
+  "Trades": "Trades",
+  "Volume": "Volume",
+  "Win rate": "Win rate",
+  "Performance": "Performance",
+  "Top win": "Top win",
+  "Top loss": "Top loss",
+  "Last 7 days": "Last 7 days",
+  "Longest win streak": "Longest win streak",
+  "Strategy": "Strategy",
+  "Top assets": "Top assets",
+  "Avg. duration": "Avg. duration",
+  "Fav. leverage": "Fav. leverage"
 }
