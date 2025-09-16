@@ -6,6 +6,7 @@ import { useWallet } from "@/contexts/WalletContext";
 import { PressableOpacity } from "./common/buttons";
 import { Row } from "./common/containers";
 import { BodyMSecondary } from "./common/texts";
+import { router } from "expo-router";
 import styled, { DefaultTheme } from "styled-components/native";
 
 export const LogoBanner = () => {
@@ -15,7 +16,7 @@ export const LogoBanner = () => {
       <RektLogo width={60} height={60} />
       <Row $justifyContent="flex-end" $gap={16} $width="auto">
         <TokenChip Icon={PointsIcon} value="58K" />
-        <PressableOpacity onPress={() => console.log("usdcBalance")}>
+        <PressableOpacity onPress={() => router.push("/profile")}>
           <TokenChip
             Icon={UsdcIcon}
             value={
