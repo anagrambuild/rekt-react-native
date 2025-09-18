@@ -12,7 +12,7 @@ export const useAuthInitialization = () => {
   const [userProfile, setUserProfile] = useState<any | null>(null);
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [requiresBiometric, setRequiresBiometric] = useState(false);
-  const [showSignUpForm, setShowSignUpForm] = useState(false);
+  const [showCompleteProfileForm, setShowCompleteProfileForm] = useState(false);
 
   // Check for existing Supabase session
   const [session, setSession] = useState<any>(null);
@@ -43,13 +43,26 @@ export const useAuthInitialization = () => {
     enabled: !!session?.user?.id,
   });
 
-  // Handle user data changes
+  // Handle user data changes and gate on profile completeness
   useEffect(() => {
     if (user) {
+      // If profile exists but is incomplete (e.g., missing username), show completion form
+      if (!user.username || user.username.trim().length === 0) {
+        setShowCompleteProfileForm(true);
+        setUserProfile(null);
+        return;
+      }
+
       setUserProfile(user);
       handleUserProfileSuccess();
+      return;
     }
-  }, [user]);
+    // If we have a session but no user record yet, require completion
+    if (session?.user?.id && !isLoading) {
+      setShowCompleteProfileForm(true);
+      setUserProfile(null);
+    }
+  }, [user, session, isLoading]);
 
   // Handle errors
   useEffect(() => {
@@ -59,7 +72,7 @@ export const useAuthInitialization = () => {
       // If we get a 404 or other error fetching profile, show signup form
       if (error instanceof Error && error.message.includes("404")) {
         console.log("📝 User profile not found (404) - showing signup form");
-        setShowSignUpForm(true);
+        setShowCompleteProfileForm(true);
         setCheckingAuth(false);
       }
     }
@@ -138,8 +151,8 @@ export const useAuthInitialization = () => {
     checkingAuth: checkingAuth || isLoading,
     requiresBiometric,
     setRequiresBiometric,
-    showSignUpForm,
-    setShowSignUpForm,
+    showCompleteProfileForm,
+    setShowCompleteProfileForm,
     authenticateWithBiometrics,
   };
 };

@@ -191,8 +191,8 @@ export const fetchTokenPrices = async (
             token === "sol"
               ? "Solana"
               : token === "eth"
-              ? "Ethereum"
-              : "Bitcoin",
+                ? "Ethereum"
+                : "Bitcoin",
           current_price: price,
           price_change_24h: estimatedChange24h,
           price_change_percentage_24h: estimatedChange24h,
@@ -1584,7 +1584,7 @@ export const getTradingHistory = async (
       closedAt: history.closed_at || null,
       duration: history.closed_at
         ? new Date(history.closed_at).getTime() -
-          new Date(history.created_at).getTime()
+        new Date(history.created_at).getTime()
         : 0,
       fees: history.fees || 0,
       points: 0, // Not provided in PositionHistory
@@ -1641,7 +1641,7 @@ export const getTradingHistoryPaginated = async (
       closedAt: history.closed_at || null,
       duration: history.closed_at
         ? new Date(history.closed_at).getTime() -
-          new Date(history.created_at).getTime()
+        new Date(history.created_at).getTime()
         : 0,
       fees: history.fees || 0,
       points: 0,

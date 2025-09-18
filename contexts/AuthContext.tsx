@@ -2,19 +2,10 @@ import { createContext, useContext, useEffect, useState } from "react";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createClient } from "@supabase/supabase-js";
-
+import { getApiBaseUrl } from "@/constants/config";
+import { supabase, supabaseSignInWithSolana } from "@/utils/supabase";
 // Initialize Supabase client
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    storage: AsyncStorage,
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: false,
-  },
-});
 
 interface AuthUser {
   id: string;
@@ -32,6 +23,12 @@ interface AuthContextType {
     email: string,
     token: string
   ) => Promise<{ success: boolean; error?: string; user?: AuthUser }>;
+  // Solana Authentication methods
+  signInWithSolana: (
+    publicKey: string,
+    message: string,
+    signature: string
+  ) => Promise<{ success: boolean; error?: string; user?: AuthUser; isNewUser?: boolean }>;
   // Legacy methods (deprecated but kept for compatibility)
   signUp: (
     email: string,
@@ -252,12 +249,84 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
+  const signInWithSolana = async (publicKey: string, message: string, signature: string) => {
+    try {
+      setLoading(true);
+
+      // First, check if user exists by calling our backend
+      const BASE_URL = getApiBaseUrl();
+      const response = await fetch(`${BASE_URL}/api/auth/solana/check`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          public_key: publicKey, // Only need public key to check user existence
+        }),
+      });
+
+      const result = await response.json();
+      console.log("🔍 Solana authentication result:", result);
+
+      if (!response.ok) {
+        return { success: false, error: result.error || 'Authentication failed' };
+      }
+
+      if (!result.success) {
+        return { success: false, error: result.error || 'Authentication failed' };
+      }
+
+      const userExists = !!result?.data?.user_exists;
+      // Make direct POST request to Supabase token endpoint
+      const supabaseResponse = await supabaseSignInWithSolana(publicKey, message, signature);
+
+      const authData = await supabaseResponse.json();
+
+      if (!supabaseResponse.ok || authData.error) {
+        console.error("Supabase Web3 auth error:", authData.error);
+        return { success: false, error: authData.error?.message || 'Web3 authentication failed' };
+      }
+      console.log("🔍 Supabase Web3 auth data:", authData);
+
+      // Set the session in Supabase
+      if (authData.access_token) {
+        const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+          access_token: authData.access_token,
+          refresh_token: authData.refresh_token,
+        });
+
+        if (sessionError) {
+          console.error("Session error:", sessionError);
+          return { success: false, error: sessionError.message };
+        }
+
+        if (sessionData.user) {
+          const authUser: AuthUser = {
+            id: sessionData.user.id,
+            email: sessionData.user.email || '',
+            created_at: sessionData.user.created_at,
+          };
+          return { success: true, user: authUser, isNewUser: !userExists };
+        }
+      }
+
+
+      return { success: false, error: "Authentication failed" };
+    } catch (error) {
+      console.error("Solana authentication error:", error);
+      return { success: false, error: "An unexpected error occurred" };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const value: AuthContextType = {
     user,
     session,
     loading,
     sendOTP,
     verifyOTP,
+    signInWithSolana,
     signUp,
     signIn,
     signOut,
