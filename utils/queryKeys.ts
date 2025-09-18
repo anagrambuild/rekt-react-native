@@ -8,8 +8,8 @@ export const queryKeys = {
   // Trading balance and positions
   tradingBalance: (userId: string) => ["trading", "balance", userId] as const,
   openPositions: (userId: string) => ["trading", "positions", userId] as const,
-  tradingHistory: (userId: string, status?: string, limit?: number, offset?: number) =>
-    ["trading", "history", userId, status, limit, offset] as const,
+  tradingHistory: (userId: string, limit?: number, offset?: number) =>
+    ["trading", "history", userId, limit, offset] as const,
 
   // User related queries
   user: ["user"] as const,

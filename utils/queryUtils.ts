@@ -351,14 +351,13 @@ export const useOpenPositionsQuery = (
 // Hook to get user's trading history
 export const useTradingHistoryQuery = (
   userId: string,
-  status?: "open" | "closed",
   limit: number = 50,
   offset: number = 0,
   options?: Omit<UseQueryOptions<Position[], Error>, "queryKey" | "queryFn">
 ) => {
   return useQuery({
-    queryKey: queryKeys.tradingHistory(userId, status, limit, offset),
-    queryFn: () => getTradingHistory(userId, status, limit, offset),
+    queryKey: queryKeys.tradingHistory(userId, limit, offset),
+    queryFn: () => getTradingHistory(userId, limit, offset),
     enabled: !!userId,
     staleTime: 1000 * 60 * 5, // 5 minutes stale time
     ...options,
@@ -386,7 +385,7 @@ export const useTradingHistoryPaginatedQuery = (
       limit,
       offset,
     ],
-    queryFn: () => getTradingHistoryPaginated(userId, status, limit, offset),
+    queryFn: () => getTradingHistoryPaginated(userId, limit, offset),
     enabled: !!userId,
     staleTime: 1000 * 60 * 5, // 5 minutes stale time
     ...options,
@@ -436,7 +435,7 @@ export const useClosePositionMutation = (
 
       // Add the closed position to the trading history cache
       queryClient.setQueryData(
-        queryKeys.tradingHistory(variables.userId, "closed", 50),
+        queryKeys.tradingHistory(variables.userId, 50, 0),
         (oldData: Position[] | undefined) => {
           return oldData ? [data, ...oldData] : [data];
         }
