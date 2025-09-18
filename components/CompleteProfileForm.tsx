@@ -12,7 +12,6 @@ import { useAppContext, useAuth, useWallet } from "@/contexts";
 import { useBiometrics, useImagePicker, useUsernameValidation } from "@/hooks";
 import { LoadingScreen } from "@/screens/LoadingScreen";
 import { useCreateUserMutation } from "@/utils/queryUtils";
-import { supabase } from "@/utils/supabase";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -35,18 +34,23 @@ interface completeProfileFormProps {
   onComplete?: () => void;
 }
 
-export const CompleteProfileForm = ({ onComplete }: completeProfileFormProps) => {
+export const CompleteProfileForm = ({
+  onComplete,
+}: completeProfileFormProps) => {
   const { t } = useTranslation();
-  const { sendOTP, signOut, verifyOTP, signInWithSolana, loading: authLoading, session } = useAuth();
-  const { publicKey, connected, generateAuthMessage, signMessage } = useWallet();
+  const { sendOTP, loading: authLoading, session } = useAuth();
+  const { publicKey, connected } = useWallet();
   const { takePhoto, pickFromLibrary, isLoading } = useImagePicker();
   const { isSupported, isEnrolled, biometricType, enableBiometrics } =
     useBiometrics();
   const theme = useTheme();
-  const { completeProfileForm, setCompleteProfileForm, setUserProfile } = useAppContext();
+  const { completeProfileForm, setCompleteProfileForm, setUserProfile } =
+    useAppContext();
 
   // Use the unified username validation hook
-  const usernameValidation = useUsernameValidation(completeProfileForm.username);
+  const usernameValidation = useUsernameValidation(
+    completeProfileForm.username
+  );
 
   // React Query mutation for user creation
   const createUserMutation = useCreateUserMutation({
@@ -134,7 +138,10 @@ export const CompleteProfileForm = ({ onComplete }: completeProfileFormProps) =>
         onPress: async () => {
           const photo = await takePhoto();
           if (photo) {
-            setCompleteProfileForm(prev => ({ ...prev, profileImage: photo.uri }));
+            setCompleteProfileForm(prev => ({
+              ...prev,
+              profileImage: photo.uri,
+            }));
           }
         },
       },
@@ -143,7 +150,10 @@ export const CompleteProfileForm = ({ onComplete }: completeProfileFormProps) =>
         onPress: async () => {
           const photo = await pickFromLibrary();
           if (photo) {
-            setCompleteProfileForm(prev => ({ ...prev, profileImage: photo.uri }));
+            setCompleteProfileForm(prev => ({
+              ...prev,
+              profileImage: photo.uri,
+            }));
           }
         },
       },
@@ -268,7 +278,6 @@ export const CompleteProfileForm = ({ onComplete }: completeProfileFormProps) =>
 
     setIsSubmitting(true);
     try {
-
       if (!session?.access_token) {
         throw new Error("No session found after authentication");
       }
@@ -372,8 +381,8 @@ export const CompleteProfileForm = ({ onComplete }: completeProfileFormProps) =>
                 )}
               {(usernameValidation.isAvailable === false ||
                 usernameValidation.hasError) && (
-                  <ErrorIndicator style={{ marginBottom: 12 }}>✗</ErrorIndicator>
-                )}
+                <ErrorIndicator style={{ marginBottom: 12 }}>✗</ErrorIndicator>
+              )}
             </Row>
             {usernameValidation.hasError ? (
               <ErrorText>{usernameValidation.error}</ErrorText>
@@ -437,22 +446,15 @@ export const CompleteProfileForm = ({ onComplete }: completeProfileFormProps) =>
           </Column>
         </Column>
 
-        <PrimaryButton
-          onPress={async () => {
-            try {
-              await signOut();
-              console.log("✅ User signed out successfully");
-            } catch (error) {
-              console.error("❌ Error signing out:", error);
-            }
-          }}
-        >
-          {t("Sign Out")}
-        </PrimaryButton>
-
         {/* Submit Button */}
         <PrimaryButton
-          onPress={otpSent ? handleSubmit : completeProfileForm.email.trim() ? handleSendOTP : handleSubmit}
+          onPress={
+            otpSent
+              ? handleSubmit
+              : completeProfileForm.email.trim()
+              ? handleSendOTP
+              : handleSubmit
+          }
           disabled={
             isSubmitting ||
             authLoading ||
@@ -467,13 +469,13 @@ export const CompleteProfileForm = ({ onComplete }: completeProfileFormProps) =>
             ? createUserMutation.isPending
               ? t("Creating Account...")
               : otpSent
-                ? t("Verifying...")
-                : t("Creating Account...")
+              ? t("Verifying...")
+              : t("Creating Account...")
             : otpSent
-              ? t("Complete Sign Up")
-              : completeProfileForm.email.trim()
-                ? t("Send Code")
-                : t("Create Account")}
+            ? t("Complete Sign Up")
+            : completeProfileForm.email.trim()
+            ? t("Send Code")
+            : t("Create Account")}
         </PrimaryButton>
       </Column>
     </FormContainer>

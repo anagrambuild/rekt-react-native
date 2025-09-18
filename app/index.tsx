@@ -6,9 +6,9 @@ import { midFireUrl } from "@/assets/videos";
 import {
   BiometricAuthScreen,
   Column,
+  CompleteProfileForm,
   PrimaryButton,
   ScreenContainer,
-  CompleteProfileForm,
   WalletConnectionModal,
 } from "@/components";
 import { SolanaAuthScreen } from "@/components/SolanaAuthScreen";
@@ -29,7 +29,7 @@ const Index = () => {
     setShowCompleteProfileForm,
     requiresBiometric,
   } = useAppContext();
-  const {session} = useAuth();
+  const { session } = useAuth();
   const {
     connecting,
     connected,
@@ -69,10 +69,11 @@ const Index = () => {
         router.replace("/(tabs)");
       }, delay);
     }
-    if(!session?.user?.id) {
+    if (!session?.user?.id) {
       setShowCompleteProfileForm(false);
     }
-  }, [isLoggedIn, requiresBiometric, showCompleteProfileForm,session]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoggedIn, requiresBiometric, showCompleteProfileForm, session]);
 
   // Initial connection check - give some time for session to load
   useEffect(() => {
@@ -94,7 +95,6 @@ const Index = () => {
           setShowSolanaAuth(true);
           setIsCheckingConnection(false);
         }
-
       }, 800); // Brief delay for smooth transition
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
