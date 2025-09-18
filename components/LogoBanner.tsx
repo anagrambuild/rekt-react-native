@@ -9,7 +9,7 @@ import { BodyMSecondary } from "./common/texts";
 import { router } from "expo-router";
 import styled, { DefaultTheme } from "styled-components/native";
 
-export const LogoBanner = () => {
+export const LogoBanner = ({ mockBalance }: { mockBalance?: number }) => {
   const { usdcBalance, isLoadingBalance } = useWallet();
   return (
     <Row>
@@ -20,7 +20,9 @@ export const LogoBanner = () => {
           <TokenChip
             Icon={UsdcIcon}
             value={
-              isLoadingBalance ? "..." : (usdcBalance || 0).toLocaleString()
+              isLoadingBalance
+                ? "..."
+                : (usdcBalance || mockBalance || 0).toLocaleString()
             }
           />
         </PressableOpacity>

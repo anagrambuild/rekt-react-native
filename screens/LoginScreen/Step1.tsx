@@ -53,7 +53,7 @@ export const Step1 = () => {
           }}
         />
         <Row style={{ paddingStart: 36, paddingEnd: 36 }}>
-          <LogoBanner />
+          <LogoBanner mockBalance={6900} />
         </Row>
         <View
           style={{
