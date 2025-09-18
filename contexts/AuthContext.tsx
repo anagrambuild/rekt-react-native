@@ -4,6 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createClient } from "@supabase/supabase-js";
 import { getApiBaseUrl } from "@/constants/config";
 import { supabase, supabaseSignInWithSolana } from "@/utils/supabase";
+import { router } from "expo-router";
 // Initialize Supabase client
 
 
@@ -169,6 +170,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       await supabase.auth.signOut();
       setUser(null);
       setSession(null);
+      router.replace("/");
     } catch (error) {
       console.error("Sign out error:", error);
     } finally {
@@ -266,8 +268,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       });
 
       const result = await response.json();
-      console.log("🔍 Solana authentication result:", result);
-
       if (!response.ok) {
         return { success: false, error: result.error || 'Authentication failed' };
       }
@@ -286,7 +286,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         console.error("Supabase Web3 auth error:", authData.error);
         return { success: false, error: authData.error?.message || 'Web3 authentication failed' };
       }
-      console.log("🔍 Supabase Web3 auth data:", authData);
 
       // Set the session in Supabase
       if (authData.access_token) {

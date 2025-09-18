@@ -12,7 +12,7 @@ import {
   WalletConnectionModal,
 } from "@/components";
 import { SolanaAuthScreen } from "@/components/SolanaAuthScreen";
-import { useAppContext, useWallet } from "@/contexts";
+import { useAppContext, useAuth, useWallet } from "@/contexts";
 import { LoadingScreen } from "@/screens";
 import { Steps } from "@/screens/LoginScreen/Steps";
 
@@ -29,6 +29,7 @@ const Index = () => {
     setShowCompleteProfileForm,
     requiresBiometric,
   } = useAppContext();
+  const {session} = useAuth();
   const {
     connecting,
     connected,
@@ -68,7 +69,10 @@ const Index = () => {
         router.replace("/(tabs)");
       }, delay);
     }
-  }, [isLoggedIn, requiresBiometric, showCompleteProfileForm]);
+    if(!session?.user?.id) {
+      setShowCompleteProfileForm(false);
+    }
+  }, [isLoggedIn, requiresBiometric, showCompleteProfileForm,session]);
 
   // Initial connection check - give some time for session to load
   useEffect(() => {

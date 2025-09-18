@@ -102,7 +102,8 @@ export const getUSDCBalanceFromSolana = async (
       // Try using the SPL Token library first
       associatedTokenAddress = await getAssociatedTokenAddress(
         USDC_MINT,
-        walletPublicKey
+        walletPublicKey,
+        true
       );
     } catch (error) {
       console.error("❌ [SOLANA API] Failed to get associated token address:", {
@@ -124,12 +125,10 @@ export const getUSDCBalanceFromSolana = async (
           fallbackError
         );
         throw new Error(
-          `Both methods failed. Original: ${
-            error instanceof Error ? error.message : "Unknown error"
-          }, Fallback: ${
-            fallbackError instanceof Error
-              ? fallbackError.message
-              : "Unknown error"
+          `Both methods failed. Original: ${error instanceof Error ? error.message : "Unknown error"
+          }, Fallback: ${fallbackError instanceof Error
+            ? fallbackError.message
+            : "Unknown error"
           }`
         );
       }

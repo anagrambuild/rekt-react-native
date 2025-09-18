@@ -746,13 +746,7 @@ export const createUser = async (
   userData: CreateUserRequest
 ): Promise<User> => {
   try {
-    // Get user ID from current session
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      throw new Error("No authenticated user found");
-    }
+
     // Step 2: Set up realtime subscription for job completion
     const userId = (await supabase.auth.getUser()).data.user?.id;
     if (!userId) {
@@ -760,10 +754,16 @@ export const createUser = async (
     }
 
     return new Promise((resolve, reject) => {
+      const job = createUserJob({
+        user_id: userId,
+        username: userData.username,
+        wallet_address: userData.walletAddress,
+      });
       const channel = supabase
         .channel(`user:${userId}`)
         .on("broadcast", { event: "user_created" }, async payload => {
           try {
+
             // Step 3: Upload avatar if provided
             if (userData.profileImage) {
               try {
