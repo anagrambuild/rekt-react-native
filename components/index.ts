@@ -3,7 +3,7 @@ export * from "./common";
 export * from "./HorizontalSlider";
 export * from "./LogoBanner";
 export * from "./QRCodeScanner";
-export * from "./SignUpForm";
+export * from "./CompleteProfileForm";
 export * from "./TokenTab";
 export * from "./WalletConnectionContent";
 export * from "./WalletConnectionModal";

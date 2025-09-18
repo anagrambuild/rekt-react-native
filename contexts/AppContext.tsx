@@ -19,7 +19,7 @@ import { ProfileProvider } from "./ProfileContext";
 import { SolanaProvider } from "./SolanaContext";
 import { WalletProvider } from "./WalletContext";
 
-type SignUpFormData = {
+type CompleteProfileFormData = {
   username: string;
   email: string;
   profileImage: string | null;
@@ -31,10 +31,10 @@ type AppContextType = {
   setIsLoggedIn: Dispatch<SetStateAction<boolean>>;
   i18nReady: boolean;
   currentLanguage: string;
-  showSignUpForm: boolean;
-  setShowSignUpForm: Dispatch<SetStateAction<boolean>>;
-  signUpForm: SignUpFormData;
-  setSignUpForm: Dispatch<SetStateAction<SignUpFormData>>;
+  showCompleteProfileForm: boolean;
+  setShowCompleteProfileForm: Dispatch<SetStateAction<boolean>>;
+  completeProfileForm: CompleteProfileFormData;
+  setCompleteProfileForm: Dispatch<SetStateAction<CompleteProfileFormData>>;
   userProfile: any | null;
   setUserProfile: Dispatch<SetStateAction<any | null>>;
   checkingAuth: boolean;
@@ -51,36 +51,36 @@ type AppContextType = {
 
 export const AppContext = createContext<AppContextType>({
   isLoggedIn: false,
-  setIsLoggedIn: () => {},
+  setIsLoggedIn: () => { },
   i18nReady: false,
   currentLanguage: "en",
-  showSignUpForm: false,
-  setShowSignUpForm: () => {},
-  signUpForm: {
+  showCompleteProfileForm: false,
+  setShowCompleteProfileForm: () => { },
+  completeProfileForm: {
     username: "",
     email: "",
     profileImage: null,
     enableBiometrics: false,
   },
-  setSignUpForm: () => {},
+  setCompleteProfileForm: () => { },
   userProfile: null,
-  setUserProfile: () => {},
+  setUserProfile: () => { },
   checkingAuth: false,
   requiresBiometric: false,
-  setRequiresBiometric: () => {},
+  setRequiresBiometric: () => { },
   hasBreeze: false,
-  setHasBreeze: () => {},
+  setHasBreeze: () => { },
   authenticateWithBiometrics: async () => false,
   expectingWalletConnection: false,
-  setExpectingWalletConnection: () => {},
+  setExpectingWalletConnection: () => { },
   walletConnectionCallback: null,
-  setWalletConnectionCallback: () => {},
+  setWalletConnectionCallback: () => { },
 });
 
 export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const [i18nReady, setI18nReady] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState("en");
-  const [signUpForm, setSignUpForm] = useState<SignUpFormData>({
+  const [completeProfileForm, setCompleteProfileForm] = useState<CompleteProfileFormData>({
     username: "",
     email: "",
     profileImage: null,
@@ -102,8 +102,8 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     checkingAuth,
     requiresBiometric,
     setRequiresBiometric,
-    showSignUpForm,
-    setShowSignUpForm,
+    showCompleteProfileForm,
+    setShowCompleteProfileForm,
     authenticateWithBiometrics,
   } = useAuthInitialization();
 
@@ -180,10 +180,10 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         setIsLoggedIn,
         i18nReady,
         currentLanguage,
-        showSignUpForm,
-        setShowSignUpForm,
-        signUpForm,
-        setSignUpForm,
+        showCompleteProfileForm,
+        setShowCompleteProfileForm,
+        completeProfileForm,
+        setCompleteProfileForm,
         userProfile,
         setUserProfile,
         checkingAuth,

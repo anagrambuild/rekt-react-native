@@ -8,10 +8,11 @@ import {
   Column,
   PrimaryButton,
   ScreenContainer,
-  SignUpForm,
+  CompleteProfileForm,
   WalletConnectionModal,
 } from "@/components";
-import { useAppContext, useWallet } from "@/contexts";
+import { SolanaAuthScreen } from "@/components/SolanaAuthScreen";
+import { useAppContext, useAuth, useWallet } from "@/contexts";
 import { LoadingScreen } from "@/screens";
 import { Steps } from "@/screens/LoginScreen/Steps";
 
@@ -24,36 +25,54 @@ const Index = () => {
   const {
     isLoggedIn,
     setIsLoggedIn,
-    showSignUpForm,
-    setShowSignUpForm,
+    showCompleteProfileForm,
+    setShowCompleteProfileForm,
     requiresBiometric,
   } = useAppContext();
+  const {session} = useAuth();
   const {
     connecting,
     connected,
     showWalletModal,
     setShowWalletModal,
     connect,
+    getSIWSData,
   } = useWallet();
   const { t } = useTranslation();
   const [isCheckingConnection, setIsCheckingConnection] = useState(true);
+  const [showSolanaAuth, setShowSolanaAuth] = useState(false);
+
   const [forceRefresh, setForceRefresh] = useState(0);
 
   const handleSignUpComplete = () => {
     setIsLoggedIn(true);
-    setShowSignUpForm(false);
+    setShowCompleteProfileForm(false);
+    setShowSolanaAuth(false);
   };
 
-  // Check if user is already authenticated and redirect to tabs
+  const handleAuthSuccess = () => {
+    setIsLoggedIn(true);
+    setShowSolanaAuth(false);
+  };
+
+  const handleSignUpRequired = () => {
+    setShowSolanaAuth(false);
+    setShowCompleteProfileForm(true);
+  };
+
+  // Check if user is authenticated and has completed profile before redirecting
   useEffect(() => {
-    if (isLoggedIn && !requiresBiometric) {
+    if (isLoggedIn && !requiresBiometric && !showCompleteProfileForm) {
       setForceRefresh(prev => prev + 1);
       const delay = 50;
       setTimeout(() => {
         router.replace("/(tabs)");
       }, delay);
     }
-  }, [isLoggedIn, requiresBiometric]);
+    if(!session?.user?.id) {
+      setShowCompleteProfileForm(false);
+    }
+  }, [isLoggedIn, requiresBiometric, showCompleteProfileForm,session]);
 
   // Initial connection check - give some time for session to load
   useEffect(() => {
@@ -67,11 +86,15 @@ const Index = () => {
   // Handle wallet connection success
   useEffect(() => {
     if (connected) {
-      // User is connected to wallet, show signup form
+      // User is connected to wallet, show Solana authentication
+      console.log("🔗 Wallet connected, starting authentication flow...");
       setIsCheckingConnection(true);
       setTimeout(() => {
-        setShowSignUpForm(true);
-        setIsCheckingConnection(false);
+        if (getSIWSData()) {
+          setShowSolanaAuth(true);
+          setIsCheckingConnection(false);
+        }
+
       }, 800); // Brief delay for smooth transition
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -137,13 +160,14 @@ const Index = () => {
     if (Platform.OS === "ios") {
       setShowWalletModal(true);
     } else {
-      connect(() => setShowSignUpForm(true));
+      connect(() => setShowSolanaAuth(true));
     }
   };
 
   // const connectWallet = () => router.push("/(tabs)");
 
-  if (showSignUpForm) {
+  // Show Solana authentication screen after wallet connection
+  if (showSolanaAuth) {
     return (
       <ScreenContainer
         alignItems="stretch"
@@ -163,7 +187,36 @@ const Index = () => {
             pointerEvents="none"
             nativeControls={false}
           />
-          <SignUpForm onComplete={handleSignUpComplete} />
+          <SolanaAuthScreen
+            onAuthSuccess={handleAuthSuccess}
+            onSignUpRequired={handleSignUpRequired}
+          />
+        </Column>
+      </ScreenContainer>
+    );
+  }
+
+  if (showCompleteProfileForm) {
+    return (
+      <ScreenContainer
+        alignItems="stretch"
+        justifyContent="flex-start"
+        noPadding
+        contentContainerStyle={{ flex: 1, position: "relative" }}
+      >
+        <Column $width="100%" $height="100%" $justifyContent="flex-start">
+          <VideoView
+            player={player}
+            style={{
+              width: "100%",
+              height: "50%",
+              position: "absolute",
+              bottom: 0,
+            }}
+            pointerEvents="none"
+            nativeControls={false}
+          />
+          <CompleteProfileForm onComplete={handleSignUpComplete} />
         </Column>
       </ScreenContainer>
     );
@@ -228,7 +281,7 @@ const Index = () => {
         <WalletConnectionModal
           visible={showWalletModal}
           onRequestClose={() => setShowWalletModal(false)}
-          onConnectionSuccess={() => setShowSignUpForm(true)}
+          onConnectionSuccess={() => setShowSolanaAuth(true)}
         />
       )}
     </ScreenContainer>

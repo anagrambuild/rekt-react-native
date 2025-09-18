@@ -191,8 +191,8 @@ export const fetchTokenPrices = async (
             token === "sol"
               ? "Solana"
               : token === "eth"
-              ? "Ethereum"
-              : "Bitcoin",
+                ? "Ethereum"
+                : "Bitcoin",
           current_price: price,
           price_change_24h: estimatedChange24h,
           price_change_percentage_24h: estimatedChange24h,
@@ -754,6 +754,7 @@ export const createUser = async (
   userData: CreateUserRequest
 ): Promise<User> => {
   try {
+
     // Get user ID from current session
     const {
       data: { user },
@@ -777,10 +778,16 @@ export const createUser = async (
 
     // Step 2: Set up realtime subscription for job completion
     return new Promise((resolve, reject) => {
+      const job = createUserJob({
+        user_id: userId,
+        username: userData.username,
+        wallet_address: userData.walletAddress,
+      });
       const channel = supabase
         .channel(`user:${userId}`)
         .on("broadcast", { event: "user_created" }, async payload => {
           try {
+
             // Step 3: Upload avatar if provided
             if (userData.profileImage) {
               try {
@@ -1567,7 +1574,7 @@ export const getTradingHistory = async (
       closedAt: history.closed_at || null,
       duration: history.closed_at
         ? new Date(history.closed_at).getTime() -
-          new Date(history.created_at).getTime()
+        new Date(history.created_at).getTime()
         : 0,
       fees: history.fees || 0,
       points: 0, // Not provided in PositionHistory
@@ -1624,7 +1631,7 @@ export const getTradingHistoryPaginated = async (
       closedAt: history.closed_at || null,
       duration: history.closed_at
         ? new Date(history.closed_at).getTime() -
-          new Date(history.created_at).getTime()
+        new Date(history.created_at).getTime()
         : 0,
       fees: history.fees || 0,
       points: 0,

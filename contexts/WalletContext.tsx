@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import { Alert, Linking, Platform } from "react-native";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { queryClient } from "@/utils/queryClient";
 import { useSwigWalletBalanceQuery } from "@/utils/queryUtils";
@@ -28,20 +29,96 @@ export let persistentWalletState = {
   publicKey: null as PublicKey | null,
   sharedSecret: null as Uint8Array | null,
   session: null as string | null,
+  authToken: null as string | null,
 };
 
+// Auth token storage keys
+const AUTH_TOKEN_STORAGE_KEY = 'wallet_auth_token';
+
+// App Identity for SIWS
+const APP_IDENTITY = {
+  name: 'Rekt',
+  uri: 'https://rekt.app',
+  icon: 'favicon.ico',
+};
+
+// Auth token storage functions
+const storeAuthToken = async (authToken: string) => {
+  try {
+    await AsyncStorage.setItem(AUTH_TOKEN_STORAGE_KEY, authToken);
+    persistentWalletState.authToken = authToken;
+  } catch (error) {
+    console.error('Failed to store auth token:', error);
+  }
+};
+
+const getStoredAuthToken = async (): Promise<string | null> => {
+  try {
+    const token = await AsyncStorage.getItem(AUTH_TOKEN_STORAGE_KEY);
+    persistentWalletState.authToken = token;
+    return token;
+  } catch (error) {
+    console.error('Failed to retrieve auth token:', error);
+    return null;
+  }
+};
+
+const removeAuthToken = async () => {
+  try {
+    await AsyncStorage.removeItem(AUTH_TOKEN_STORAGE_KEY);
+    persistentWalletState.authToken = null;
+  } catch (error) {
+    console.error('Failed to remove auth token:', error);
+  }
+};
+
+// SIWS verification function using proper Solana Mobile documentation implementation
+export function verifySIWS(
+  input: SolanaSignInInput,
+  output: SolanaSignInOutput
+): boolean {
+  const serialisedOutput: SolanaSignInOutput = {
+    account: {
+      ...output.account,
+      publicKey: new Uint8Array(output.account.publicKey),
+    },
+    signature: new Uint8Array(output.signature),
+    signedMessage: new Uint8Array(output.signedMessage),
+  };
+  return verifySignIn(input, serialisedOutput);
+}
+
+// Function to format SIWS result for Supabase backend compatibility
+const formatSIWSForBackend = (
+  signInResult: any,
+  walletAddress: string
+): { wallet_address: string; signature: string; message: string } => {
+  try {
+
+
+    return {
+      wallet_address: walletAddress, // Already in base58 format
+      signature: signInResult.signature, // Now in hex format
+      message: signInResult.signed_message,
+    };
+  } catch (error) {
+    console.error('Error formatting SIWS for backend:', error);
+    throw error;
+  }
+};
+import {
+  transact,
+  Web3MobileWallet,
+} from "@solana-mobile/mobile-wallet-adapter-protocol-web3js";
+import type {
+  SolanaSignInInput,
+  SolanaSignInOutput,
+} from "@solana/wallet-standard-features";
+import { verifySignIn } from "@solana/wallet-standard-util";
+import { SignInResult } from "@solana-mobile/mobile-wallet-adapter-protocol";
 // Only import wallet adapter for Android
 const isAndroid = Platform.OS === "android";
-let transact: any = null;
 
-if (isAndroid) {
-  try {
-    const protocol = require("@solana-mobile/mobile-wallet-adapter-protocol-web3js");
-    transact = protocol.transact;
-  } catch (error) {
-    console.error("Failed to import mobile wallet adapter:", error);
-  }
-}
 
 export interface WalletContextState {
   connected: boolean;
@@ -59,6 +136,10 @@ export interface WalletContextState {
   // Transfer State
   transferState: TransferState;
 
+  // Authentication State
+  pendingSignature: { message: string; callback: (signature: string) => void } | null;
+  lastSIWSResult: SignInResult | null;
+
   // Methods
   connect: (onSuccess?: () => void) => Promise<void>;
   connectForTransfer: () => Promise<void>; // New method for transfer-only connection
@@ -68,6 +149,12 @@ export interface WalletContextState {
   refreshUSDCBalance: () => Promise<void>;
   initiateTransfer: (amount: number, toAddress: string) => Promise<void>;
   resetTransfer: () => void;
+
+  // Solana Authentication Methods
+  signMessage: (message: string) => Promise<{ success: boolean; signature?: string; error?: string }>;
+  generateAuthMessage: () => string;
+  getSIWSData: () => SignInResult | null;
+  removeAuthToken: () => Promise<void>;
 }
 
 const WalletContext = createContext<WalletContextState>({
@@ -84,15 +171,21 @@ const WalletContext = createContext<WalletContextState>({
   usdcBalance: null,
   isLoadingBalance: false,
   transferState: { status: "idle" },
+  pendingSignature: null,
+  lastSIWSResult: null,
 
-  connect: async () => {},
-  connectForTransfer: async () => {},
-  disconnect: () => {},
-  setShowWalletModal: () => {},
-  setConnectionSuccessCallback: () => {},
-  refreshUSDCBalance: async () => {},
-  initiateTransfer: async () => {},
-  resetTransfer: () => {},
+  connect: async () => { },
+  connectForTransfer: async () => { },
+  disconnect: () => { },
+  setShowWalletModal: () => { },
+  setConnectionSuccessCallback: () => { },
+  refreshUSDCBalance: async () => { },
+  initiateTransfer: async () => { },
+  resetTransfer: () => { },
+  signMessage: async () => ({ success: false }),
+  generateAuthMessage: () => "",
+  getSIWSData: () => null,
+  removeAuthToken: async () => { },
 });
 
 export const useWallet = () => {
@@ -148,6 +241,14 @@ export const WalletProvider = ({
     status: "idle",
   });
 
+  // Authentication state
+  const [pendingSignature, setPendingSignature] = useState<{
+    message: string;
+    callback: (signature: string) => void
+  } | null>(null);
+
+  const [lastSIWSResult, setLastSIWSResult] = useState<SignInResult | null>(null);
+
   // Generate encryption keypair for Phantom communication - initialize once
   const [dappKeyPair] = useState<nacl.BoxKeyPair>(() => {
     try {
@@ -180,21 +281,66 @@ export const WalletProvider = ({
 
     try {
       const cluster = solanaNetwork.includes("mainnet")
-        ? "mainnet-beta"
-        : "devnet";
-      const result = await transact(async (wallet: any) => {
+        ? "solana:mainnet"
+        : "solana:devnet";
+
+      // Get stored auth token if available
+      const storedAuthToken = await getStoredAuthToken();
+      const nonce = Math.random().toString(36).substring(2, 15);
+      const signInPayload = {
+        domain: 'rekt.app',
+        statement: 'Sign in to Rekt App',
+        uri: 'rekt.app',
+        version: '1',
+        chainId: 1,
+        nonce: nonce,
+        issuedAt: new Date().toISOString(),
+      };
+      const result = await transact(async (wallet: Web3MobileWallet) => {
         const authResult = await wallet.authorize({
-          cluster: cluster,
-          identity: {
-            name: "Rekt",
-            uri: "https://rekt.app",
-            icon: "favicon.ico",
-          },
+          chain: cluster,
+          identity: APP_IDENTITY,
+          auth_token: storedAuthToken ? storedAuthToken : undefined,
         });
-        return authResult;
+        let address = bs58.encode(Buffer.from(authResult.accounts[0].address, "base64"))
+        const message = [
+          `d62684ca4a6a.ngrok-free.app wants you to sign in with your Solana account:`,
+          address,
+          ...(signInPayload.statement ? ['', signInPayload.statement, ''] : ['']),
+          'Version: 1',
+          `URI: https://d62684ca4a6a.ngrok-free.app`,
+          `Issued At: ${signInPayload.issuedAt ?? new Date().toISOString()}`,
+
+
+          ...(signInPayload.nonce ? [`Nonce: ${signInPayload.nonce}`] : []),
+        ].join('\n')
+
+        const signedMessage = await wallet.signMessages({
+          addresses: [authResult.accounts[0].address],
+          payloads: [new TextEncoder().encode(message)],
+        });
+        const sign_in_result: SignInResult = {
+          address: address,
+          signed_message: message,
+          signature: Buffer.from(signedMessage[0]).toString('base64'),
+        };
+        console.log("🔍 sign_in_result:", sign_in_result);
+        return {
+          ...authResult,
+          sign_in_result: sign_in_result,
+        }
       });
 
       if (result.accounts.length > 0) {
+        // Store the new auth token
+        if (result.auth_token) {
+          await storeAuthToken(result.auth_token);
+        }
+        if (result.sign_in_result) {
+          setLastSIWSResult(result.sign_in_result || null);
+        }
+
+
         // Convert base64 address to PublicKey
         const base64Address = result.accounts[0].address;
         const addressBytes = global.Buffer.from(base64Address, "base64");
@@ -212,7 +358,15 @@ export const WalletProvider = ({
       }
       return false;
     } catch (error) {
+      removeAuthToken();
       console.error("Android wallet connection failed:", error);
+
+      // Handle user cancellation gracefully
+      if (error instanceof Error && error.message.includes("cancelled by user")) {
+        console.log("User cancelled wallet connection");
+        return false;
+      }
+
       Alert.alert(t("Connection Failed"), t("Failed to connect to wallet"));
       return false;
     }
@@ -326,7 +480,7 @@ export const WalletProvider = ({
         return;
       }
 
-      // Handle transaction signing response from Phantom
+      // Handle message signing or transaction signing response from Phantom
       if (
         url.includes(`${currentScheme}://`) &&
         url.includes("data") &&
@@ -350,8 +504,15 @@ export const WalletProvider = ({
                 global.Buffer.from(decryptedData).toString("utf8")
               );
 
-              if (responseData.signature) {
-                // Update transfer state with success
+              if (responseData.signature && !responseData.transaction) {
+                // This is a message signing response (signature only, no transaction)
+                if (pendingSignature) {
+                  pendingSignature.callback(responseData.signature);
+                  setPendingSignature(null);
+                  return;
+                }
+
+                // This is a transaction signing response with direct signature
                 setTransferState({
                   status: "success",
                   signature: responseData.signature,
@@ -447,10 +608,9 @@ export const WalletProvider = ({
                     txError
                   );
                   throw new Error(
-                    `Failed to send transaction: ${
-                      txError instanceof Error
-                        ? txError.message
-                        : "Unknown error"
+                    `Failed to send transaction: ${txError instanceof Error
+                      ? txError.message
+                      : "Unknown error"
                     }`
                   );
                 }
@@ -529,8 +689,9 @@ export const WalletProvider = ({
   }, [getDappKeyPair, sharedSecret, transferState, connection]);
 
   const connect = useCallback(
+
     async (onSuccess?: () => void) => {
-      if (connecting || connected) {
+      if (connecting || connected && lastSIWSResult) {
         return;
       }
 
@@ -559,7 +720,7 @@ export const WalletProvider = ({
         setConnecting(false);
       }
     },
-    [connecting, connected, connectAndroid]
+    [connecting, connected, isAndroid, transact, solanaNetwork]
   );
 
   // Transfer-only connection that doesn't trigger authentication flows
@@ -585,20 +746,38 @@ export const WalletProvider = ({
       console.error("Transfer wallet connection error:", error);
       setConnecting(false);
     }
-  }, [connecting, connected, connectAndroid]);
+  }, [connecting, connected, isAndroid, transact, solanaNetwork]);
 
-  const disconnect = useCallback(() => {
+  const disconnect = useCallback(async () => {
+    // Deauthorize from wallet if we have an auth token
+    const storedAuthToken = await getStoredAuthToken();
+    if (storedAuthToken && isAndroid && transact) {
+      try {
+        await transact(async (wallet: Web3MobileWallet) => {
+          await wallet.deauthorize({ auth_token: storedAuthToken });
+          await removeAuthToken();
+        });
+      } catch (error) {
+        console.error('Failed to deauthorize wallet:', error);
+      }
+    }
+
+    // Remove auth token from storage
+    await removeAuthToken();
+
     // Update persistent state
     persistentWalletState.connected = false;
     persistentWalletState.publicKey = null;
     persistentWalletState.sharedSecret = null;
     persistentWalletState.session = null;
+    persistentWalletState.authToken = null;
 
     setConnected(false);
     setPublicKey(null);
     setSharedSecret(null);
     setSession(null);
-  }, []);
+    setLastSIWSResult(null);
+  }, [isAndroid, transact]);
 
   // Get swig wallet address from user profile (not connected wallet)
   const swigWalletAddress = userProfile?.swigWalletAddress || "";
@@ -759,6 +938,152 @@ export const WalletProvider = ({
     []
   );
 
+  // Generate authentication message with nonce
+  const generateAuthMessage = useCallback(() => {
+    const nonce = Math.random().toString(36).substring(2, 15);
+    const timestamp = Date.now();
+    return `Sign this message to authenticate with Rekt:\n\nNonce: ${nonce}\nTimestamp: ${timestamp}\n\nThis request will not trigger a blockchain transaction or cost any gas fees.`;
+  }, []);
+
+  // Sign message for authentication
+  const signMessage = useCallback(
+    async (message: string) => {
+      if (!connected || !publicKey) {
+        return { success: false, error: "Wallet not connected" };
+      }
+
+      try {
+        if (Platform.OS === "android") {
+          // Android MWA message signing
+          console.log("🤖 Android detected, checking MWA transact function...");
+          console.log("🔧 transact available:", !!transact);
+          console.log("🔧 transact type:", typeof transact);
+
+          if (!transact) {
+            console.error("❌ MWA transact function not available");
+            return { success: false, error: "Mobile Wallet Adapter not available. Please ensure you have a compatible wallet installed." };
+          }
+
+          console.log("🔐 Starting MWA message signing...");
+
+          // Add timeout to prevent hanging
+          const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => {
+              console.error("⏰ MWA signing timeout after 60 seconds");
+              reject(new Error("Wallet signing timeout after 60 seconds"));
+            }, 60000);
+          });
+
+          const signingPromise = transact(async (wallet: any) => {
+            console.log("📱 MWA wallet connected, requesting message signature...");
+            console.log("📝 Message to sign:", message);
+
+            const messageBytes = new TextEncoder().encode(message);
+            console.log("📦 Message bytes length:", messageBytes.length);
+
+            try {
+              console.log("🔐 Calling wallet.signMessages...");
+              const signedMessage = await wallet.signMessages({
+                payloads: [messageBytes],
+              });
+              console.log("✅ MWA message signed successfully", signedMessage);
+              return signedMessage;
+            } catch (walletError) {
+              console.error("❌ Wallet signing error:", walletError);
+              throw walletError;
+            }
+          });
+
+          const result = await Promise.race([signingPromise, timeoutPromise]);
+
+          if (result && result.signed_payloads && result.signed_payloads.length > 0) {
+            const signature = bs58.encode(result.signed_payloads[0]);
+            console.log("🎯 Signature created:", signature.substring(0, 20) + "...");
+            return { success: true, signature };
+          } else {
+            console.error("❌ No signature payload received from MWA");
+            return { success: false, error: "Failed to sign message" };
+          }
+        } else if (Platform.OS === "ios") {
+          // iOS Phantom message signing
+          if (!sharedSecret || !session) {
+            return { success: false, error: "Wallet not properly connected" };
+          }
+
+          const keyPair = getDappKeyPair();
+          const messageBytes = new TextEncoder().encode(message);
+
+          // Create sign message request
+          const request = {
+            method: "signMessage",
+            params: {
+              message: bs58.encode(messageBytes),
+              display: "utf8",
+            },
+          };
+
+          // Encrypt the request
+          const nonce = nacl.randomBytes(24);
+          const requestData = JSON.stringify(request);
+          const encryptedData = nacl.box.after(
+            new TextEncoder().encode(requestData),
+            nonce,
+            sharedSecret
+          );
+
+          // Create the URL to send to Phantom
+          const currentScheme = Constants.expoConfig?.scheme;
+          const params = new URLSearchParams({
+            dapp_encryption_public_key: bs58.encode(keyPair.publicKey),
+            nonce: bs58.encode(nonce),
+            redirect_link: `${currentScheme}://`,
+            payload: bs58.encode(encryptedData),
+          });
+
+          const url = `https://phantom.app/ul/v1/signMessage?${params.toString()}`;
+
+          // Set up pending signature callback
+          return new Promise<{ success: boolean; signature?: string; error?: string }>((resolve) => {
+            setPendingSignature({
+              message,
+              callback: (signature: string) => {
+                resolve({ success: true, signature });
+              }
+            });
+
+            Linking.openURL(url).catch((error) => {
+              setPendingSignature(null);
+              resolve({ success: false, error: error.message });
+            });
+          });
+        }
+
+        return { success: false, error: "Platform not supported" };
+      } catch (error) {
+        console.error("Message signing error:", error);
+
+        // Handle MWA user cancellation gracefully
+        if (error instanceof Error && error.message.includes("cancelled by user")) {
+          return {
+            success: false,
+            error: "User cancelled the signing request"
+          };
+        }
+
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : "Failed to sign message"
+        };
+      }
+    },
+    [connected, publicKey, sharedSecret, session, getDappKeyPair]
+  );
+
+  // Method to get SIWS data for backend authentication
+  const getSIWSData = useCallback(() => {
+    return lastSIWSResult;
+  }, [lastSIWSResult]);
+
   const value: WalletContextState = {
     connected,
     connecting,
@@ -770,6 +1095,8 @@ export const WalletProvider = ({
     usdcBalance,
     isLoadingBalance,
     transferState,
+    pendingSignature,
+    lastSIWSResult,
     connect,
     connectForTransfer,
     disconnect,
@@ -778,6 +1105,10 @@ export const WalletProvider = ({
     initiateTransfer,
     resetTransfer,
     setConnectionSuccessCallback,
+    signMessage,
+    generateAuthMessage,
+    getSIWSData,
+    removeAuthToken,
   };
 
   return (

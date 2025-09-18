@@ -31,28 +31,28 @@ import { useTranslation } from "react-i18next";
 import styled, { DefaultTheme, useTheme } from "styled-components/native";
 import { Toast } from "toastify-react-native";
 
-interface SignUpFormProps {
+interface completeProfileFormProps {
   onComplete?: () => void;
 }
 
-export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
+export const CompleteProfileForm = ({ onComplete }: completeProfileFormProps) => {
   const { t } = useTranslation();
-  const { sendOTP, signOut, verifyOTP, loading: authLoading } = useAuth();
-  const { publicKey, connected } = useWallet();
+  const { sendOTP, signOut, verifyOTP, signInWithSolana, loading: authLoading, session } = useAuth();
+  const { publicKey, connected, generateAuthMessage, signMessage } = useWallet();
   const { takePhoto, pickFromLibrary, isLoading } = useImagePicker();
   const { isSupported, isEnrolled, biometricType, enableBiometrics } =
     useBiometrics();
   const theme = useTheme();
-  const { signUpForm, setSignUpForm, setUserProfile } = useAppContext();
+  const { completeProfileForm, setCompleteProfileForm, setUserProfile } = useAppContext();
 
   // Use the unified username validation hook
-  const usernameValidation = useUsernameValidation(signUpForm.username);
+  const usernameValidation = useUsernameValidation(completeProfileForm.username);
 
   // React Query mutation for user creation
   const createUserMutation = useCreateUserMutation({
     onSuccess: user => {
-      console.log("✅ User created successfully via React Query");
-      console.log("👤 User:", user);
+      console.log(" 2705 User created successfully via React Query");
+      console.log(" 1f464 User:", user);
 
       // Show success toast
       Toast.show({
@@ -65,7 +65,7 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
       setUserProfile(user);
 
       // Clear the form after successful creation
-      setSignUpForm({
+      setCompleteProfileForm({
         username: "",
         email: "",
         profileImage: null,
@@ -81,7 +81,7 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
       onComplete?.();
     },
     onError: error => {
-      console.error("❌ User creation failed:", error);
+      console.error(" 274c User creation failed:", error);
       Toast.show({
         text1: t("Error"),
         text2:
@@ -98,7 +98,7 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
   const [otp, setOtp] = useState("");
 
   const handleUsernameChange = (text: string) => {
-    setSignUpForm(prev => ({ ...prev, username: text }));
+    setCompleteProfileForm(prev => ({ ...prev, username: text }));
   };
 
   const emailInputRef = useRef<TextInput>(null);
@@ -108,7 +108,7 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
   };
 
   const handleEmailChange = (text: string) => {
-    setSignUpForm(prev => ({ ...prev, email: text }));
+    setCompleteProfileForm(prev => ({ ...prev, email: text }));
 
     // Clear previous error
     if (emailError) setEmailError("");
@@ -134,7 +134,7 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
         onPress: async () => {
           const photo = await takePhoto();
           if (photo) {
-            setSignUpForm(prev => ({ ...prev, profileImage: photo.uri }));
+            setCompleteProfileForm(prev => ({ ...prev, profileImage: photo.uri }));
           }
         },
       },
@@ -143,7 +143,7 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
         onPress: async () => {
           const photo = await pickFromLibrary();
           if (photo) {
-            setSignUpForm(prev => ({ ...prev, profileImage: photo.uri }));
+            setCompleteProfileForm(prev => ({ ...prev, profileImage: photo.uri }));
           }
         },
       },
@@ -152,11 +152,12 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
   };
 
   const validateForm = () => {
-    if (!signUpForm.username.trim()) {
+    if (!completeProfileForm.username.trim()) {
       return false;
     }
-    if (!signUpForm.email.trim()) {
-      setEmailError(t("Email is required"));
+    // Email is now optional unless using OTP flow
+    if (otpSent && !completeProfileForm.email.trim()) {
+      setEmailError(t("Email is required for OTP verification"));
       return false;
     }
     if (otpSent && !otp.trim()) {
@@ -171,33 +172,33 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
   };
 
   const handleBiometricToggle = async () => {
-    if (!signUpForm.enableBiometrics) {
+    if (!completeProfileForm.enableBiometrics) {
       // User wants to enable biometrics
       const success = await enableBiometrics();
       if (success) {
-        setSignUpForm(prev => ({ ...prev, enableBiometrics: true }));
+        setCompleteProfileForm(prev => ({ ...prev, enableBiometrics: true }));
       }
     } else {
       // User wants to disable biometrics
-      setSignUpForm(prev => ({ ...prev, enableBiometrics: false }));
+      setCompleteProfileForm(prev => ({ ...prev, enableBiometrics: false }));
     }
   };
 
   const handleSendOTP = async () => {
-    if (!signUpForm.email.trim()) {
+    if (!completeProfileForm.email.trim()) {
       setEmailError(t("Email is required"));
       return;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(signUpForm.email)) {
+    if (!emailRegex.test(completeProfileForm.email)) {
       setEmailError(t("Please enter a valid email address"));
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const result = await sendOTP(signUpForm.email);
+      const result = await sendOTP(completeProfileForm.email);
       if (result.success) {
         setOtpSent(true);
         Toast.show({
@@ -267,52 +268,31 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
 
     setIsSubmitting(true);
     try {
-      // Step 1: Verify OTP and authenticate with Supabase
-      const otpResult = await verifyOTP(signUpForm.email, otp);
-      if (!otpResult.success) {
-        throw new Error(otpResult.error || "OTP verification failed");
-      }
-
-      console.log("✅ OTP verification successful");
-
-      // DEBUG: Check session after OTP verification
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      console.log("🔑 Session after OTP:", {
-        hasSession: !!session,
-        hasAccessToken: !!session?.access_token,
-        userId: session?.user?.id,
-        tokenPreview: session?.access_token?.substring(0, 50) + "...",
-      });
-
-      // LOG FULL TOKEN
-      console.log("🎫 FULL JWT TOKEN:", session?.access_token);
 
       if (!session?.access_token) {
-        throw new Error("No session found after OTP verification");
+        throw new Error("No session found after authentication");
       }
 
-      // Step 2: Store biometric preference if enabled
-      if (signUpForm.enableBiometrics) {
+      // Store biometric preference if enabled
+      if (completeProfileForm.enableBiometrics) {
         await AsyncStorage.setItem("biometric_enabled", "true");
       } else {
         await AsyncStorage.setItem("biometric_enabled", "false");
       }
 
-      // Step 3: Create user in database using React Query mutation
+      // Create user in database using React Query mutation
       createUserMutation.mutate({
-        username: signUpForm.username,
-        email: signUpForm.email,
+        username: completeProfileForm.username,
+        email: completeProfileForm.email,
         walletAddress: publicKey.toBase58(),
-        profileImage: signUpForm.profileImage || undefined,
+        profileImage: completeProfileForm.profileImage || undefined,
       });
     } catch (error) {
-      console.error("❌ OTP verification failed:", error);
+      console.error(" 274 Authentication failed:", error);
       Toast.show({
         text1: t("Error"),
         text2:
-          error instanceof Error ? error.message : t("OTP verification failed"),
+          error instanceof Error ? error.message : t("Authentication failed"),
         type: "error",
       });
       setIsSubmitting(false);
@@ -353,8 +333,8 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
             <AvatarContainer>
               <AvatarImage
                 source={
-                  signUpForm.profileImage
-                    ? { uri: signUpForm.profileImage }
+                  completeProfileForm.profileImage
+                    ? { uri: completeProfileForm.profileImage }
                     : require("@/assets/images/app-pngs/avatar.png")
                 }
               />
@@ -371,7 +351,7 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
                 <Input
                   label={`${t("Username")} *`}
                   placeholder={t("Enter your username")}
-                  value={signUpForm.username}
+                  value={completeProfileForm.username}
                   onChangeText={handleUsernameChange}
                   returnKeyType="next"
                   onSubmitEditing={onNext}
@@ -392,8 +372,8 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
                 )}
               {(usernameValidation.isAvailable === false ||
                 usernameValidation.hasError) && (
-                <ErrorIndicator style={{ marginBottom: 12 }}>✗</ErrorIndicator>
-              )}
+                  <ErrorIndicator style={{ marginBottom: 12 }}>✗</ErrorIndicator>
+                )}
             </Row>
             {usernameValidation.hasError ? (
               <ErrorText>{usernameValidation.error}</ErrorText>
@@ -401,9 +381,9 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
 
             {/* Email Input */}
             <Input
-              label={t("Email Address")}
+              label={`${t("Email Address")} (${t("Optional")})`}
               placeholder={t("Enter your email")}
-              value={signUpForm.email}
+              value={completeProfileForm.email}
               onChangeText={handleEmailChange}
               keyboardType="email-address"
               returnKeyType="done"
@@ -448,7 +428,7 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
                     </BodyS>
                   </Column>
                   <Switch
-                    isOn={signUpForm.enableBiometrics}
+                    isOn={completeProfileForm.enableBiometrics}
                     onPress={handleBiometricToggle}
                   />
                 </Row>
@@ -472,15 +452,13 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
 
         {/* Submit Button */}
         <PrimaryButton
-          onPress={otpSent ? handleSubmit : handleSendOTP}
+          onPress={otpSent ? handleSubmit : completeProfileForm.email.trim() ? handleSendOTP : handleSubmit}
           disabled={
             isSubmitting ||
             authLoading ||
             createUserMutation.isPending ||
-            (!otpSent &&
-              (!signUpForm.email.trim() ||
-                usernameValidation.isEmpty ||
-                !usernameValidation.isValid)) ||
+            usernameValidation.isEmpty ||
+            !usernameValidation.isValid ||
             (otpSent && !otp.trim())
           }
           style={{ marginTop: 24 }}
@@ -488,10 +466,14 @@ export const SignUpForm = ({ onComplete }: SignUpFormProps) => {
           {isSubmitting || createUserMutation.isPending
             ? createUserMutation.isPending
               ? t("Creating Account...")
-              : t("Sending OTP...")
+              : otpSent
+                ? t("Verifying...")
+                : t("Creating Account...")
             : otpSent
-            ? t("Complete Sign Up")
-            : t("Send Code")}
+              ? t("Complete Sign Up")
+              : completeProfileForm.email.trim()
+                ? t("Send Code")
+                : t("Create Account")}
         </PrimaryButton>
       </Column>
     </FormContainer>

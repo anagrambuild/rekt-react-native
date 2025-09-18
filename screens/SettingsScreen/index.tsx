@@ -28,7 +28,8 @@ import { useTheme } from "styled-components/native";
 export const SettingsScreen = () => {
   const theme = useTheme();
   const { t } = useTranslation();
-  const { setIsLoggedIn, setUserProfile, setShowSignUpForm } = useAppContext();
+  const { setIsLoggedIn, setUserProfile, setShowCompleteProfileForm } = useAppContext();
+  const { removeAuthToken } = useWallet();
   const { disconnect } = useWallet();
   const {
     userImage,
@@ -45,10 +46,11 @@ export const SettingsScreen = () => {
 
   const handleLogout = async () => {
     try {
+      removeAuthToken();
       await supabase.auth.signOut();
       disconnect();
       setUserProfile(null);
-      setShowSignUpForm(false);
+      setShowCompleteProfileForm(false);
       setIsLoggedIn(false);
       router.replace("/");
     } catch (error) {
