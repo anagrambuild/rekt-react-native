@@ -28,6 +28,7 @@ import {
   WebViewScreen,
 } from "@/components";
 import { useAppContext, useProfileContext, useWallet } from "@/contexts";
+import { queryClient } from "@/utils/queryClient";
 
 import Feather from "@expo/vector-icons/Feather";
 import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
@@ -91,6 +92,18 @@ export const TransferIn = ({
     address.length > 10
       ? address.slice(0, 6) + "..." + address.slice(-4)
       : address;
+
+  // Watch for successful transfers and invalidate balance query with delay
+  useEffect(() => {
+    if (transferState.status === "success" && address) {
+      // Wait 5 seconds for blockchain finalization before refetching balance
+      setTimeout(() => {
+        queryClient.invalidateQueries({
+          queryKey: ["swigWallet", "balance", address],
+        });
+      }, 5000);
+    }
+  }, [transferState.status, address]);
 
   // Save transfer amount when it changes
   useEffect(() => {

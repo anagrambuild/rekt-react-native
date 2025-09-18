@@ -68,6 +68,8 @@ interface ProfileContextType {
   setSavedTransferAmount: (amount: string) => void;
   wasInTransferFlow: boolean;
   setWasInTransferFlow: (inFlow: boolean) => void;
+  showStatsView: boolean;
+  setShowStatsView: (show: boolean) => void;
 }
 
 export const ProfileContext = createContext<ProfileContextType>({
@@ -112,6 +114,8 @@ export const ProfileContext = createContext<ProfileContextType>({
   setSavedTransferAmount: () => {},
   wasInTransferFlow: false,
   setWasInTransferFlow: () => {},
+  showStatsView: false,
+  setShowStatsView: () => {},
 });
 
 export const useProfileContext = () => {
@@ -154,6 +158,7 @@ export const ProfileProvider = ({
   const [savedOnOffRampView, setSavedOnOffRampView] = useState("balance");
   const [savedTransferAmount, setSavedTransferAmount] = useState("");
   const [wasInTransferFlow, setWasInTransferFlow] = useState(false);
+  const [showStatsView, setShowStatsView] = useState(false);
 
   // Set profile ID from userProfile when it changes
   useEffect(() => {
@@ -198,6 +203,7 @@ export const ProfileProvider = ({
       setSavedOnOffRampView("balance");
       setSavedTransferAmount("");
       setWasInTransferFlow(false);
+      setShowStatsView(false);
     }
     // Profile ID is now handled by the separate useEffect above
   }, [userProfile]);
@@ -302,6 +308,8 @@ export const ProfileProvider = ({
         setSavedTransferAmount,
         wasInTransferFlow,
         setWasInTransferFlow,
+        showStatsView,
+        setShowStatsView,
       }}
     >
       {children}

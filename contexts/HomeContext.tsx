@@ -7,6 +7,7 @@ import {
   Position,
   TradingBalance,
 } from "@/utils/backendApi";
+import { queryClient } from "@/utils/queryClient";
 import {
   useClosePositionMutation,
   useOpenPositionMutation,
@@ -123,7 +124,13 @@ export const useHomeContext = () => {
   return useContext(HomeContext);
 };
 
-export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
+export const HomeProvider = ({
+  children,
+  userProfile,
+}: {
+  children: React.ReactNode;
+  userProfile: any | null;
+}) => {
   const { t } = useTranslation();
   const { usdcBalance } = useWallet();
   const { userId } = useProfileContext();
@@ -132,7 +139,7 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
   const [solTrade, setSolTrade] = useState<Trade | null>(null);
   const [ethTrade, setEthTrade] = useState<Trade | null>(null);
   const [btcTrade, setBtcTrade] = useState<Trade | null>(null);
-  
+
   // Market-specific trading states
   const [tradingStates, setTradingStates] = useState({
     SOL: false,
@@ -186,8 +193,11 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Trading action state (deprecated - use tradingStates instead)
   const isTrading =
-    openPositionMutation.isPending || closePositionMutation.isPending ||
-    tradingStates.SOL || tradingStates.ETH || tradingStates.BTC;
+    openPositionMutation.isPending ||
+    closePositionMutation.isPending ||
+    tradingStates.SOL ||
+    tradingStates.ETH ||
+    tradingStates.BTC;
 
   // Refresh functions using React Query refetch
   const refreshBalance = async () => {
@@ -221,10 +231,15 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
     // Create unique operation key for tracking
     const operationKey = `${market}-${direction}-${amount}-${leverage}-${Date.now()}`;
     const callStack = new Error().stack;
-    
-    console.log(`🚀 [TRADE CALL] openPosition called with key: ${operationKey}`);
-    console.log(`📍 [TRADE CALL] Call stack:`, callStack?.split('\n').slice(0, 5).join('\n'));
-    
+
+    console.log(
+      `🚀 [TRADE CALL] openPosition called with key: ${operationKey}`
+    );
+    console.log(
+      `📍 [TRADE CALL] Call stack:`,
+      callStack?.split("\n").slice(0, 5).join("\n")
+    );
+
     if (!userId) {
       Toast.show({
         text1: t("Error"),
@@ -233,12 +248,20 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
       });
       return false;
     }
-    
+
     // Prevent double execution using multiple guards
     if (tradingStates[market] || ongoingOperations.current.has(market)) {
-      console.warn(`🚫 [TRADE GUARD] ${market} trade already in progress, ignoring duplicate call`);
-      console.warn(`🚫 [TRADE GUARD] tradingStates[${market}]:`, tradingStates[market]);
-      console.warn(`🚫 [TRADE GUARD] ongoingOperations.has(${market}):`, ongoingOperations.current.has(market));
+      console.warn(
+        `🚫 [TRADE GUARD] ${market} trade already in progress, ignoring duplicate call`
+      );
+      console.warn(
+        `🚫 [TRADE GUARD] tradingStates[${market}]:`,
+        tradingStates[market]
+      );
+      console.warn(
+        `🚫 [TRADE GUARD] ongoingOperations.has(${market}):`,
+        ongoingOperations.current.has(market)
+      );
       return false;
     }
 
@@ -250,7 +273,7 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
       console.log(`🚀 [TRADE START] Starting ${market} ${direction} trade:`, {
         amount,
         leverage,
-        operationKey
+        operationKey,
       });
 
       // Validate inputs
@@ -295,10 +318,30 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
       });
 
       // Force refresh positions to get real backend data
-      console.log(`🔄 [TRADE SUCCESS] Refreshing positions data to show LiveTradeView...`);
+      console.log(
+        `🔄 [TRADE SUCCESS] Refreshing positions data to show LiveTradeView...`
+      );
       await refreshPositions();
 
-      console.log(`✅ [TRADE SUCCESS] ${market} positions refreshed, UI should update when backend data loads`);
+      // Invalidate swig wallet balance after blockchain finalization
+      if (userProfile?.swigWalletAddress) {
+        console.log(
+          "🔄 [TRADE SUCCESS] Waiting 5 seconds for blockchain finalization before refreshing swig wallet balance..."
+        );
+        setTimeout(() => {
+          console.log(
+            "🔄 [TRADE SUCCESS] Now invalidating swig wallet balance query for:",
+            userProfile.swigWalletAddress
+          );
+          queryClient.invalidateQueries({
+            queryKey: ["swigWallet", "balance", userProfile.swigWalletAddress],
+          });
+        }, 5000);
+      }
+
+      console.log(
+        `✅ [TRADE SUCCESS] ${market} positions refreshed, UI should update when backend data loads`
+      );
       return true;
     } catch (error) {
       console.error(`❌ [TRADE ERROR] ${market} trade failed:`, error);
@@ -334,7 +377,9 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
 
     // Prevent double execution if we know the market
     if (market && tradingStates[market]) {
-      console.warn(`🚫 [CLOSE GUARD] ${market} close already in progress, ignoring duplicate call`);
+      console.warn(
+        `🚫 [CLOSE GUARD] ${market} close already in progress, ignoring duplicate call`
+      );
       return false;
     }
 
@@ -348,6 +393,8 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
       const closeRequest: ClosePositionRequest = {
         userId,
         positionId,
+        // TODO - verify that thisis the right value to use
+        positionAmount: position?.size.toString(),
       };
 
       const closedPosition = await closePositionMutation.mutateAsync(
@@ -370,6 +417,22 @@ export const HomeProvider = ({ children }: { children: React.ReactNode }) => {
           : t("Position closed successfully"),
         type: "success",
       });
+
+      // Invalidate swig wallet balance after blockchain finalization
+      if (userProfile?.swigWalletAddress) {
+        console.log(
+          "🔄 [CLOSE SUCCESS] Waiting 5 seconds for blockchain finalization before refreshing swig wallet balance..."
+        );
+        setTimeout(() => {
+          console.log(
+            "🔄 [CLOSE SUCCESS] Now invalidating swig wallet balance query for:",
+            userProfile.swigWalletAddress
+          );
+          queryClient.invalidateQueries({
+            queryKey: ["swigWallet", "balance", userProfile.swigWalletAddress],
+          });
+        }, 5000);
+      }
 
       return true;
     } catch (error) {

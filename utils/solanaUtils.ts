@@ -21,10 +21,6 @@ const findAssociatedTokenAddress = async (
   walletAddress: PublicKey,
   tokenMintAddress: PublicKey
 ): Promise<PublicKey> => {
-  console.log(
-    "🔧 [SOLANA UTILS] Manually calculating associated token address"
-  );
-
   const [associatedTokenAddress] = PublicKey.findProgramAddressSync(
     [
       walletAddress.toBytes(),
@@ -54,10 +50,8 @@ const createConnection = (
       commitment: "confirmed",
       confirmTransactionInitialTimeout: 30000,
     });
-    console.log("✅ [SOLANA UTILS] Connection created successfully");
     return connection;
   } catch (error) {
-    console.error("❌ [SOLANA UTILS] Failed to create connection:", error);
     throw error;
   }
 };
@@ -86,12 +80,7 @@ export const getUSDCBalanceFromSolana = async (
     try {
       walletPublicKey = new PublicKey(walletAddress);
     } catch (error) {
-      console.error(
-        "❌ [SOLANA API] Invalid wallet address:",
-        walletAddress,
-        error
-      );
-      throw new Error(`Invalid wallet address: ${walletAddress}`);
+      throw new Error(`Invalid wallet address: ${walletAddress}, ${error}`);
     }
 
     // Create connection
@@ -106,13 +95,6 @@ export const getUSDCBalanceFromSolana = async (
         true
       );
     } catch (error) {
-      console.error("❌ [SOLANA API] Failed to get associated token address:", {
-        error: error instanceof Error ? error.message : "Unknown error",
-        errorType: typeof error,
-        errorStack: error instanceof Error ? error.stack : undefined,
-        errorName: error instanceof Error ? error.name : undefined,
-      });
-
       // Try fallback method if SPL Token library failed
       try {
         associatedTokenAddress = await findAssociatedTokenAddress(

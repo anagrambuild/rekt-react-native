@@ -55,21 +55,27 @@ export const LiveTradeView = ({ trade }: LiveTradeViewProps) => {
   const handleClose = async () => {
     // Try to get position ID from local trade first, then backend position
     const positionId = trade.positionId || currentPosition?.id;
-    
+
     if (positionId) {
-      console.log(`🔄 [CLOSE] Closing position ${positionId} for ${selectedToken.toUpperCase()}`);
+      console.log(
+        `🔄 [CLOSE] Closing position ${positionId} for ${selectedToken.toUpperCase()}`
+      );
       // Close the actual position via backend
       const success = await closePosition(positionId);
       if (success) {
         // Clear local trade state after successful close
-        console.log(`✅ [CLOSE] Position closed, clearing local ${selectedToken.toUpperCase()} trade state`);
+        console.log(
+          `✅ [CLOSE] Position closed, clearing local ${selectedToken.toUpperCase()} trade state`
+        );
         if (selectedToken === "sol") setSolTrade(null);
         else if (selectedToken === "eth") setEthTrade(null);
         else setBtcTrade(null);
       }
     } else {
       // Fallback: just clear local state if no position ID found
-      console.warn(`⚠️ [CLOSE] No position ID found for ${selectedToken.toUpperCase()}, clearing local state only`);
+      console.warn(
+        `⚠️ [CLOSE] No position ID found for ${selectedToken.toUpperCase()}, clearing local state only`
+      );
       if (selectedToken === "sol") setSolTrade(null);
       else if (selectedToken === "eth") setEthTrade(null);
       else setBtcTrade(null);

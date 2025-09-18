@@ -11,6 +11,7 @@ import {
 import { Alert, Linking, Platform } from "react-native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { queryClient } from "@/utils/queryClient";
 import { useSwigWalletBalanceQuery } from "@/utils/queryUtils";
 import { createTransferService, TransferState } from "@/utils/transferService";
 
@@ -519,6 +520,24 @@ export const WalletProvider = ({
                   amount: transferState.amount || 0,
                 });
 
+                // Invalidate swig wallet balance to trigger refetch after successful deposit
+                if (swigWalletAddress) {
+                  queryClient.invalidateQueries({
+                    queryKey: ["swigWallet", "balance", swigWalletAddress],
+                  });
+                  // Also manually trigger refetch as backup after blockchain finalization
+                  setTimeout(() => {
+                    refreshUSDCBalance();
+                  }, 6000);
+                } else {
+                  console.warn(
+                    "⚠️ [WALLET CONTEXT] Cannot invalidate - no swig wallet address. userProfile:",
+                    userProfile,
+                    "swigWalletAddress:",
+                    swigWalletAddress
+                  );
+                }
+
                 // Navigate back to profile tab after successful transfer
                 router.push("/(tabs)/profile");
               } else if (responseData.transaction) {
@@ -558,6 +577,28 @@ export const WalletProvider = ({
                     explorerUrl: `https://explorer.solana.com/tx/${signature}?cluster=mainnet-beta`,
                     amount: transferState.amount || 0,
                   });
+
+                  // Invalidate swig wallet balance to trigger refetch after successful deposit
+                  if (swigWalletAddress) {
+                    console.log(
+                      "🔄 [WALLET CONTEXT] Invalidating swig wallet balance query for:",
+                      swigWalletAddress
+                    );
+                    queryClient.invalidateQueries({
+                      queryKey: ["swigWallet", "balance", swigWalletAddress],
+                    });
+                    // Also manually trigger refetch as backup after blockchain finalization
+                    setTimeout(() => {
+                      refreshUSDCBalance();
+                    }, 6000);
+                  } else {
+                    console.warn(
+                      "⚠️ [WALLET CONTEXT] Cannot invalidate - no swig wallet address. userProfile:",
+                      userProfile,
+                      "swigWalletAddress:",
+                      swigWalletAddress
+                    );
+                  }
 
                   // Navigate back to profile tab after successful transfer
                   router.push("/(tabs)/profile");
@@ -644,7 +685,8 @@ export const WalletProvider = ({
     });
 
     return () => subscription?.remove();
-  }, [getDappKeyPair, t, sharedSecret, transferState, connection]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [getDappKeyPair, sharedSecret, transferState, connection]);
 
   const connect = useCallback(
 
@@ -843,6 +885,24 @@ export const WalletProvider = ({
             explorerUrl: result.explorerUrl,
             amount,
           });
+
+          // Invalidate swig wallet balance to trigger refetch after successful deposit
+          if (swigWalletAddress) {
+            queryClient.invalidateQueries({
+              queryKey: ["swigWallet", "balance", swigWalletAddress],
+            });
+            // Also manually trigger refetch as backup after blockchain finalization
+            setTimeout(() => {
+              refreshUSDCBalance();
+            }, 6000);
+          } else {
+            console.warn(
+              "⚠️ [WALLET CONTEXT] Cannot invalidate - no swig wallet address. userProfile:",
+              userProfile,
+              "swigWalletAddress:",
+              swigWalletAddress
+            );
+          }
         } else {
           throw new Error(result.error || "Transfer failed");
         }
@@ -855,6 +915,7 @@ export const WalletProvider = ({
         });
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [
       connected,
       publicKey,

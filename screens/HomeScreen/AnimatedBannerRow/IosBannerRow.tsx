@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Animated, Easing, View } from "react-native";
 
-import { PerpSocialChip } from "./PerpSocialChip";
+import { PerpSocialChip } from "../PerpSocialChip";
 import styled from "styled-components/native";
 
 // Animated banner row for perpSocials
-export const AnimatedBannerRow = ({ items }: { items: any[] }) => {
+export const IosBannerRow = ({ items }: { items: any[] }) => {
   const translateX = useRef(new Animated.Value(0)).current;
   const itemGap = 16;
   const [contentWidth, setContentWidth] = useState(0);
@@ -23,7 +23,10 @@ export const AnimatedBannerRow = ({ items }: { items: any[] }) => {
     const pixelsPerSecond = 60;
     // Add itemGap to account for the spacer between the two sets
     const totalScrollDistance = contentWidth + itemGap;
-    const duration = Math.max(1000, (totalScrollDistance / pixelsPerSecond) * 1000);
+    const duration = Math.max(
+      1000,
+      (totalScrollDistance / pixelsPerSecond) * 1000
+    );
     const animation = Animated.loop(
       Animated.timing(translateX, {
         toValue: -totalScrollDistance,
