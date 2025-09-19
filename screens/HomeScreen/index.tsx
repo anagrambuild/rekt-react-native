@@ -30,7 +30,7 @@ export const HomeScreen = () => {
   } = useHomeContext();
   const { usdcBalance } = useWallet();
   const { setIsOnOffRampModalVisible } = useProfileContext();
-
+  console.log("openPositions", openPositions);
   usePreventRemove(true, () => {});
 
   // Get current trade and setter for selected token
@@ -95,7 +95,6 @@ export const HomeScreen = () => {
     const tokenMap = { sol: "SOL", eth: "ETH", btc: "BTC" };
     return position.market === tokenMap[selectedToken as keyof typeof tokenMap];
   });
-
   // Only show LiveTradeView when we have real backend position data
   // Show Long/Short buttons (with loading state) until backend data is available
   const isActiveTrade = !!currentPosition;
@@ -129,7 +128,8 @@ export const HomeScreen = () => {
                 trade || {
                   side: currentPosition?.direction || "LONG",
                   entryPrice: currentPosition?.entryPrice || 0,
-                  amount: currentPosition?.marginUsed || 0,
+                  //  1 usdc comes back as .01 so we need to multiply by 100
+                  amount: currentPosition?.size * 100 || 0,
                   leverage: currentPosition?.leverage || 1,
                   status: "open",
                   pnl: currentPosition?.pnl || 0,

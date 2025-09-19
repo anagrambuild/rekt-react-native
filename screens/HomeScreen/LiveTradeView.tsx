@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { ActivityIndicator } from "react-native";
 
 import rektBomb from "@/assets/images/app-pngs/rekt-bomb.png";
@@ -14,6 +15,11 @@ import {
 } from "@/components";
 import { useHomeContext } from "@/contexts";
 import { Trade } from "@/contexts/HomeContext";
+import {
+  calculatePositionMetricsFromUI,
+  pythPriceService,
+  SupportedToken,
+} from "@/utils";
 
 import { LongArrow, ShortArrow } from "./long-short-buttons";
 import { Image } from "expo-image";
@@ -37,45 +43,91 @@ export const LiveTradeView = ({ trade }: LiveTradeViewProps) => {
     isTrading,
   } = useHomeContext();
 
+  // State for real-time price
+  const [currentPrice, setCurrentPrice] = useState<number | null>(null);
+
   // Find the actual position for this token (don't require direction match)
   const currentPosition = openPositions.find(
     pos => pos.market === selectedToken.toUpperCase()
   );
 
-  // Use real position data only - no mock data or fallbacks
-  const rektAt = currentPosition?.liquidationPrice;
+  // Subscribe to real-time price updates
+  useEffect(() => {
+    // Start price streaming if not already active
+    if (!pythPriceService.isActive()) {
+      pythPriceService.startStreaming().catch(console.error);
+    }
 
-  // Current value = initial margin + PnL (what the investment is worth now)
-  const currentValue = currentPosition
-    ? currentPosition.marginUsed + currentPosition.pnl
+    // Subscribe to price updates for the selected token
+    const subscriptionId = pythPriceService.subscribe(
+      selectedToken as SupportedToken,
+      priceData => {
+        setCurrentPrice(priceData.price);
+      }
+    );
+
+    // Get initial price if available
+    const latestPrice = pythPriceService.getLatestPrice(
+      selectedToken as SupportedToken
+    );
+    if (latestPrice) {
+      setCurrentPrice(latestPrice.price);
+    }
+
+    return () => {
+      pythPriceService.unsubscribe(subscriptionId);
+    };
+  }, [selectedToken]);
+
+  // Calculate position metrics using real-time price and position calculation functions
+  // Use backend position size if available, otherwise fall back to trade amount
+  const positionSize = currentPosition
+    ? currentPosition.size * 100
     : trade.amount;
-  const profitPercent = currentPosition?.pnlPercentage || 0;
-  const isProfit = currentPosition ? currentPosition.pnl >= 0 : null;
+
+  const positionMetrics =
+    currentPrice && trade.entryPrice
+      ? calculatePositionMetricsFromUI(
+          trade.entryPrice,
+          currentPrice,
+          positionSize,
+          trade.leverage,
+          trade.side
+        )
+      : null;
+
+  // Use calculated metrics or fallback to backend data
+  const currentValue =
+    positionMetrics?.currentValue ??
+    (currentPosition
+      ? currentPosition.marginUsed + currentPosition.pnl
+      : trade.amount);
+
+  const profitPercent =
+    positionMetrics?.pnlPercentage ?? (currentPosition?.pnlPercentage || 0);
+
+  const pnlAmount = positionMetrics?.pnl ?? (currentPosition?.pnl || 0);
+
+  const isProfit = pnlAmount >= 0;
+
+  // Use real position data for liquidation price
+  const rektAt = currentPosition?.liquidationPrice;
 
   const handleClose = async () => {
     // Try to get position ID from local trade first, then backend position
     const positionId = trade.positionId || currentPosition?.id;
 
     if (positionId) {
-      console.log(
-        `🔄 [CLOSE] Closing position ${positionId} for ${selectedToken.toUpperCase()}`
-      );
       // Close the actual position via backend
       const success = await closePosition(positionId);
       if (success) {
         // Clear local trade state after successful close
-        console.log(
-          `✅ [CLOSE] Position closed, clearing local ${selectedToken.toUpperCase()} trade state`
-        );
         if (selectedToken === "sol") setSolTrade(null);
         else if (selectedToken === "eth") setEthTrade(null);
         else setBtcTrade(null);
       }
     } else {
       // Fallback: just clear local state if no position ID found
-      console.warn(
-        `⚠️ [CLOSE] No position ID found for ${selectedToken.toUpperCase()}, clearing local state only`
-      );
       if (selectedToken === "sol") setSolTrade(null);
       else if (selectedToken === "eth") setEthTrade(null);
       else setBtcTrade(null);
@@ -111,8 +163,8 @@ export const LiveTradeView = ({ trade }: LiveTradeViewProps) => {
               <Title5>
                 $
                 {currentValue.toLocaleString("en-US", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
+                  minimumFractionDigits: currentValue < 1 ? 4 : 2,
+                  maximumFractionDigits: currentValue < 1 ? 4 : 2,
                 })}
               </Title5>
               <BodyMSecondary>{t("Current value")}</BodyMSecondary>

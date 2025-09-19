@@ -1,6 +1,11 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 
-import { fetchTokenPrices, SupportedToken, TokenPrice } from "@/utils";
+import {
+  fetchTokenPrices,
+  queryKeys,
+  SupportedToken,
+  TokenPrice,
+} from "@/utils";
 import {
   ClosePositionRequest,
   OpenPositionRequest,
@@ -171,7 +176,6 @@ export const HomeProvider = ({
     error: positionsQueryError,
     refetch: refetchPositions,
   } = useOpenPositionsQuery(userId || "", { enabled: !!userId });
-  console.log("openPositions", openPositions);
 
   const {
     data: tradingHistory = [],
@@ -207,6 +211,7 @@ export const HomeProvider = ({
 
   const refreshPositions = async () => {
     if (!userId) return;
+    queryClient.removeQueries({ queryKey: queryKeys.openPositions(userId) });
     await refetchPositions();
   };
 
@@ -309,7 +314,7 @@ export const HomeProvider = ({
 
       const position = await openPositionMutation.mutateAsync(openRequest);
 
-      console.log(`✅ [TRADE SUCCESS] ${market} trade completed:`, position.id);
+      console.log(`✅ [HOME CONTEXT] ${market} trade completed:`, position.id);
 
       Toast.show({
         text1: t("Position Opened"),
@@ -317,11 +322,11 @@ export const HomeProvider = ({
         type: "success",
       });
 
-      // Force refresh positions to get real backend data
+      // The React Query mutation onSuccess already updates the cache immediately
+      // and triggers a refetch, so we don't need to manually refresh here
       console.log(
-        `🔄 [TRADE SUCCESS] Refreshing positions data to show LiveTradeView...`
+        `✅ [TRADE SUCCESS] Position added to cache, UI should update immediately`
       );
-      await refreshPositions();
 
       // Invalidate swig wallet balance after blockchain finalization
       if (userProfile?.swigWalletAddress) {
@@ -393,7 +398,7 @@ export const HomeProvider = ({
       const closeRequest: ClosePositionRequest = {
         userId,
         positionId,
-        // TODO - verify that thisis the right value to use
+        // if we leave position amount empty, the backend will use the amount of the trade
         // positionAmount: "1",
       };
 

@@ -1288,10 +1288,8 @@ export const openTradingPosition = async (
     }
 
     const userId = user.id;
-    console.log("👤 [USER] Using user ID:", userId);
 
-    //TODO - set this to the amount of the trade
-    const requiredCollateral = 1;
+    const requiredCollateral = request.amount;
 
     // Use the new format directly - no conversion needed
     const tradeRequest: PlaceTradeRequest = {
@@ -1823,11 +1821,6 @@ export const closeTradingPosition = async (
             filter: `user_id=eq.${userId}`,
           },
           async payload => {
-            console.log(
-              "📊 [REALTIME] Database UPDATE detected:",
-              JSON.stringify(payload, null, 2)
-            );
-
             // Check if this is the position we're closing and it's now closed
             const updatedPosition = payload.new;
             if (
