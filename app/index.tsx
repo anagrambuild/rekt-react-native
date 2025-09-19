@@ -92,8 +92,8 @@ const Index = () => {
 
   // Handle wallet connection success
   useEffect(() => {
-    if (connected) {
-      // User is connected to wallet, show Solana authentication
+    if (connected && !isLoggedIn) {
+      // User is connected to wallet but not logged in, show Solana authentication
       console.log("🔗 Wallet connected, starting authentication flow...");
       setIsCheckingConnection(true);
       setTimeout(() => {
@@ -106,9 +106,16 @@ const Index = () => {
           console.log("⚠️ No SIWS data found and not iOS - staying in loading");
         }
       }, 800); // Brief delay for smooth transition
+    } else if (connected && isLoggedIn) {
+      // User is already logged in, don't show auth screen
+      setIsCheckingConnection(false);
+    } else if (!connected) {
+      // User not connected, reset states
+      setShowSolanaAuth(false);
+      setIsCheckingConnection(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [connected]);
+  }, [connected, isLoggedIn]);
 
   // Handle auth redirects from Phantom
   useEffect(() => {
@@ -119,7 +126,7 @@ const Index = () => {
           const urlObj = new URL(url);
           const data = urlObj.searchParams.get("data");
           const nonce = urlObj.searchParams.get("nonce");
-          
+
           if (data && nonce && sharedSecret && publicKey) {
             // Decrypt the response using existing shared secret
             const decryptedData = nacl.box.open.after(
@@ -127,17 +134,18 @@ const Index = () => {
               bs58.decode(nonce),
               sharedSecret
             );
-            
+
             if (decryptedData) {
               const responseData = JSON.parse(
                 global.Buffer.from(decryptedData).toString("utf8")
               );
-              
+
               if (responseData.signature) {
                 // Convert signature from base58 to base64 (to match Android format)
                 const signatureBytes = bs58.decode(responseData.signature);
-                const base64Signature = Buffer.from(signatureBytes).toString("base64");
-                
+                const base64Signature =
+                  Buffer.from(signatureBytes).toString("base64");
+
                 // Store the signature for SolanaAuthScreen to handle authentication
                 // This follows the same pattern as Android where SolanaAuthScreen handles the auth flow
                 await AsyncStorage.setItem("auth_signature", base64Signature);

@@ -270,9 +270,22 @@ export const useUserByUserIdQuery = (
 ) => {
   return useQuery({
     queryKey: queryKeys.userProfile(userId),
-    queryFn: () => getUserByUserId(userId),
+    queryFn: () => {
+      console.log("🔄 [REACT QUERY] Fetching user profile for userId:", userId);
+      return getUserByUserId(userId);
+    },
     enabled: !!userId,
-    staleTime: 1000 * 60 * 5, // 5 minutes stale time
+    staleTime: 1000 * 60 * 2, // Reduced to 2 minutes stale time for more frequent updates
+    refetchOnMount: true, // Always refetch when component mounts
+    refetchOnWindowFocus: true, // Refetch when app comes to foreground
+    retry: (failureCount, error: any) => {
+      // Don't retry on 404 errors (user not found)
+      if (error?.message?.includes("404")) {
+        console.log("🚫 [REACT QUERY] Not retrying 404 error for user profile");
+        return false;
+      }
+      return failureCount < 2;
+    },
     ...options,
   });
 };
@@ -398,7 +411,7 @@ export const useOpenPositionMutation = (
 ) => {
   return useMutation({
     mutationFn: openTradingPosition,
-    onSuccess: (data, variables) => {
+    onSuccess: () => {
       // Only invalidate queries, don't immediately update cache to prevent re-renders during operation
       // The queries will refetch automatically and update the UI
       queryClient.invalidateQueries({ queryKey: ["trading", "positions"] });

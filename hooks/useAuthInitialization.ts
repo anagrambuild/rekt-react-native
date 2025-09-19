@@ -3,6 +3,8 @@ import { Platform } from "react-native";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+import { queryClient } from "../utils/queryClient";
+import { queryKeys } from "../utils/queryKeys";
 import { useUserByUserIdQuery } from "../utils/queryUtils";
 import { supabase } from "../utils/supabase";
 import * as LocalAuthentication from "expo-local-authentication";
@@ -24,6 +26,13 @@ export const useAuthInitialization = () => {
           data: { session: currentSession },
         } = await supabase.auth.getSession();
         setSession(currentSession);
+
+        // If we have a new session, invalidate user queries to force refetch
+        if (currentSession?.user?.id) {
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.userProfile(currentSession.user.id),
+          });
+        }
       } catch (error) {
         console.error("Error getting session:", error);
       } finally {
@@ -32,6 +41,34 @@ export const useAuthInitialization = () => {
     };
 
     getSession();
+
+    // Listen for auth state changes to handle login/logout
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log(
+        "🔄 [DEBUG] Auth state change in useAuthInitialization:",
+        event
+      );
+
+      if (event === "SIGNED_IN" && session?.user?.id) {
+        // User just signed in, invalidate user profile cache to force fresh fetch
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.userProfile(session.user.id),
+        });
+
+        setSession(session);
+      } else if (event === "SIGNED_OUT") {
+        // User signed out, clear session
+        setSession(null);
+        setUserProfile(null);
+        setIsLoggedIn(false);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Use React Query to fetch user data when session is available

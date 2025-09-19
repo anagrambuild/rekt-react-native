@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Platform } from "react-native";
 
 import { BodyS, Column, Title1 } from "@/components/common";
-import { useAuth, useWallet } from "@/contexts";
+import { useAppContext, useAuth, useWallet } from "@/contexts";
 import { LoadingScreen } from "@/screens/LoadingScreen";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -22,27 +22,31 @@ export const SolanaAuthScreen = ({
 }: SolanaAuthScreenProps) => {
   const { t } = useTranslation();
   const theme = useTheme();
-  const { signInWithSolana, loading: authLoading } = useAuth();
-  const {
-    publicKey,
-    getSIWSData,
-    generateAuthMessage,
-    signAuthMessage,
-  } = useWallet();
+  const { signInWithSolana, loading: authLoading, session } = useAuth();
+  const { isLoggedIn } = useAppContext();
+  const { publicKey, getSIWSData, generateAuthMessage, signAuthMessage } =
+    useWallet();
 
   const [authStep, setAuthStep] = useState<
     "verifying" | "completed" | "signup_required" | "signing_message"
   >("verifying");
   const isProcessingRef = useRef(false);
+  const isMountedRef = useRef(true);
+  const pollingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasInitiatedAuthRef = useRef(false);
 
   const handleSolanaAuth = useCallback(async () => {
     // Prevent multiple simultaneous auth attempts
-    if (isProcessingRef.current) {
-      console.log("Authentication already in progress, skipping...");
+    if (
+      isProcessingRef.current ||
+      !isMountedRef.current ||
+      hasInitiatedAuthRef.current
+    ) {
       return;
     }
 
     isProcessingRef.current = true;
+    hasInitiatedAuthRef.current = true;
     if (!publicKey) {
       Toast.show({
         text1: t("Error"),
@@ -55,14 +59,27 @@ export const SolanaAuthScreen = ({
 
     try {
       console.log("🚀 Starting Solana authentication flow...");
+      console.log("🔍 [DEBUG] Session state:", {
+        hasSession: !!session,
+        sessionUser: session?.user?.id,
+        isLoggedIn,
+        authStep,
+      });
+
+      // Check if user already has a valid session AND is logged in
+      if (session && isLoggedIn) {
+        setAuthStep("completed");
+        onAuthSuccess();
+        return;
+      }
 
       // Get SIWS data from wallet authorization (already signed during connection)
       const siwsData = getSIWSData();
       if (!siwsData) {
         // On iOS, SIWS data doesn't exist yet - we need to trigger message signing
         if (Platform.OS === "ios") {
-        // iOS requires separate message signing flow
-        await handleiOSMessageSigning();
+          // iOS requires separate message signing flow
+          await handleiOSMessageSigning();
           return;
         } else {
           // On Android, this shouldn't happen - redirect back to login screen
@@ -91,6 +108,7 @@ export const SolanaAuthScreen = ({
         type: "error",
       });
       setAuthStep("verifying"); // Stay in verifying state for retry
+      hasInitiatedAuthRef.current = false; // Reset on error to allow retry
     } finally {
       isProcessingRef.current = false;
     }
@@ -151,7 +169,8 @@ export const SolanaAuthScreen = ({
           type: "error",
         });
         setAuthStep("verifying");
-        isProcessingRef.current = false; // Reset processing flag on error
+        hasInitiatedAuthRef.current = false; // Reset on error to allow retry        isProcessingRef.current = false; // Reset processing flag on error
+        hasInitiatedAuthRef.current = false; // Reset on error to allow retry
       }
     },
     [publicKey, signInWithSolana, onSignUpRequired, onAuthSuccess, t]
@@ -189,11 +208,7 @@ export const SolanaAuthScreen = ({
       setAuthStep("verifying");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    generateAuthMessage,
-    signAuthMessage,
-    authenticateWithBackend,
-  ]);
+  }, [generateAuthMessage, signAuthMessage, authenticateWithBackend]);
 
   // Poll for signature from auth redirect (iOS only)
   const pollForAuthSignature = useCallback(
@@ -203,9 +218,14 @@ export const SolanaAuthScreen = ({
 
       const poll = async () => {
         try {
+          // Check if component is still mounted and not already processing
+          if (!isMountedRef.current) {
+            return;
+          }
+
           const storedSignature = await AsyncStorage.getItem("auth_signature");
           if (storedSignature) {
-            // Clear the stored signature
+            // Clear the stored signature immediately to prevent duplicate processing
             await AsyncStorage.removeItem("auth_signature");
             // Process the authentication
             await authenticateWithBackend(message, storedSignature);
@@ -213,20 +233,24 @@ export const SolanaAuthScreen = ({
           }
 
           attempts++;
-          if (attempts < maxAttempts) {
-            setTimeout(poll, 1000); // Check every second
-          } else {
+          if (attempts < maxAttempts && isMountedRef.current) {
+            pollingTimeoutRef.current = setTimeout(poll, 1000); // Check every second
+          } else if (attempts >= maxAttempts) {
             console.error("Authentication timeout waiting for signature");
-            setAuthStep("verifying");
-            Toast.show({
-              text1: t("Authentication Timeout"),
-              text2: t("Please try again"),
-              type: "error",
-            });
+            if (isMountedRef.current) {
+              setAuthStep("verifying");
+              Toast.show({
+                text1: t("Authentication Timeout"),
+                text2: t("Please try again"),
+                type: "error",
+              });
+            }
           }
         } catch (error) {
           console.error("Error polling for signature:", error);
-          setAuthStep("verifying");
+          if (isMountedRef.current) {
+            setAuthStep("verifying");
+          }
         }
       };
 
@@ -235,9 +259,29 @@ export const SolanaAuthScreen = ({
     [authenticateWithBackend, t]
   );
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      isProcessingRef.current = false;
+      hasInitiatedAuthRef.current = false;
+      if (pollingTimeoutRef.current) {
+        clearTimeout(pollingTimeoutRef.current);
+        pollingTimeoutRef.current = null;
+      }
+    };
+  }, []);
+
   // Single useEffect to trigger auth when component mounts and wallet is ready
   useEffect(() => {
-    if (publicKey && authStep === "verifying" && !isProcessingRef.current) {
+    if (
+      publicKey &&
+      authStep === "verifying" &&
+      !isProcessingRef.current &&
+      isMountedRef.current &&
+      !hasInitiatedAuthRef.current
+    ) {
+      console.log("🔄 Triggering authentication flow...");
       // Small delay to ensure component is fully mounted
       const timer = setTimeout(() => {
         handleSolanaAuth();
@@ -245,7 +289,8 @@ export const SolanaAuthScreen = ({
 
       return () => clearTimeout(timer);
     }
-  }, [publicKey, authStep, handleSolanaAuth]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [publicKey, authStep]); // Removed handleSolanaAuth from dependencies to prevent multiple calls
 
   // Remove the embedded SignUpForm - this is now handled by the parent component
 

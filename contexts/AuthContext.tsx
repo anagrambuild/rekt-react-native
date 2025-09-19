@@ -284,7 +284,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         // Continue with authentication even if user check fails
         console.warn("User check failed, proceeding with authentication");
       }
-      
+
       const supabaseResponse = await supabaseSignInWithSolana(
         publicKey,
         message,
@@ -294,10 +294,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       const authData = await supabaseResponse.json();
 
       if (!supabaseResponse.ok || authData.error) {
-        console.error("Supabase Web3 auth failed:", authData.error?.message || authData.error_description);
+        console.error(
+          "Supabase Web3 auth failed:",
+          authData.error?.message || authData.error_description
+        );
         return {
           success: false,
-          error: authData.error?.message || authData.error_description || "Web3 authentication failed",
+          error:
+            authData.error?.message ||
+            authData.error_description ||
+            "Web3 authentication failed",
         };
       }
 
