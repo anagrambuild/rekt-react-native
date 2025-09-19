@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { View } from "react-native";
+import { Alert, View } from "react-native";
 
 import { highFireUrl, lowFireUrl, midFireUrl } from "@/assets/videos";
 import {
@@ -10,7 +10,9 @@ import {
   SegmentContainer,
   SegmentControl,
 } from "@/components";
+import { useProfileContext } from "@/contexts";
 import { Trade, useHomeContext } from "@/contexts/HomeContext";
+import { useWallet } from "@/contexts/WalletContext";
 
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import MaterialIcon from "@expo/vector-icons/MaterialIcons";
@@ -41,6 +43,8 @@ export const TradeScreen = () => {
     btcTrade,
     setBtcTrade,
   } = useHomeContext();
+  const { usdcBalance } = useWallet();
+  const { setIsOnOffRampModalVisible } = useProfileContext();
 
   const [amountPopupVisible, setAmountModalVisible] = useState(false);
 
@@ -121,6 +125,31 @@ export const TradeScreen = () => {
   };
 
   const handleTrade = async () => {
+    // Check balance before attempting to open position
+    const currentBalance = usdcBalance ?? 0;
+    if (currentBalance < amount) {
+      Alert.alert(
+        t("Insufficient USDC"),
+        t(
+          "You don't have enough USDC to place this trade. Do you want to make a deposit?"
+        ),
+        [
+          {
+            text: t("No"),
+            style: "cancel",
+          },
+          {
+            text: t("Yes"),
+            onPress: () => {
+              setIsOnOffRampModalVisible(true);
+              router.push("/profile");
+            },
+          },
+        ]
+      );
+      return;
+    }
+
     const success = await openPosition(
       getMarketSymbol(),
       tradeSide,
