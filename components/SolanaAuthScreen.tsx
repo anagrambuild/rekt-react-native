@@ -1,9 +1,11 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import { ActivityIndicator } from "react-native";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ActivityIndicator, Platform } from "react-native";
 
 import { BodyS, Column, Title1 } from "@/components/common";
 import { useAuth, useWallet } from "@/contexts";
 import { LoadingScreen } from "@/screens/LoadingScreen";
+
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { router } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -21,10 +23,15 @@ export const SolanaAuthScreen = ({
   const { t } = useTranslation();
   const theme = useTheme();
   const { signInWithSolana, loading: authLoading } = useAuth();
-  const { publicKey, getSIWSData } = useWallet();
+  const {
+    publicKey,
+    getSIWSData,
+    generateAuthMessage,
+    signAuthMessage,
+  } = useWallet();
 
   const [authStep, setAuthStep] = useState<
-    "verifying" | "completed" | "signup_required"
+    "verifying" | "completed" | "signup_required" | "signing_message"
   >("verifying");
   const isProcessingRef = useRef(false);
 
@@ -52,12 +59,22 @@ export const SolanaAuthScreen = ({
       // Get SIWS data from wallet authorization (already signed during connection)
       const siwsData = getSIWSData();
       if (!siwsData) {
-        //redirect back to login screen
-        router.replace("/");
-        return;
+        // On iOS, SIWS data doesn't exist yet - we need to trigger message signing
+        if (Platform.OS === "ios") {
+        // iOS requires separate message signing flow
+        await handleiOSMessageSigning();
+          return;
+        } else {
+          // On Android, this shouldn't happen - redirect back to login screen
+          console.log(
+            "❌ No SIWS data found on Android - redirecting to login"
+          );
+          router.replace("/");
+          return;
+        }
       }
 
-      console.log("🔍 SIWS data:", siwsData);
+      // Use SIWS data for authentication
       console.log("✅ Using existing SIWS data from wallet authorization");
 
       // Authenticate with backend using existing SIWS data
@@ -140,6 +157,84 @@ export const SolanaAuthScreen = ({
     [publicKey, signInWithSolana, onSignUpRequired, onAuthSuccess, t]
   );
 
+  const handleiOSMessageSigning = useCallback(async () => {
+    setAuthStep("signing_message");
+
+    try {
+      // Generate authentication message
+      const message = generateAuthMessage();
+
+      // Sign the message with Phantom
+      const result = await signAuthMessage(message);
+
+      if (result.success && result.signature) {
+        if (result.signature === "PENDING_AUTH_REDIRECT") {
+          // Start polling for the signature from auth redirect
+          pollForAuthSignature(message);
+          return;
+        }
+
+        // Now authenticate with the signed message
+        await authenticateWithBackend(message, result.signature);
+      } else {
+        throw new Error(result.error || "Message signing failed");
+      }
+    } catch (error) {
+      console.error("Message signing failed:", error);
+      Toast.show({
+        text1: t("Message Signing Failed"),
+        text2: error instanceof Error ? error.message : t("Please try again"),
+        type: "error",
+      });
+      setAuthStep("verifying");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    generateAuthMessage,
+    signAuthMessage,
+    authenticateWithBackend,
+  ]);
+
+  // Poll for signature from auth redirect (iOS only)
+  const pollForAuthSignature = useCallback(
+    async (message: string) => {
+      const maxAttempts = 30; // 30 seconds max
+      let attempts = 0;
+
+      const poll = async () => {
+        try {
+          const storedSignature = await AsyncStorage.getItem("auth_signature");
+          if (storedSignature) {
+            // Clear the stored signature
+            await AsyncStorage.removeItem("auth_signature");
+            // Process the authentication
+            await authenticateWithBackend(message, storedSignature);
+            return;
+          }
+
+          attempts++;
+          if (attempts < maxAttempts) {
+            setTimeout(poll, 1000); // Check every second
+          } else {
+            console.error("Authentication timeout waiting for signature");
+            setAuthStep("verifying");
+            Toast.show({
+              text1: t("Authentication Timeout"),
+              text2: t("Please try again"),
+              type: "error",
+            });
+          }
+        } catch (error) {
+          console.error("Error polling for signature:", error);
+          setAuthStep("verifying");
+        }
+      };
+
+      poll();
+    },
+    [authenticateWithBackend, t]
+  );
+
   // Single useEffect to trigger auth when component mounts and wallet is ready
   useEffect(() => {
     if (publicKey && authStep === "verifying" && !isProcessingRef.current) {
@@ -154,7 +249,11 @@ export const SolanaAuthScreen = ({
 
   // Remove the embedded SignUpForm - this is now handled by the parent component
 
-  if (authLoading || authStep === "verifying") {
+  if (
+    authLoading ||
+    authStep === "verifying" ||
+    authStep === "signing_message"
+  ) {
     return (
       <Container>
         <LoadingScreen />

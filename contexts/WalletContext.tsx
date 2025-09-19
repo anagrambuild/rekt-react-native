@@ -169,6 +169,9 @@ export interface WalletContextState {
   signMessage: (
     message: string
   ) => Promise<{ success: boolean; signature?: string; error?: string }>;
+  signAuthMessage: (
+    message: string
+  ) => Promise<{ success: boolean; signature?: string; error?: string }>;
   generateAuthMessage: () => string;
   getSIWSData: () => SignInResult | null;
   removeAuthToken: () => Promise<void>;
@@ -200,6 +203,7 @@ const WalletContext = createContext<WalletContextState>({
   initiateTransfer: async () => {},
   resetTransfer: () => {},
   signMessage: async () => ({ success: false }),
+  signAuthMessage: async () => ({ success: false }),
   generateAuthMessage: () => "",
   getSIWSData: () => null,
   removeAuthToken: async () => {},
@@ -520,7 +524,8 @@ export const WalletProvider = ({
       if (
         url.includes(`${currentScheme}://`) &&
         url.includes("data") &&
-        !url.includes("phantom_encryption_public_key") // Not a connection response
+        !url.includes("phantom_encryption_public_key") && // Not a connection response
+        !url.includes("auth=true") // Not an auth redirect (handled separately)
       ) {
         try {
           const urlObj = new URL(url);
@@ -975,12 +980,37 @@ export const WalletProvider = ({
     []
   );
 
-  // Generate authentication message with nonce
+  // Generate authentication message with nonce (SIWS format - matches Android)
   const generateAuthMessage = useCallback(() => {
     const nonce = Math.random().toString(36).substring(2, 15);
-    const timestamp = Date.now();
-    return `Sign this message to authenticate with Rekt:\n\nNonce: ${nonce}\nTimestamp: ${timestamp}\n\nThis request will not trigger a blockchain transaction or cost any gas fees.`;
-  }, []);
+    const timestamp = new Date().toISOString();
+    // Use the exact same domain/URI as Android for Supabase compatibility
+    const uri = "https://nocap-api-cqt3.onrender.com";
+    const uriDomain = uri.replace(/^https?:\/\//, "");
+    const statement = "Sign in to Rekt App";
+
+    if (!publicKey) {
+      console.warn(
+        "⚠️ [AUTH] No public key available for SIWS message generation"
+      );
+      return "";
+    }
+
+    // SIWS format - exactly matching Android implementation
+    const message = [
+      `${uriDomain} wants you to sign in with your Solana account:`,
+      publicKey.toBase58(),
+      "",
+      statement,
+      "",
+      "Version: 1",
+      `URI: ${uri}`,
+      `Issued At: ${timestamp}`,
+      `Nonce: ${nonce}`,
+    ].join("\n");
+
+    return message;
+  }, [publicKey]);
 
   // Sign message for authentication
   const signMessage = useCallback(
@@ -1142,6 +1172,76 @@ export const WalletProvider = ({
     return lastSIWSResult;
   }, [lastSIWSResult]);
 
+  // Authentication-specific message signing (bypasses existing URL handler)
+  const signAuthMessage = useCallback(
+    async (message: string) => {
+      if (!connected || !publicKey) {
+        return { success: false, error: "Wallet not connected" };
+      }
+
+      if (Platform.OS !== "ios") {
+        // For Android, use the regular signMessage function
+        return await signMessage(message);
+      }
+
+      // iOS-specific authentication message signing
+      if (!sharedSecret || !session) {
+        return { success: false, error: "Wallet not properly connected" };
+      }
+
+      try {
+        // Store the message for later retrieval when processing auth redirect
+        await AsyncStorage.setItem("auth_message", message);
+
+        const keyPair = getDappKeyPair();
+        const messageBytes = new TextEncoder().encode(message);
+
+        // Create sign message request (Phantom mobile deep link format)
+        const request = {
+          message: bs58.encode(messageBytes),
+          session: session,
+          display: "utf8",
+        };
+
+        // Encrypt the request
+        const nonce = nacl.randomBytes(24);
+        const requestData = JSON.stringify(request);
+        const encryptedData = nacl.box.after(
+          new TextEncoder().encode(requestData),
+          nonce,
+          sharedSecret
+        );
+
+        // Create the URL to send to Phantom
+        const currentScheme = Constants.expoConfig?.scheme;
+        const params = new URLSearchParams({
+          dapp_encryption_public_key: bs58.encode(keyPair.publicKey),
+          nonce: bs58.encode(nonce),
+          redirect_link: `${currentScheme}://?auth=true`,
+          payload: bs58.encode(encryptedData),
+        });
+
+        const url = `https://phantom.app/ul/v1/signMessage?${params.toString()}`;
+
+        // Open Phantom and return immediately - we'll handle the response in SolanaAuthScreen
+        await Linking.openURL(url);
+
+        // Return a special status indicating we need to wait for the redirect
+        return { success: true, signature: "PENDING_AUTH_REDIRECT" };
+      } catch (error) {
+        console.error("🧪 [AUTH] Authentication message signing error:", error);
+        return {
+          success: false,
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to sign auth message",
+        };
+      }
+    },
+    [connected, publicKey, sharedSecret, session, getDappKeyPair, signMessage]
+  );
+
   const value: WalletContextState = {
     connected,
     connecting,
@@ -1164,6 +1264,7 @@ export const WalletProvider = ({
     resetTransfer,
     setConnectionSuccessCallback,
     signMessage,
+    signAuthMessage,
     generateAuthMessage,
     getSIWSData,
     removeAuthToken,

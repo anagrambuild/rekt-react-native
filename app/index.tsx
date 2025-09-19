@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Animated, Easing, Platform } from "react-native";
+import { Animated, Easing, Linking, Platform } from "react-native";
 
 import RektLogo from "@/assets/images/rekt-logo.svg";
 import { midFireUrl } from "@/assets/videos";
@@ -16,10 +16,14 @@ import { useAppContext, useAuth, useWallet } from "@/contexts";
 import { LoadingScreen } from "@/screens";
 import { Steps } from "@/screens/LoginScreen/Steps";
 
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+import bs58 from "bs58";
 import { router } from "expo-router";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { useTranslation } from "react-i18next";
 import styled from "styled-components/native";
+import nacl from "tweetnacl";
 
 const Index = () => {
   const {
@@ -29,13 +33,15 @@ const Index = () => {
     setShowCompleteProfileForm,
     requiresBiometric,
   } = useAppContext();
-  const { session } = useAuth();
+  const { session, signInWithSolana } = useAuth();
   const {
     connecting,
     connected,
     showWalletModal,
     setShowWalletModal,
     connect,
+    sharedSecret,
+    publicKey,
     getSIWSData,
   } = useWallet();
   const { t } = useTranslation();
@@ -91,14 +97,78 @@ const Index = () => {
       console.log("🔗 Wallet connected, starting authentication flow...");
       setIsCheckingConnection(true);
       setTimeout(() => {
-        if (getSIWSData()) {
+        // On Android, wait for SIWS data. On iOS, proceed without SIWS data.
+        if (getSIWSData() || Platform.OS === "ios") {
+          console.log("🔗 Showing SolanaAuthScreen...");
           setShowSolanaAuth(true);
           setIsCheckingConnection(false);
+        } else {
+          console.log("⚠️ No SIWS data found and not iOS - staying in loading");
         }
       }, 800); // Brief delay for smooth transition
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connected]);
+
+  // Handle auth redirects from Phantom
+  useEffect(() => {
+    const handleAuthRedirect = async (url: string) => {
+      if (url.includes("auth=true") && url.includes("data")) {
+        try {
+          // Parse the URL to get the encrypted data
+          const urlObj = new URL(url);
+          const data = urlObj.searchParams.get("data");
+          const nonce = urlObj.searchParams.get("nonce");
+          
+          if (data && nonce && sharedSecret && publicKey) {
+            // Decrypt the response using existing shared secret
+            const decryptedData = nacl.box.open.after(
+              bs58.decode(data),
+              bs58.decode(nonce),
+              sharedSecret
+            );
+            
+            if (decryptedData) {
+              const responseData = JSON.parse(
+                global.Buffer.from(decryptedData).toString("utf8")
+              );
+              
+              if (responseData.signature) {
+                // Convert signature from base58 to base64 (to match Android format)
+                const signatureBytes = bs58.decode(responseData.signature);
+                const base64Signature = Buffer.from(signatureBytes).toString("base64");
+                
+                // Store the signature for SolanaAuthScreen to handle authentication
+                // This follows the same pattern as Android where SolanaAuthScreen handles the auth flow
+                await AsyncStorage.setItem("auth_signature", base64Signature);
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Error processing auth redirect:", error);
+        }
+      }
+    };
+    // Handle initial URL if app was opened via auth redirect
+    Linking.getInitialURL().then(url => {
+      if (url) {
+        handleAuthRedirect(url);
+      }
+    });
+
+    // Listen for URL changes while app is running
+    const subscription = Linking.addEventListener("url", event => {
+      handleAuthRedirect(event.url);
+    });
+
+    return () => subscription?.remove();
+  }, [
+    sharedSecret,
+    publicKey,
+    signInWithSolana,
+    setShowCompleteProfileForm,
+    setIsLoggedIn,
+  ]);
 
   const player = useVideoPlayer(midFireUrl, player => {
     player.loop = true;

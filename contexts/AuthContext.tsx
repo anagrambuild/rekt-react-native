@@ -263,34 +263,28 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setLoading(true);
 
       // First, check if user exists by calling our backend
-      const BASE_URL = getApiBaseUrl();
-      const response = await fetch(`${BASE_URL}/api/auth/solana/check`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          public_key: publicKey, // Only need public key to check user existence
-        }),
-      });
+      let userExists = false;
+      try {
+        const BASE_URL = getApiBaseUrl();
+        const response = await fetch(`${BASE_URL}/api/auth/solana/check`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            public_key: publicKey, // Only need public key to check user existence
+          }),
+        });
 
-      const result = await response.json();
-      if (!response.ok) {
-        return {
-          success: false,
-          error: result.error || "Authentication failed",
-        };
+        const result = await response.json();
+        if (response.ok && result.success) {
+          userExists = !!result?.data?.user_exists;
+        }
+      } catch {
+        // Continue with authentication even if user check fails
+        console.warn("User check failed, proceeding with authentication");
       }
-
-      if (!result.success) {
-        return {
-          success: false,
-          error: result.error || "Authentication failed",
-        };
-      }
-
-      const userExists = !!result?.data?.user_exists;
-      // Make direct POST request to Supabase token endpoint
+      
       const supabaseResponse = await supabaseSignInWithSolana(
         publicKey,
         message,
@@ -300,10 +294,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       const authData = await supabaseResponse.json();
 
       if (!supabaseResponse.ok || authData.error) {
-        console.error("Supabase Web3 auth error:", authData.error);
+        console.error("Supabase Web3 auth failed:", authData.error?.message || authData.error_description);
         return {
           success: false,
-          error: authData.error?.message || "Web3 authentication failed",
+          error: authData.error?.message || authData.error_description || "Web3 authentication failed",
         };
       }
 
