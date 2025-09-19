@@ -346,7 +346,7 @@ export const useOpenPositionsQuery = (
     },
     enabled: !!userId,
     staleTime: 1000 * 30, // 30 seconds stale time
-    refetchInterval: 1000 * 60, // Refetch every 60 seconds
+    refetchInterval: 1000 * 60, // Refetch every 60 seconds - RE-ENABLED
     retry: (failureCount, error: any) => {
       // Don't retry on 500 errors - backend issue
       if (error?.message?.includes("500")) {
@@ -412,8 +412,7 @@ export const useOpenPositionMutation = (
   return useMutation({
     mutationFn: openTradingPosition,
     onSuccess: () => {
-      // Only invalidate queries, don't immediately update cache to prevent re-renders during operation
-      // The queries will refetch automatically and update the UI
+      // RE-ENABLED: Invalidate queries to test if backend data changes over time
       queryClient.invalidateQueries({ queryKey: ["trading", "positions"] });
       queryClient.invalidateQueries({ queryKey: ["trading", "history"] });
       queryClient.invalidateQueries({ queryKey: ["trading", "balance"] });
@@ -431,7 +430,7 @@ export const useClosePositionMutation = (
   return useMutation({
     mutationFn: closeTradingPosition,
     onSuccess: (data, variables) => {
-      // Invalidate position queries to refresh data
+      // RE-ENABLED: Invalidate position queries to test if backend data changes over time
       queryClient.invalidateQueries({ queryKey: ["trading", "positions"] });
       queryClient.invalidateQueries({ queryKey: ["trading", "history"] });
       queryClient.invalidateQueries({ queryKey: ["trading", "balance"] });

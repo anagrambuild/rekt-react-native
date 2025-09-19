@@ -1329,7 +1329,7 @@ export const openTradingPosition = async (
 
             console.log("🔍 [REALTIME] Extracted position ID:", positionId);
 
-            // Step 3: Get the created position data from the payload or fetch from API
+            // Step 3: Create position from realtime payload data (skip broken API)
             if (payload.position) {
               console.log(
                 "✅ [REALTIME] Position data found in payload, resolving immediately"
@@ -1338,84 +1338,77 @@ export const openTradingPosition = async (
               resolve(payload.position as Position);
             } else if (positionId) {
               console.log(
-                "🔄 [REALTIME] Position ID found, trying direct Supabase query..."
+                "🔄 [REALTIME] Creating position from realtime payload data..."
               );
 
-              try {
-                // Get the created position using getOpenPositions (which now queries Supabase directly)
-                console.log(
-                  "🔄 [REALTIME] Fetching positions via getOpenPositions..."
-                );
-                const positions = await getOpenPositions(request.userId);
-                console.log(
-                  "📊 [REALTIME] Fetched positions:",
-                  positions.length
-                );
-                const newPosition = positions.find(p => p.id === positionId);
-                if (newPosition) {
-                  console.log("✅ [REALTIME] Found new position, resolving");
-                  channel.unsubscribe();
-                  resolve(newPosition);
-                } else {
-                  console.warn(
-                    "⚠️ [REALTIME] Position not found in API, creating from realtime data..."
-                  );
+              // Extract position data from the realtime payload
+              const positionHistory =
+                payload.payload?.data?.position_history ||
+                payload.payload?.position_history;
 
-                  // Option 3: Create position from realtime data
-                  const position: Position = {
-                    id: positionId,
-                    positionId: positionId, // Use same ID for now
-                    market: request.market,
-                    direction: request.direction,
-                    status: "OPEN",
-                    size: request.amount,
-                    entryPrice: 0, // Will be updated later
-                    exitPrice: null,
-                    currentPrice: 0,
-                    pnl: 0,
-                    pnlPercentage: 0,
-                    leverage: request.leverage,
-                    liquidationPrice: 0,
-                    marginUsed: 0,
-                    openedAt:
-                      payload.payload?.timestamp || new Date().toISOString(),
-                    closedAt: null,
-                    duration: 0,
-                    fees: 0,
-                    points: 0,
-                  };
+              if (positionHistory) {
+                console.log("📊 [REALTIME] Found position_history in payload");
 
-                  console.log(
-                    "✅ [REALTIME] Created position from realtime data, resolving"
-                  );
-                  channel.unsubscribe();
-                  resolve(position);
-                }
-              } catch (positionError) {
-                console.error(
-                  "❌ [REALTIME] Position query failed:",
-                  positionError
-                );
-
-                // Final fallback: Create position from realtime data
-                console.log(
-                  "🔄 [REALTIME] Final fallback: creating position from realtime data"
-                );
+                // Create position from realtime data with actual values from backend
                 const position: Position = {
                   id: positionId,
-                  positionId: positionId, // Use same ID for now
+                  positionId: positionId,
+                  market: positionHistory.market || request.market,
+                  direction: (positionHistory.trade_type ||
+                    request.direction) as "LONG" | "SHORT",
+                  status: "OPEN",
+                  size: request.amount, // Use request amount since backend shows 0
+                  entryPrice: parseFloat(positionHistory.entry_price) || 0,
+                  exitPrice: null,
+                  currentPrice: parseFloat(positionHistory.entry_price) || 0, // Use entry price as current for now
+                  pnl: parseFloat(positionHistory.action_pnl) || 0,
+                  pnlPercentage: 0,
+                  leverage: request.leverage,
+                  liquidationPrice:
+                    parseFloat(positionHistory.liquidation_price) || 0,
+                  marginUsed: request.amount / request.leverage, // Calculate margin used
+                  openedAt:
+                    positionHistory.created_at || new Date().toISOString(),
+                  closedAt: null,
+                  duration: 0,
+                  fees: 0,
+                  points: 0,
+                };
+
+                console.log(
+                  "✅ [REALTIME] Created position from position_history data:",
+                  {
+                    id: position.id,
+                    market: position.market,
+                    direction: position.direction,
+                    size: position.size,
+                    leverage: position.leverage,
+                  }
+                );
+
+                channel.unsubscribe();
+                resolve(position);
+              } else {
+                console.warn(
+                  "⚠️ [REALTIME] No position_history found, creating basic position..."
+                );
+
+                // Fallback: Create basic position from request data
+                const position: Position = {
+                  id: positionId,
+                  positionId: positionId,
                   market: request.market,
                   direction: request.direction,
                   status: "OPEN",
                   size: request.amount,
-                  entryPrice: 0,
+                  entryPrice: 0, // Will be updated when backend API is fixed
                   exitPrice: null,
                   currentPrice: 0,
                   pnl: 0,
                   pnlPercentage: 0,
                   leverage: request.leverage,
                   liquidationPrice: 0,
-                  marginUsed: 0,
+                  marginUsed: request.amount / request.leverage,
                   openedAt:
                     payload.payload?.timestamp || new Date().toISOString(),
                   closedAt: null,
@@ -1425,7 +1418,7 @@ export const openTradingPosition = async (
                 };
 
                 console.log(
-                  "✅ [REALTIME] Final fallback successful, resolving"
+                  "✅ [REALTIME] Created fallback position from request data"
                 );
                 channel.unsubscribe();
                 resolve(position);
