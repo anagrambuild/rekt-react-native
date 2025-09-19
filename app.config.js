@@ -1,5 +1,5 @@
 // Default (development) settings
-const BASE_URL = "http://192.168.88.124:8080"; //"https://nocap-api-cqt3.onrender.com";
+const BASE_URL = "https://nocap-api-cqt3.onrender.com";
 let name = "rekt-react-native";
 let slug = "rekt-react-native";
 let owner = "anagram-xyz";
@@ -18,7 +18,7 @@ let usdcMint = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"; // Mainnet USDC
 // Preview settings
 if (process.env.DEPLOY_ENVIRONMENT === "preview") {
   name = "Rekt Preview";
-  slug = "rektaustbot";
+  slug = "rekt-react-native";
   version = "0.0.1";
   //   easProjectId = 'PREVIEW_PROJECT_ID'; // Optional: Only if you want a separate project in Expo dashboard
   icon = "./assets/images/rekt-icon-ios.png";

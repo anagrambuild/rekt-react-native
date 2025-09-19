@@ -1,6 +1,7 @@
 import PointsIcon from "@/assets/images/app-svgs/points.svg";
 import UsdcIcon from "@/assets/images/app-svgs/usdc.svg";
 import RektLogo from "@/assets/images/rekt-logo.svg";
+import { useProfileContext } from "@/contexts";
 import { useWallet } from "@/contexts/WalletContext";
 
 import { PressableOpacity } from "./common/buttons";
@@ -9,18 +10,26 @@ import { BodyMSecondary } from "./common/texts";
 import { router } from "expo-router";
 import styled, { DefaultTheme } from "styled-components/native";
 
-export const LogoBanner = () => {
+export const LogoBanner = ({ mockBalance }: { mockBalance?: number }) => {
   const { usdcBalance, isLoadingBalance } = useWallet();
+  const { setIsOnOffRampModalVisible } = useProfileContext();
   return (
     <Row>
       <RektLogo width={60} height={60} />
       <Row $justifyContent="flex-end" $gap={16} $width="auto">
         <TokenChip Icon={PointsIcon} value="58K" />
-        <PressableOpacity onPress={() => router.push("/profile")}>
+        <PressableOpacity
+          onPress={() => {
+            setIsOnOffRampModalVisible(true);
+            router.push("/profile");
+          }}
+        >
           <TokenChip
             Icon={UsdcIcon}
             value={
-              isLoadingBalance ? "..." : (usdcBalance || 0).toLocaleString()
+              isLoadingBalance
+                ? "..."
+                : (usdcBalance || mockBalance || 0).toLocaleString()
             }
           />
         </PressableOpacity>

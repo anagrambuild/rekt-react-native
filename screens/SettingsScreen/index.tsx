@@ -11,6 +11,7 @@ import {
   Title5,
 } from "@/components";
 import { useAppContext, useProfileContext, useWallet } from "@/contexts";
+import { queryClient } from "@/utils/queryClient";
 import { supabase } from "@/utils/supabase";
 
 import MaterialIcon from "@expo/vector-icons/MaterialIcons";
@@ -28,7 +29,8 @@ import { useTheme } from "styled-components/native";
 export const SettingsScreen = () => {
   const theme = useTheme();
   const { t } = useTranslation();
-  const { setIsLoggedIn, setUserProfile, setShowCompleteProfileForm } = useAppContext();
+  const { setIsLoggedIn, setUserProfile, setShowCompleteProfileForm } =
+    useAppContext();
   const { removeAuthToken } = useWallet();
   const { disconnect } = useWallet();
   const {
@@ -46,13 +48,25 @@ export const SettingsScreen = () => {
 
   const handleLogout = async () => {
     try {
-      removeAuthToken();
-      await supabase.auth.signOut();
-      disconnect();
+      console.log("🔍 [DEBUG] Starting logout process...");
+
+      // Set logged out state first
+      setIsLoggedIn(false);
       setUserProfile(null);
       setShowCompleteProfileForm(false);
-      setIsLoggedIn(false);
-      router.replace("/");
+
+      // Clear all React Query cache to ensure fresh data on next login
+      queryClient.clear();
+      // Remove auth token and disconnect wallet
+      removeAuthToken();
+      disconnect();
+
+      // Sign out from Supabase
+      await supabase.auth.signOut();
+      // Small delay to ensure state changes are processed
+      setTimeout(() => {
+        router.replace("/");
+      }, 100);
     } catch (error) {
       console.error("Logout failed:", error);
       setIsLoggedIn(false);

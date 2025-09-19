@@ -1,6 +1,7 @@
-import { View } from "react-native";
+import { Alert, View } from "react-native";
 
-import { useHomeContext } from "@/contexts";
+import { useHomeContext, useProfileContext } from "@/contexts";
+import { useWallet } from "@/contexts/WalletContext";
 
 import { usePreventRemove } from "@react-navigation/native";
 
@@ -27,6 +28,8 @@ export const HomeScreen = () => {
     openPositions,
     tradingStates,
   } = useHomeContext();
+  const { usdcBalance } = useWallet();
+  const { setIsOnOffRampModalVisible } = useProfileContext();
 
   usePreventRemove(true, () => {});
 
@@ -60,6 +63,31 @@ export const HomeScreen = () => {
         isMaxLeverageOn: false,
       });
     }
+  };
+
+  const handleNavigateToTrade = (side: "LONG" | "SHORT") => {
+    const balance = usdcBalance ?? 0;
+    if (balance === 0) {
+      Alert.alert(
+        t("Insufficient USDC"),
+        t(
+          "You don't have enough USDC to place this trade. Do you want to make a deposit?"
+        ),
+        [
+          { text: t("No"), style: "cancel" },
+          {
+            text: t("Yes"),
+            onPress: () => {
+              setIsOnOffRampModalVisible(true);
+              router.push("/profile");
+            },
+          },
+        ]
+      );
+      return;
+    }
+    setTradeSide(side);
+    router.push("/trade");
   };
 
   // Check for active trades - BACKEND-ONLY approach (no mock data)
@@ -114,10 +142,7 @@ export const HomeScreen = () => {
           ) : (
             <Row>
               <ShortButton
-                onPress={() => {
-                  setTradeSide("SHORT");
-                  router.push("/trade");
-                }}
+                onPress={() => handleNavigateToTrade("SHORT")}
                 title={t("Short")}
                 subtitle={
                   tradingStates[
@@ -128,10 +153,7 @@ export const HomeScreen = () => {
                 }
               />
               <LongButton
-                onPress={() => {
-                  setTradeSide("LONG");
-                  router.push("/trade");
-                }}
+                onPress={() => handleNavigateToTrade("LONG")}
                 title={t("Long")}
                 subtitle={
                   tradingStates[

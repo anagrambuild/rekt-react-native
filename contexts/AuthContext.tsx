@@ -1,12 +1,10 @@
 import { createContext, useContext, useEffect, useState } from "react";
 
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { createClient } from "@supabase/supabase-js";
 import { getApiBaseUrl } from "@/constants/config";
 import { supabase, supabaseSignInWithSolana } from "@/utils/supabase";
+
 import { router } from "expo-router";
 // Initialize Supabase client
-
 
 interface AuthUser {
   id: string;
@@ -29,7 +27,12 @@ interface AuthContextType {
     publicKey: string,
     message: string,
     signature: string
-  ) => Promise<{ success: boolean; error?: string; user?: AuthUser; isNewUser?: boolean }>;
+  ) => Promise<{
+    success: boolean;
+    error?: string;
+    user?: AuthUser;
+    isNewUser?: boolean;
+  }>;
   // Legacy methods (deprecated but kept for compatibility)
   signUp: (
     email: string,
@@ -251,48 +254,66 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
-  const signInWithSolana = async (publicKey: string, message: string, signature: string) => {
+  const signInWithSolana = async (
+    publicKey: string,
+    message: string,
+    signature: string
+  ) => {
     try {
       setLoading(true);
 
       // First, check if user exists by calling our backend
-      const BASE_URL = getApiBaseUrl();
-      const response = await fetch(`${BASE_URL}/api/auth/solana/check`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          public_key: publicKey, // Only need public key to check user existence
-        }),
-      });
+      let userExists = false;
+      try {
+        const BASE_URL = getApiBaseUrl();
+        const response = await fetch(`${BASE_URL}/api/auth/solana/check`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            public_key: publicKey, // Only need public key to check user existence
+          }),
+        });
 
-      const result = await response.json();
-      if (!response.ok) {
-        return { success: false, error: result.error || 'Authentication failed' };
+        const result = await response.json();
+        if (response.ok && result.success) {
+          userExists = !!result?.data?.user_exists;
+        }
+      } catch {
+        // Continue with authentication even if user check fails
+        console.warn("User check failed, proceeding with authentication");
       }
 
-      if (!result.success) {
-        return { success: false, error: result.error || 'Authentication failed' };
-      }
-
-      const userExists = !!result?.data?.user_exists;
-      // Make direct POST request to Supabase token endpoint
-      const supabaseResponse = await supabaseSignInWithSolana(publicKey, message, signature);
+      const supabaseResponse = await supabaseSignInWithSolana(
+        publicKey,
+        message,
+        signature
+      );
 
       const authData = await supabaseResponse.json();
 
       if (!supabaseResponse.ok || authData.error) {
-        console.error("Supabase Web3 auth error:", authData.error);
-        return { success: false, error: authData.error?.message || 'Web3 authentication failed' };
+        console.error(
+          "Supabase Web3 auth failed:",
+          authData.error?.message || authData.error_description
+        );
+        return {
+          success: false,
+          error:
+            authData.error?.message ||
+            authData.error_description ||
+            "Web3 authentication failed",
+        };
       }
 
       // Set the session in Supabase
       if (authData.access_token) {
-        const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-          access_token: authData.access_token,
-          refresh_token: authData.refresh_token,
-        });
+        const { data: sessionData, error: sessionError } =
+          await supabase.auth.setSession({
+            access_token: authData.access_token,
+            refresh_token: authData.refresh_token,
+          });
 
         if (sessionError) {
           console.error("Session error:", sessionError);
@@ -302,13 +323,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         if (sessionData.user) {
           const authUser: AuthUser = {
             id: sessionData.user.id,
-            email: sessionData.user.email || '',
+            email: sessionData.user.email || "",
             created_at: sessionData.user.created_at,
           };
           return { success: true, user: authUser, isNewUser: !userExists };
         }
       }
-
 
       return { success: false, error: "Authentication failed" };
     } catch (error) {

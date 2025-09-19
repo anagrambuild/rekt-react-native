@@ -191,8 +191,8 @@ export const fetchTokenPrices = async (
             token === "sol"
               ? "Solana"
               : token === "eth"
-                ? "Ethereum"
-                : "Bitcoin",
+              ? "Ethereum"
+              : "Bitcoin",
           current_price: price,
           price_change_24h: estimatedChange24h,
           price_change_percentage_24h: estimatedChange24h,
@@ -538,6 +538,7 @@ export interface PaginatedResponse<T> {
 
 export interface PositionHistory {
   id: string;
+  position_id: string;
   user_id: string;
   market: string; // Backend returns "SOL", "BTC", "ETH"
   trade_type: string; // Backend returns "LONG", "SHORT"
@@ -676,7 +677,59 @@ export const placeTradeJob = async (
       throw new Error(result.error || "Failed to place trade job");
     }
 
-    return result.data;
+    const jobResponse = result.data;
+    console.log("🎯 [JOB CREATED] Trade job created:", jobResponse.job_id);
+
+    // Check job status with retries
+    const maxRetries = 5;
+    const retryDelay = 2000; // 2 seconds
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(
+          `🔍 [JOB STATUS] Checking job status (attempt ${attempt}/${maxRetries}):`,
+          jobResponse.job_id
+        );
+
+        const jobStatus = await getJobStatus(jobResponse.job_id);
+        console.log(
+          `📊 [JOB STATUS] Job ${jobResponse.job_id} status:`,
+          jobStatus
+        );
+
+        if (jobStatus.status === "completed") {
+          console.log(
+            "✅ [JOB COMPLETED] Job completed successfully:",
+            jobStatus.result
+          );
+          break;
+        } else if (jobStatus.status === "failed") {
+          console.error("❌ [JOB FAILED] Job failed:", jobStatus.error);
+          break;
+        } else {
+          console.log(
+            `⏳ [JOB PENDING] Job still ${jobStatus.status}, waiting...`
+          );
+        }
+
+        // Wait before next retry (except on last attempt)
+        if (attempt < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+        }
+      } catch (statusError) {
+        console.error(
+          `❌ [JOB STATUS ERROR] Failed to check job status (attempt ${attempt}):`,
+          statusError
+        );
+
+        // Wait before next retry (except on last attempt)
+        if (attempt < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+        }
+      }
+    }
+
+    return jobResponse;
   } catch (error) {
     console.error("Error placing trade job:", error);
 
@@ -754,7 +807,6 @@ export const createUser = async (
   userData: CreateUserRequest
 ): Promise<User> => {
   try {
-
     // Get user ID from current session
     const {
       data: { user },
@@ -778,16 +830,10 @@ export const createUser = async (
 
     // Step 2: Set up realtime subscription for job completion
     return new Promise((resolve, reject) => {
-      const job = createUserJob({
-        user_id: userId,
-        username: userData.username,
-        wallet_address: userData.walletAddress,
-      });
       const channel = supabase
         .channel(`user:${userId}`)
-        .on("broadcast", { event: "user_created" }, async payload => {
+        .on("broadcast", { event: "user_created" }, async () => {
           try {
-
             // Step 3: Upload avatar if provided
             if (userData.profileImage) {
               try {
@@ -1115,6 +1161,7 @@ export interface InitializationResponse {
 
 export interface Position {
   id: string;
+  positionId: string; // Business logic ID like "SOL:1758171234720"
   market: string; // "SOL", "BTC", "ETH"
   direction: "LONG" | "SHORT";
   status: string;
@@ -1209,6 +1256,29 @@ export const openTradingPosition = async (
   console.log(`🎯 [BACKEND API] Request details:`, request);
 
   try {
+    // Step 1: Check authentication state BEFORE anything else
+    console.log("🔐 [AUTH CHECK] Verifying authentication state...");
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
+    if (sessionError) {
+      console.error("❌ [AUTH CHECK] Session error:", sessionError);
+      throw new Error(`Authentication error: ${sessionError.message}`);
+    }
+    if (!session) {
+      console.error("❌ [AUTH CHECK] No active session found");
+      throw new Error("No authenticated user found");
+    }
+    console.log(
+      "✅ [AUTH CHECK] Active session found for user:",
+      session.user.id
+    );
+    console.log(
+      "🔑 [AUTH CHECK] Session expires at:",
+      new Date(session.expires_at! * 1000).toISOString()
+    );
+
     // Get user ID from current session
     const {
       data: { user },
@@ -1216,6 +1286,9 @@ export const openTradingPosition = async (
     if (!user) {
       throw new Error("No authenticated user found");
     }
+
+    const userId = user.id;
+    console.log("👤 [USER] Using user ID:", userId);
 
     //TODO - set this to the amount of the trade
     const requiredCollateral = 1;
@@ -1227,25 +1300,28 @@ export const openTradingPosition = async (
       trade_type: request.direction,
       quantity: request.amount,
       leverage: request.leverage,
-      collateral_amount: requiredCollateral.toString(), // Required by backend
-      // Optional fields can be added later for limit orders, TP/SL
+      collateral_amount: requiredCollateral.toString(),
     };
 
-    // Step 1: Start trade placement job
-    const jobResponse = await placeTradeJob(tradeRequest);
+    // Step 2: Set up realtime subscription BEFORE submitting job
+    console.log(
+      "📡 [REALTIME SETUP] Setting up realtime listeners BEFORE job submission..."
+    );
 
-    // Step 2: Set up realtime subscription for job completion
-    const userId = (await supabase.auth.getUser()).data.user?.id;
-    if (!userId) {
-      throw new Error("No authenticated user found");
-    }
+    return new Promise(async (resolve, reject) => {
+      const channelName = `user:${userId}`;
+      console.log("📡 [REALTIME SETUP] Creating channel:", channelName);
 
-    return new Promise((resolve, reject) => {
-      const channel = supabase
-        .channel(`user:${userId}`)
+      const channel = supabase.channel(channelName);
 
+      // Set up all event listeners with detailed logging
+      channel
         // Primary: Listen for backend job completion events
         .on("broadcast", { event: "trade_completed" }, async payload => {
+          console.log(
+            "🎉 [REALTIME] Received trade_completed event:",
+            JSON.stringify(payload, null, 2)
+          );
           try {
             // Extract position ID from nested payload structure
             const positionId =
@@ -1253,30 +1329,108 @@ export const openTradingPosition = async (
               payload.position_id ||
               payload.payload?.data?.position_id;
 
+            console.log("🔍 [REALTIME] Extracted position ID:", positionId);
+
             // Step 3: Get the created position data from the payload or fetch from API
             if (payload.position) {
+              console.log(
+                "✅ [REALTIME] Position data found in payload, resolving immediately"
+              );
               channel.unsubscribe();
               resolve(payload.position as Position);
             } else if (positionId) {
-              // Fetch position details if only ID is provided
+              console.log(
+                "🔄 [REALTIME] Position ID found, trying direct Supabase query..."
+              );
+
               try {
+                // Get the created position using getOpenPositions (which now queries Supabase directly)
+                console.log(
+                  "🔄 [REALTIME] Fetching positions via getOpenPositions..."
+                );
                 const positions = await getOpenPositions(request.userId);
+                console.log(
+                  "📊 [REALTIME] Fetched positions:",
+                  positions.length
+                );
                 const newPosition = positions.find(p => p.id === positionId);
                 if (newPosition) {
+                  console.log("✅ [REALTIME] Found new position, resolving");
                   channel.unsubscribe();
                   resolve(newPosition);
                 } else {
                   console.warn(
-                    "⚠️ [REALTIME] Position not found in current positions, will rely on database listener..."
+                    "⚠️ [REALTIME] Position not found in API, creating from realtime data..."
                   );
-                  // Don't reject here - let the database listener handle it or the main timeout
-                  // The 2-minute timeout in the main promise will handle ultimate failure
+
+                  // Option 3: Create position from realtime data
+                  const position: Position = {
+                    id: positionId,
+                    positionId: positionId, // Use same ID for now
+                    market: request.market,
+                    direction: request.direction,
+                    status: "OPEN",
+                    size: request.amount,
+                    entryPrice: 0, // Will be updated later
+                    exitPrice: null,
+                    currentPrice: 0,
+                    pnl: 0,
+                    pnlPercentage: 0,
+                    leverage: request.leverage,
+                    liquidationPrice: 0,
+                    marginUsed: 0,
+                    openedAt:
+                      payload.payload?.timestamp || new Date().toISOString(),
+                    closedAt: null,
+                    duration: 0,
+                    fees: 0,
+                    points: 0,
+                  };
+
+                  console.log(
+                    "✅ [REALTIME] Created position from realtime data, resolving"
+                  );
+                  channel.unsubscribe();
+                  resolve(position);
                 }
-              } catch (error) {
-                console.error("❌ [REALTIME] Error fetching positions:", error);
-                throw new Error(
-                  "Failed to retrieve created position: " + error
+              } catch (positionError) {
+                console.error(
+                  "❌ [REALTIME] Position query failed:",
+                  positionError
                 );
+
+                // Final fallback: Create position from realtime data
+                console.log(
+                  "🔄 [REALTIME] Final fallback: creating position from realtime data"
+                );
+                const position: Position = {
+                  id: positionId,
+                  positionId: positionId, // Use same ID for now
+                  market: request.market,
+                  direction: request.direction,
+                  status: "OPEN",
+                  size: request.amount,
+                  entryPrice: 0,
+                  exitPrice: null,
+                  currentPrice: 0,
+                  pnl: 0,
+                  pnlPercentage: 0,
+                  leverage: request.leverage,
+                  liquidationPrice: 0,
+                  marginUsed: 0,
+                  openedAt:
+                    payload.payload?.timestamp || new Date().toISOString(),
+                  closedAt: null,
+                  duration: 0,
+                  fees: 0,
+                  points: 0,
+                };
+
+                console.log(
+                  "✅ [REALTIME] Final fallback successful, resolving"
+                );
+                channel.unsubscribe();
+                resolve(position);
               }
             } else {
               console.error(
@@ -1286,11 +1440,19 @@ export const openTradingPosition = async (
               throw new Error("No position data in trade completion payload");
             }
           } catch (error) {
+            console.error(
+              "❌ [REALTIME] Error in trade_completed handler:",
+              error
+            );
             channel.unsubscribe();
             reject(error);
           }
         })
         .on("broadcast", { event: "trade_failed" }, payload => {
+          console.log(
+            "❌ [REALTIME] Received trade_failed event:",
+            JSON.stringify(payload, null, 2)
+          );
           channel.unsubscribe();
           reject(new Error(payload.error || "Trade failed"));
         })
@@ -1305,16 +1467,30 @@ export const openTradingPosition = async (
             filter: `user_id=eq.${userId}`,
           },
           async payload => {
+            console.log(
+              "📊 [REALTIME] Database INSERT detected:",
+              JSON.stringify(payload, null, 2)
+            );
+
             // Check if this is a recent position (within last 2 minutes)
             const positionCreatedAt = new Date(payload.new.created_at);
             const timeDiff = Date.now() - positionCreatedAt.getTime();
+            console.log(
+              "⏰ [REALTIME] Position created at:",
+              positionCreatedAt.toISOString()
+            );
+            console.log("⏰ [REALTIME] Time difference:", timeDiff, "ms");
 
             if (timeDiff < 2 * 60 * 1000) {
+              console.log(
+                "✅ [REALTIME] Recent position detected, resolving from database"
+              );
               channel.unsubscribe();
 
               // Convert database position to frontend Position format
               const position: Position = {
                 id: payload.new.id,
+                positionId: payload.new.position_id || payload.new.id, // Use position_id if available
                 market: payload.new.asset, // SOL, BTC, ETH
                 direction: "LONG", // Default, will be updated when we get actual position data
                 status: "OPEN",
@@ -1336,28 +1512,84 @@ export const openTradingPosition = async (
 
               resolve(position);
             } else {
+              console.log("⏰ [REALTIME] Position too old, ignoring");
             }
           }
         )
+        .subscribe((status, err) => {
+          console.log("📡 [REALTIME] Subscription status change:", status);
+          if (err) {
+            console.error("❌ [REALTIME] Subscription error:", err);
+          }
 
-        .subscribe(status => {
-          console.log("📡 [REALTIME] Subscription status:", status);
+          // Add specific handling for different statuses
+          if (status === "SUBSCRIBED") {
+            console.log(
+              "✅ [REALTIME] Successfully subscribed to channel:",
+              channelName
+            );
+            console.log("🚀 [REALTIME] Now submitting trade job...");
+
+            // Step 3: Submit job AFTER realtime is set up
+            placeTradeJob(tradeRequest)
+              .then(jobResponse => {
+                console.log(
+                  "✅ [JOB] Trade job submitted successfully:",
+                  jobResponse.job_id
+                );
+
+                // Set up warning at 30 seconds
+                setTimeout(() => {
+                  console.warn(
+                    "⚠️ [TRADE DEBUG] Trade taking longer than expected (30s). Job ID:",
+                    jobResponse.job_id
+                  );
+                  console.warn(
+                    "🔄 [TRADE DEBUG] Waiting for backend job or database insertion..."
+                  );
+                }, 30 * 1000);
+              })
+              .catch(jobError => {
+                console.error("❌ [JOB] Failed to submit trade job:", jobError);
+                channel.unsubscribe();
+                reject(
+                  new Error(`Failed to submit trade job: ${jobError.message}`)
+                );
+              });
+          } else if (status === "CLOSED") {
+            console.error("🔴 [REALTIME] Connection closed unexpectedly");
+            console.error(
+              "🔍 [REALTIME] Check authentication, RLS policies, and realtime settings"
+            );
+            console.error("🔍 [REALTIME] Session valid:", !!session);
+            console.error("🔍 [REALTIME] User ID:", userId);
+
+            // Don't reject immediately, the job might still complete
+            // But log this as a critical issue
+            console.error(
+              "⚠️ [REALTIME] Realtime connection lost, falling back to polling"
+            );
+          } else if (status === "CHANNEL_ERROR") {
+            console.error("💥 [REALTIME] Channel error occurred");
+            channel.unsubscribe();
+            reject(new Error("Realtime channel error"));
+          } else if (status === "TIMED_OUT") {
+            console.error("⏰ [REALTIME] Connection timed out");
+            channel.unsubscribe();
+            reject(new Error("Realtime connection timed out"));
+          }
         });
 
-      // Set up warning at 30 seconds
+      // Add a fallback timeout (2 minutes) in case everything fails
       setTimeout(() => {
-        console.warn(
-          "⚠️ [TRADE DEBUG] Trade taking longer than expected (30s). Job ID:",
-          jobResponse.job_id
+        console.error("⏰ [TIMEOUT] Trade operation timed out after 2 minutes");
+        channel.unsubscribe();
+        reject(
+          new Error(
+            "Trade operation timed out - no response from backend or realtime"
+          )
         );
-        console.warn(
-          "🔄 [TRADE DEBUG] Waiting for backend job or database insertion..."
-        );
-      }, 30 * 1000);
-
-      // REMOVED: 2-minute timeout that was causing promise rejection and automatic retries
-      // The realtime listener will handle success/failure, no need for artificial timeout
-      // This was causing the double execution issue
+      }, 2 * 60 * 1000);
     });
   } catch (error) {
     console.error("Error in trade placement flow:", error);
@@ -1368,7 +1600,10 @@ export const openTradingPosition = async (
 // Get open positions for a user
 export const getOpenPositions = async (userId: string): Promise<Position[]> => {
   try {
-    // Use the authenticated API client with new endpoint
+    console.log(
+      "🔍 [GET POSITIONS] Testing backend API endpoint for user:",
+      userId
+    );
     const result = await apiClient.get<ApiResponse<CurrentPositionsResponse>>(
       `/api/trades/positions/${userId}`
     );
@@ -1378,8 +1613,6 @@ export const getOpenPositions = async (userId: string): Promise<Position[]> => {
       throw new Error(result.error || "Failed to get positions");
     }
 
-    // The backend returns position summaries that need to be mapped to our Position format
-    // Since the backend structure might be different, let's map it properly
     const backendPositions = result.data!.positions;
 
     if (!backendPositions || !Array.isArray(backendPositions)) {
@@ -1390,33 +1623,38 @@ export const getOpenPositions = async (userId: string): Promise<Position[]> => {
       return [];
     }
 
-    // If positions are already in the correct format, return them
-    // Otherwise, we might need to map them similar to how we do in getTradingHistoryPaginated
     const mappedPositions: Position[] = backendPositions.map(
       (pos: any, index: number) => {
-        // Always map from backend format to ensure consistency
+        // Helper function to safely convert string/number to number (no defaults)
+        const toNumber = (value: any): number => {
+          if (value === null || value === undefined) return value;
+          const num =
+            typeof value === "string" ? parseFloat(value) : Number(value);
+          return isNaN(num) ? value : num;
+        };
+
         const mappedPosition = {
-          id: pos.id || pos.position_id || "",
-          market: pos.market || "",
-          direction: pos.trade_type
-            ? (pos.trade_type as "LONG" | "SHORT")
-            : pos.direction || "LONG",
-          status: pos.status || "open",
-          size: pos.quantity || pos.size || 0,
-          entryPrice: pos.entry_price || pos.entryPrice || 0,
-          exitPrice: pos.exit_price || pos.exitPrice || null,
-          currentPrice:
-            pos.current_price || pos.currentPrice || pos.entry_price || 0,
-          pnl: pos.unrealized_pnl || pos.pnl || 0,
-          pnlPercentage: pos.pnl_percentage || pos.pnlPercentage || 0,
-          leverage: pos.leverage || 1,
-          liquidationPrice: pos.liquidation_price || pos.liquidationPrice || 0,
-          marginUsed: pos.margin_used || pos.marginUsed || 0,
-          openedAt: pos.created_at || pos.openedAt || new Date().toISOString(),
-          closedAt: pos.closed_at || pos.closedAt || null,
-          duration: pos.duration || 0,
-          fees: pos.fees || 0,
-          points: pos.points || 0,
+          id: pos.position_id,
+          positionId: pos.position_id, // Business logic ID - same as id for now
+          market: pos.market,
+          direction: pos.trade_type as "LONG" | "SHORT",
+          status: pos.status, // Not in PositionSummary - will be undefined
+          size: toNumber(pos.quantity),
+          entryPrice: toNumber(pos.entry_price),
+          exitPrice: pos.exit_price ? toNumber(pos.exit_price) : null, // Not in PositionSummary
+          currentPrice: toNumber(pos.current_price),
+          pnl: toNumber(pos.unrealized_pnl),
+          pnlPercentage: pos.pnl_percentage
+            ? toNumber(pos.pnl_percentage)
+            : undefined, // Not in PositionSummary
+          leverage: pos.leverage ? toNumber(pos.leverage) : undefined, // Not in PositionSummary
+          liquidationPrice: toNumber(pos.liquidation_price),
+          marginUsed: pos.margin_used ? toNumber(pos.margin_used) : undefined, // Not in PositionSummary
+          openedAt: pos.last_updated,
+          closedAt: pos.closed_at || null, // Not in PositionSummary
+          duration: pos.duration ? toNumber(pos.duration) : undefined, // Not in PositionSummary
+          fees: pos.fees ? toNumber(pos.fees) : undefined, // Not in PositionSummary
+          points: pos.points ? toNumber(pos.points) : undefined, // Not in PositionSummary
         } as Position;
         return mappedPosition;
       }
@@ -1439,14 +1677,30 @@ export const getOpenPositions = async (userId: string): Promise<Position[]> => {
 export const closeTradingPosition = async (
   request: ClosePositionRequest
 ): Promise<Position> => {
+  console.log(`🎯 [CLOSE POSITION] Request details:`, request);
+
   try {
-    // Get user ID from current session
+    // Step 1: Check authentication state
+    console.log("🔐 [AUTH CHECK] Verifying authentication state...");
     const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
+    if (sessionError) {
+      console.error("❌ [AUTH CHECK] Session error:", sessionError);
+      throw new Error(`Authentication error: ${sessionError.message}`);
+    }
+    if (!session) {
+      console.error("❌ [AUTH CHECK] No active session found");
       throw new Error("No authenticated user found");
     }
+    console.log(
+      "✅ [AUTH CHECK] Active session found for user:",
+      session.user.id
+    );
+
+    const userId = session.user.id;
+    console.log("👤 [USER] Using user ID:", userId);
 
     // Convert legacy request format to new backend format
     const cancelRequest: CancelTradeRequest = {
@@ -1455,73 +1709,249 @@ export const closeTradingPosition = async (
       position_amount: request.positionAmount,
     };
 
-    // Step 1: Start trade cancellation job
-    const jobResponse = await cancelTradeJob(cancelRequest);
+    // Step 2: Set up realtime subscription BEFORE submitting job
+    console.log(
+      "📡 [REALTIME SETUP] Setting up realtime listeners BEFORE job submission..."
+    );
 
-    console.log("Trade cancellation job started:", jobResponse.job_id);
+    return new Promise(async (resolve, reject) => {
+      const channelName = `user:${userId}`;
+      console.log("📡 [REALTIME SETUP] Creating channel:", channelName);
 
-    // Step 2: Set up realtime subscription for job completion
-    const userId = (await supabase.auth.getUser()).data.user?.id;
-    if (!userId) {
-      throw new Error("No authenticated user found");
-    }
+      const channel = supabase.channel(channelName);
 
-    return new Promise((resolve, reject) => {
-      const channel = supabase
-        .channel(`trade:${userId}`)
+      // Set up all event listeners with detailed logging
+      channel
+        // Primary: Listen for backend job completion events
         .on("broadcast", { event: "trade_cancelled" }, async payload => {
+          console.log(
+            "🎉 [REALTIME] Received trade_cancelled event:",
+            JSON.stringify(payload, null, 2)
+          );
           try {
-            // Step 3: Get the updated position data from the payload or fetch from API
-            if (payload.position) {
-              channel.unsubscribe();
-              resolve(payload.position as Position);
-            } else if (payload.position_id) {
-              // Fetch updated position details if only ID is provided
-              try {
-                const history = await getTradingHistory(
-                  request.userId,
-                  "closed",
-                  50
+            // Extract position ID from nested payload structure
+            const positionId =
+              payload.payload?.position_id ||
+              payload.position_id ||
+              payload.payload?.data?.position_id ||
+              request.positionId; // Fallback to request position ID
+
+            console.log("🔍 [REALTIME] Extracted position ID:", positionId);
+
+            // Step 3: Refresh open positions to update UI (position should be removed from open list)
+            console.log(
+              "🔄 [REALTIME] Refreshing open positions to update UI..."
+            );
+            try {
+              const updatedPositions = await getOpenPositions(request.userId);
+              console.log(
+                "📊 [REALTIME] Updated positions count:",
+                updatedPositions.length
+              );
+
+              // Check if the position was actually closed (should not be in open positions anymore)
+              const stillOpen = updatedPositions.find(p => p.id === positionId);
+              if (!stillOpen) {
+                console.log(
+                  "✅ [REALTIME] Position successfully closed and removed from open positions"
                 );
-                const closedPosition = history.find(
-                  p => p.id === payload.position_id
+
+                // Create a closed position object for the response
+                const closedPosition: Position = {
+                  id: positionId,
+                  positionId: payload.payload?.positionId || positionId, // Use payload positionId if available
+                  market: payload.payload?.market || payload.market || "",
+                  direction: payload.payload?.direction || "LONG",
+                  status: "CLOSED",
+                  size: payload.payload?.size || 0,
+                  entryPrice: payload.payload?.entry_price || 0,
+                  exitPrice: payload.payload?.exit_price || 0,
+                  currentPrice: payload.payload?.exit_price || 0,
+                  pnl: payload.payload?.pnl || 0,
+                  pnlPercentage: payload.payload?.pnl_percentage || 0,
+                  leverage: payload.payload?.leverage || 1,
+                  liquidationPrice: 0,
+                  marginUsed: 0,
+                  openedAt:
+                    payload.payload?.opened_at || new Date().toISOString(),
+                  closedAt:
+                    payload.payload?.closed_at || new Date().toISOString(),
+                  duration: 0,
+                  fees: payload.payload?.fees || 0,
+                  points: payload.payload?.points || 0,
+                };
+
+                channel.unsubscribe();
+                resolve(closedPosition);
+              } else {
+                console.warn(
+                  "⚠️ [REALTIME] Position still appears in open positions, checking trading history..."
                 );
-                if (closedPosition) {
-                  channel.unsubscribe();
-                  resolve(closedPosition);
-                } else {
-                  throw new Error(
-                    "Closed position not found after cancellation"
-                  );
-                }
-              } catch (error) {
-                throw new Error("Failed to retrieve closed position: " + error);
               }
-            } else {
-              throw new Error("No position data in trade cancellation payload");
+            } catch (positionError) {
+              console.error(
+                "❌ [REALTIME] Position refresh failed:",
+                positionError
+              );
+              throw new Error("Failed to refresh positions after closure");
             }
           } catch (error) {
+            console.error(
+              "❌ [REALTIME] Error in trade_cancelled handler:",
+              error
+            );
             channel.unsubscribe();
             reject(error);
           }
         })
         .on("broadcast", { event: "trade_cancellation_failed" }, payload => {
+          console.log(
+            "❌ [REALTIME] Received trade_cancellation_failed event:",
+            JSON.stringify(payload, null, 2)
+          );
           channel.unsubscribe();
           reject(new Error(payload.error || "Trade cancellation failed"));
         })
-        .subscribe(status => {
-          console.log("Realtime subscription status:", status);
+
+        // Backup: Listen for database position updates (status change to CLOSED)
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "position",
+            filter: `user_id=eq.${userId}`,
+          },
+          async payload => {
+            console.log(
+              "📊 [REALTIME] Database UPDATE detected:",
+              JSON.stringify(payload, null, 2)
+            );
+
+            // Check if this is the position we're closing and it's now closed
+            const updatedPosition = payload.new;
+            if (
+              updatedPosition.position_id === request.positionId &&
+              updatedPosition.status === "CLOSED"
+            ) {
+              console.log(
+                "✅ [REALTIME] Position closure detected via database update"
+              );
+
+              // Refresh positions and resolve
+              try {
+                await getOpenPositions(request.userId); // This will update the UI
+
+                // Create closed position response
+                const closedPosition: Position = {
+                  id: updatedPosition.position_id || updatedPosition.id,
+                  positionId: updatedPosition.position_id || updatedPosition.id, // Use position_id from database
+                  market: updatedPosition.asset || "",
+                  direction: updatedPosition.direction || "LONG",
+                  status: "CLOSED",
+                  size: updatedPosition.position_size || 0,
+                  entryPrice: updatedPosition.entry_price || 0,
+                  exitPrice: updatedPosition.exit_price || 0,
+                  currentPrice: updatedPosition.exit_price || 0,
+                  pnl: updatedPosition.pnl || 0,
+                  pnlPercentage: updatedPosition.pnl_percentage || 0,
+                  leverage: updatedPosition.leverage || 1,
+                  liquidationPrice: 0,
+                  marginUsed: 0,
+                  openedAt: updatedPosition.created_at,
+                  closedAt: updatedPosition.updated_at,
+                  duration: 0,
+                  fees: 0,
+                  points: 0,
+                };
+
+                channel.unsubscribe();
+                resolve(closedPosition);
+              } catch (error) {
+                console.error(
+                  "❌ [REALTIME] Error processing database update:",
+                  error
+                );
+                channel.unsubscribe();
+                reject(error);
+              }
+            }
+          }
+        )
+        .subscribe((status, err) => {
+          console.log("📡 [REALTIME] Subscription status change:", status);
+          if (err) {
+            console.error("❌ [REALTIME] Subscription error:", err);
+          }
+
+          if (status === "SUBSCRIBED") {
+            console.log(
+              "✅ [REALTIME] Successfully subscribed to channel:",
+              channelName
+            );
+            console.log(
+              "🚀 [REALTIME] Now submitting trade cancellation job..."
+            );
+
+            // Step 3: Submit job AFTER realtime is set up
+            cancelTradeJob(cancelRequest)
+              .then(jobResponse => {
+                console.log(
+                  "✅ [JOB] Trade cancellation job submitted successfully:",
+                  jobResponse.job_id
+                );
+
+                // Set up warning at 30 seconds
+                setTimeout(() => {
+                  console.warn(
+                    "⚠️ [TRADE DEBUG] Trade cancellation taking longer than expected (30s). Job ID:",
+                    jobResponse.job_id
+                  );
+                  console.warn(
+                    "🔄 [TRADE DEBUG] Waiting for backend job or database update..."
+                  );
+                }, 30 * 1000);
+              })
+              .catch(jobError => {
+                console.error(
+                  "❌ [JOB] Failed to submit trade cancellation job:",
+                  jobError
+                );
+                channel.unsubscribe();
+                reject(
+                  new Error(
+                    `Failed to submit trade cancellation job: ${jobError.message}`
+                  )
+                );
+              });
+          } else if (status === "CLOSED") {
+            console.error("🔴 [REALTIME] Connection closed unexpectedly");
+            console.error(
+              "🔍 [REALTIME] Check authentication, RLS policies, and realtime settings"
+            );
+          } else if (status === "CHANNEL_ERROR") {
+            console.error("💥 [REALTIME] Channel error occurred");
+            channel.unsubscribe();
+            reject(new Error("Realtime channel error"));
+          } else if (status === "TIMED_OUT") {
+            console.error("⏰ [REALTIME] Connection timed out");
+            channel.unsubscribe();
+            reject(new Error("Realtime connection timed out"));
+          }
         });
 
-      // Set up timeout for job completion (5 minutes)
+      // Add a fallback timeout (2 minutes) in case everything fails
       setTimeout(() => {
+        console.error(
+          "⏰ [TIMEOUT] Trade cancellation timed out after 2 minutes"
+        );
         channel.unsubscribe();
         reject(
           new Error(
-            "Trade cancellation timeout - job took too long to complete"
+            "Trade cancellation timed out - no response from backend or realtime"
           )
         );
-      }, 5 * 60 * 1000);
+      }, 2 * 60 * 1000);
     });
   } catch (error) {
     console.error("Error in trade cancellation flow:", error);
@@ -1532,15 +1962,11 @@ export const closeTradingPosition = async (
 // Get trading history for a user with pagination
 export const getTradingHistory = async (
   userId: string,
-  status?: "open" | "closed",
   limit: number = 50,
   offset: number = 0
 ): Promise<Position[]> => {
   try {
     let endpoint = `/api/trades/history/${userId}?limit=${limit}&offset=${offset}`;
-    if (status) {
-      endpoint += `&status=${status}`;
-    }
     // Use the authenticated API client with new endpoint
     const result = await apiClient.get<
       ApiResponse<PaginatedResponse<PositionHistory>>
@@ -1554,6 +1980,7 @@ export const getTradingHistory = async (
     // Convert PositionHistory to Position format
     const positions: Position[] = result.data!.data.map(history => ({
       id: history.id,
+      positionId: history.position_id, // Use same ID for now
       market: history.market,
       direction: history.trade_type as "LONG" | "SHORT",
       status: history.status,
@@ -1574,7 +2001,7 @@ export const getTradingHistory = async (
       closedAt: history.closed_at || null,
       duration: history.closed_at
         ? new Date(history.closed_at).getTime() -
-        new Date(history.created_at).getTime()
+          new Date(history.created_at).getTime()
         : 0,
       fees: history.fees || 0,
       points: 0, // Not provided in PositionHistory
@@ -1590,15 +2017,11 @@ export const getTradingHistory = async (
 // Get paginated trading history with full response metadata
 export const getTradingHistoryPaginated = async (
   userId: string,
-  status?: "open" | "closed",
   limit: number = 50,
   offset: number = 0
 ): Promise<PaginatedResponse<Position>> => {
   try {
     let endpoint = `/api/trades/history/${userId}?limit=${limit}&offset=${offset}`;
-    if (status) {
-      endpoint += `&status=${status}`;
-    }
 
     const result = await apiClient.get<
       ApiResponse<PaginatedResponse<PositionHistory>>
@@ -1611,6 +2034,7 @@ export const getTradingHistoryPaginated = async (
     // Convert PositionHistory to Position format
     const positions: Position[] = result.data!.data.map(history => ({
       id: history.id,
+      positionId: history.position_id,
       market: history.market,
       direction: history.trade_type as "LONG" | "SHORT",
       status: history.status,
@@ -1631,7 +2055,7 @@ export const getTradingHistoryPaginated = async (
       closedAt: history.closed_at || null,
       duration: history.closed_at
         ? new Date(history.closed_at).getTime() -
-        new Date(history.created_at).getTime()
+          new Date(history.created_at).getTime()
         : 0,
       fees: history.fees || 0,
       points: 0,

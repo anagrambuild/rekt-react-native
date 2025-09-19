@@ -178,7 +178,7 @@ export const HomeProvider = ({
     isLoading: isLoadingHistory,
     error: historyQueryError,
     refetch: refetchHistory,
-  } = useTradingHistoryQuery(userId || "", undefined, 50, 0, {
+  } = useTradingHistoryQuery(userId || "", 50, 0, {
     enabled: !!userId,
   });
 
@@ -394,7 +394,7 @@ export const HomeProvider = ({
         userId,
         positionId,
         // TODO - verify that thisis the right value to use
-        positionAmount: position?.size.toString(),
+        // positionAmount: "1",
       };
 
       const closedPosition = await closePositionMutation.mutateAsync(
