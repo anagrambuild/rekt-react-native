@@ -4,7 +4,7 @@ import { Position } from "./backendApi";
  * Calculate PnL for a trading position with leverage
  * @param entryPrice - Price when position was opened
  * @param currentPrice - Current market price from Pyth oracle
- * @param collateral - Collateral amount (backend value, needs to be multiplied by 100 for actual USDC)
+ * @param collateral - Collateral amount
  * @param leverage - Leverage multiplier (e.g., 50 for 50x leverage)
  * @param direction - "LONG" or "SHORT"
  * @returns PnL value in USDC
@@ -16,11 +16,8 @@ export const calculatePnL = (
   leverage: number = 1,
   direction: "LONG" | "SHORT"
 ): number => {
-  // Convert backend collateral to actual USDC amount (multiply by 100)
-  const actualCollateral = collateral * 100;
-  
   // Calculate position size with leverage
-  const positionSize = actualCollateral * leverage;
+  const positionSize = collateral * leverage;
 
   // Calculate asset quantity (how much of the asset we actually hold)
   const assetQuantity = positionSize / entryPrice;
@@ -42,7 +39,7 @@ export const calculatePnL = (
  * Calculate PnL percentage for a trading position with leverage
  * @param entryPrice - Price when position was opened
  * @param currentPrice - Current market price from Pyth oracle
- * @param collateral - Collateral amount (backend value, needs to be multiplied by 100 for actual USDC)
+ * @param collateral - Collateral amount
  * @param leverage - Leverage multiplier (e.g., 50 for 50x leverage)
  * @param direction - "LONG" or "SHORT"
  * @returns PnL percentage based on initial collateral investment
@@ -54,9 +51,6 @@ export const calculatePnLPercentage = (
   leverage: number = 1,
   direction: "LONG" | "SHORT"
 ): number => {
-  // Convert backend collateral to actual USDC amount (multiply by 100)
-  const actualCollateral = collateral * 100;
-  
   const pnl = calculatePnL(
     entryPrice,
     currentPrice,
@@ -65,10 +59,10 @@ export const calculatePnLPercentage = (
     direction
   );
 
-  if (actualCollateral === 0) return 0;
+  if (collateral === 0) return 0;
 
   // PnL percentage is based on the initial collateral investment, not the leveraged position size
-  const pnlPercentage = (pnl / actualCollateral) * 100;
+  const pnlPercentage = (pnl / collateral) * 100;
 
   return Number(pnlPercentage.toFixed(2)); // Round to 2 decimal places for display
 };
@@ -77,7 +71,7 @@ export const calculatePnLPercentage = (
  * Calculate current value of a position (initial collateral investment + PnL)
  * @param entryPrice - Price when position was opened
  * @param currentPrice - Current market price from Pyth oracle
- * @param collateral - Collateral amount (backend value, needs to be multiplied by 100 for actual USDC)
+ * @param collateral - Collateral amount
  * @param leverage - Leverage multiplier (e.g., 50 for 50x leverage)
  * @param direction - "LONG" or "SHORT"
  * @returns Current value in USDC (what the investment is worth now)
@@ -89,9 +83,6 @@ export const calculateCurrentValue = (
   leverage: number = 1,
   direction: "LONG" | "SHORT"
 ): number => {
-  // Convert backend collateral to actual USDC amount (multiply by 100)
-  const actualCollateral = collateral * 100;
-  
   const pnl = calculatePnL(
     entryPrice,
     currentPrice,
@@ -101,7 +92,7 @@ export const calculateCurrentValue = (
   );
 
   // Current value = initial investment + PnL
-  return Number((actualCollateral + pnl).toFixed(6));
+  return Number((collateral + pnl).toFixed(6));
 };
 
 /**
@@ -186,15 +177,14 @@ export const formatDuration = (durationSeconds: number): string => {
 
 // =============================================================================
 // UI-FRIENDLY WRAPPER FUNCTIONS
-// These functions expect values that have already been converted for UI display
-// (i.e., USDC amounts already multiplied by 100)
+// These functions expect values in direct USDC amounts (same as backend)
 // =============================================================================
 
 /**
  * Calculate PnL for a trading position (UI-friendly version)
  * @param entryPrice - Price when position was opened
  * @param currentPrice - Current market price from Pyth oracle
- * @param usdcAmount - USDC amount already converted for UI (multiplied by 100)
+ * @param usdcAmount - USDC amount (direct, not multiplied)
  * @param leverage - Leverage multiplier (e.g., 50 for 50x leverage)
  * @param direction - "LONG" or "SHORT"
  * @returns PnL value in USDC
@@ -206,15 +196,20 @@ export const calculatePnLFromUI = (
   leverage: number = 1,
   direction: "LONG" | "SHORT"
 ): number => {
-  // Convert UI amount back to backend format for internal calculation
-  return calculatePnL(entryPrice, currentPrice, usdcAmount / 100, leverage, direction);
+  return calculatePnL(
+    entryPrice,
+    currentPrice,
+    usdcAmount,
+    leverage,
+    direction
+  );
 };
 
 /**
  * Calculate PnL percentage for a trading position (UI-friendly version)
  * @param entryPrice - Price when position was opened
  * @param currentPrice - Current market price from Pyth oracle
- * @param usdcAmount - USDC amount already converted for UI (multiplied by 100)
+ * @param usdcAmount - USDC amount (direct, not multiplied)
  * @param leverage - Leverage multiplier (e.g., 50 for 50x leverage)
  * @param direction - "LONG" or "SHORT"
  * @returns PnL percentage based on initial collateral investment
@@ -226,14 +221,20 @@ export const calculatePnLPercentageFromUI = (
   leverage: number = 1,
   direction: "LONG" | "SHORT"
 ): number => {
-  return calculatePnLPercentage(entryPrice, currentPrice, usdcAmount / 100, leverage, direction);
+  return calculatePnLPercentage(
+    entryPrice,
+    currentPrice,
+    usdcAmount,
+    leverage,
+    direction
+  );
 };
 
 /**
  * Calculate current value of a position (UI-friendly version)
  * @param entryPrice - Price when position was opened
  * @param currentPrice - Current market price from Pyth oracle
- * @param usdcAmount - USDC amount already converted for UI (multiplied by 100)
+ * @param usdcAmount - USDC amount (direct, not multiplied)
  * @param leverage - Leverage multiplier (e.g., 50 for 50x leverage)
  * @param direction - "LONG" or "SHORT"
  * @returns Current value in USDC (what the investment is worth now)
@@ -245,14 +246,20 @@ export const calculateCurrentValueFromUI = (
   leverage: number = 1,
   direction: "LONG" | "SHORT"
 ): number => {
-  return calculateCurrentValue(entryPrice, currentPrice, usdcAmount / 100, leverage, direction);
+  return calculateCurrentValue(
+    entryPrice,
+    currentPrice,
+    usdcAmount,
+    leverage,
+    direction
+  );
 };
 
 /**
  * Calculate all position metrics at once (UI-friendly version)
  * @param entryPrice - Price when position was opened
  * @param currentPrice - Current market price from Pyth oracle
- * @param usdcAmount - USDC amount already converted for UI (multiplied by 100)
+ * @param usdcAmount - USDC amount (direct, not multiplied)
  * @param leverage - Leverage multiplier (e.g., 50 for 50x leverage)
  * @param direction - "LONG" or "SHORT"
  * @returns Object with calculated pnl, pnlPercentage, currentValue, and isProfit
@@ -264,10 +271,28 @@ export const calculatePositionMetricsFromUI = (
   leverage: number = 1,
   direction: "LONG" | "SHORT"
 ) => {
-  const pnl = calculatePnLFromUI(entryPrice, currentPrice, usdcAmount, leverage, direction);
-  const pnlPercentage = calculatePnLPercentageFromUI(entryPrice, currentPrice, usdcAmount, leverage, direction);
-  const currentValue = calculateCurrentValueFromUI(entryPrice, currentPrice, usdcAmount, leverage, direction);
-  
+  const pnl = calculatePnLFromUI(
+    entryPrice,
+    currentPrice,
+    usdcAmount,
+    leverage,
+    direction
+  );
+  const pnlPercentage = calculatePnLPercentageFromUI(
+    entryPrice,
+    currentPrice,
+    usdcAmount,
+    leverage,
+    direction
+  );
+  const currentValue = calculateCurrentValueFromUI(
+    entryPrice,
+    currentPrice,
+    usdcAmount,
+    leverage,
+    direction
+  );
+
   return {
     pnl,
     pnlPercentage,

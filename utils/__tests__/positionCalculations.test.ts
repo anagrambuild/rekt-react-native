@@ -19,7 +19,7 @@ const testPosition: Position = {
   market: "SOL",
   direction: "LONG",
   status: "OPEN",
-  size: 0.01, // Backend value (needs * 100 = 1.00 USDC)
+  size: 1,
   entryPrice: 245.1894,
   exitPrice: null,
   currentPrice: 105,
@@ -38,101 +38,95 @@ const testPosition: Position = {
 describe("Position Calculations", () => {
   describe("calculatePnL", () => {
     it("should calculate correct PnL for losing LONG position with 1x leverage (your actual data)", () => {
-      // Entry: $245.1894, Current: $105, Collateral: 0.01 (= 1.00 USDC), Leverage: 1x
+      // Entry: $245.1894, Current: $105, Collateral: 1.00 USDC, Leverage: 1x
       // Position Size: 1.00 * 1 = 1.00 USDC
       // Asset Quantity: 1.00 / 245.1894 = 0.004078 units
       // Expected PnL: (105 - 245.1894) * 0.004078 = -0.57176
-      const pnl = calculatePnL(245.1894, 105, 0.01, 1, "LONG");
+      const pnl = calculatePnL(245.1894, 105, 1, 1, "LONG");
       expect(pnl).toBeCloseTo(-0.57176, 3);
     });
 
     it("should calculate correct PnL for losing LONG position with 50x leverage", () => {
-      // Entry: $245.1894, Current: $105, Collateral: 0.01 (= 1.00 USDC), Leverage: 50x
+      // Entry: $245.1894, Current: $105, Collateral: 1.00 USDC, Leverage: 50x
       // Position Size: 1.00 * 50 = 50.00 USDC
       // Asset Quantity: 50.00 / 245.1894 = 0.2039 units
       // Expected PnL: (105 - 245.1894) * 0.2039 = -28.587981
-      const pnl = calculatePnL(245.1894, 105, 0.01, 50, "LONG");
+      const pnl = calculatePnL(245.1894, 105, 1, 50, "LONG");
       expect(pnl).toBeCloseTo(-28.587981, 2);
     });
 
     it("should calculate positive PnL for profitable LONG position", () => {
-      // Entry: $100, Current: $110, Collateral: 0.01 (= 1.00 USDC), Leverage: 1x
+      // Entry: $100, Current: $110, Collateral: 1.00 USDC, Leverage: 1x
       // Position Size: 1.00 * 1 = 1.00 USDC
       // Asset Quantity: 1.00 / 100 = 0.01 units
       // Expected PnL: (110 - 100) * 0.01 = 0.1
-      const pnl = calculatePnL(100, 110, 0.01, 1, "LONG");
+      const pnl = calculatePnL(100, 110, 1, 1, "LONG");
       expect(pnl).toBe(0.1);
     });
 
     it("should calculate positive PnL for profitable SHORT position", () => {
-      // Entry: $100, Current: $90, Collateral: 0.01 (= 1.00 USDC), Leverage: 1x
+      // Entry: $100, Current: $90, Collateral: 1.00 USDC, Leverage: 1x
       // Position Size: 1.00 * 1 = 1.00 USDC
       // Asset Quantity: 1.00 / 100 = 0.01 units
       // Expected PnL: (100 - 90) * 0.01 = 0.1
-      const pnl = calculatePnL(100, 90, 0.01, 1, "SHORT");
+      const pnl = calculatePnL(100, 90, 1, 1, "SHORT");
       expect(pnl).toBe(0.1);
     });
 
     it("should calculate negative PnL for losing SHORT position", () => {
-      // Entry: $100, Current: $110, Collateral: 0.01 (= 1.00 USDC), Leverage: 1x
+      // Entry: $100, Current: $110, Collateral: 1.00 USDC, Leverage: 1x
       // Expected PnL: (100 - 110) * 0.01 = -0.1
-      const pnl = calculatePnL(100, 110, 0.01, 1, "SHORT");
+      const pnl = calculatePnL(100, 110, 1, 1, "SHORT");
       expect(pnl).toBe(-0.1);
     });
 
     it("should handle zero PnL when prices are equal", () => {
-      const pnl = calculatePnL(100, 100, 0.01, 1, "LONG");
+      const pnl = calculatePnL(100, 100, 1, 1, "LONG");
       expect(pnl).toBe(0);
     });
 
     it("should handle different leverage multipliers correctly", () => {
       // Test with 10x leverage
-      const pnl1 = calculatePnL(100, 110, 0.01, 10, "LONG"); // 1.00 USDC * 10x = 10 USDC position
+      const pnl1 = calculatePnL(100, 110, 1, 10, "LONG"); // 1.00 USDC * 10x = 10 USDC position
       expect(pnl1).toBe(1); // (110 - 100) * (10/100) = 1
 
       // Test with 50x leverage
-      const pnl2 = calculatePnL(100, 110, 0.01, 50, "LONG"); // 1.00 USDC * 50x = 50 USDC position
+      const pnl2 = calculatePnL(100, 110, 1, 50, "LONG"); // 1.00 USDC * 50x = 50 USDC position
       expect(pnl2).toBe(5); // (110 - 100) * (50/100) = 5
     });
 
     it("should default to 1x leverage when not provided", () => {
-      const pnl = calculatePnL(100, 110, 0.01, undefined, "LONG");
+      const pnl = calculatePnL(100, 110, 1, undefined, "LONG");
       expect(pnl).toBe(0.1); // Same as 1x leverage
     });
   });
 
   describe("calculatePnLPercentage", () => {
     it("should calculate correct percentage for your actual losing position with 1x leverage", () => {
-      // Entry: $245.1894, Current: $105, Collateral: 0.01 (= 1.00 USDC), Leverage: 1x
+      // Entry: $245.1894, Current: $105, Collateral: 1.00 USDC, Leverage: 1x
       // PnL: -0.571894, Collateral: 1.00, Percentage: (-0.571894/1.00) * 100 = -57.19%
-      const percentage = calculatePnLPercentage(245.1894, 105, 0.01, 1, "LONG");
+      const percentage = calculatePnLPercentage(245.1894, 105, 1, 1, "LONG");
       expect(percentage).toBeCloseTo(-57.19, 1);
     });
 
     it("should calculate correct percentage for losing position with 50x leverage", () => {
-      // Entry: $245.1894, Current: $105, Collateral: 0.01 (= 1.00 USDC), Leverage: 50x
+      // Entry: $245.1894, Current: $105, Collateral: 1.00 USDC, Leverage: 50x
       // PnL: -28.587981, Collateral: 1.00, Percentage: (-28.587981/1.00) * 100 = -2858.8%
-      const percentage = calculatePnLPercentage(
-        245.1894,
-        105,
-        0.01,
-        50,
-        "LONG"
-      );
+      const percentage = calculatePnLPercentage(245.1894, 105, 1, 50, "LONG");
       expect(percentage).toBeCloseTo(-2858.8, 1);
     });
 
     it("should calculate positive percentage for profitable position", () => {
-      // Entry: $100, Current: $110, Collateral: 0.01 (= 1.00 USDC), Leverage: 1x
+      // Entry: $100, Current: $110, Collateral: 1.00 USDC, Leverage: 1x
       // PnL: 0.1, Collateral: 1.00, Percentage: (0.1/1.00) * 100 = 10%
-      const percentage = calculatePnLPercentage(100, 110, 0.01, 1, "LONG");
+      const percentage = calculatePnLPercentage(100, 110, 1, 1, "LONG");
       expect(percentage).toBe(10);
     });
 
     it("should calculate amplified percentage with leverage", () => {
-      // Entry: $100, Current: $110, Collateral: 0.01 (= 1.00 USDC), Leverage: 10x
+      // Entry: $100, Current: $110, Collateral: 1.00 USDC, Leverage: 10x
       // PnL: 1.0, Collateral: 1.00, Percentage: (1.0/1.00) * 100 = 100%
-      const percentage = calculatePnLPercentage(100, 110, 0.01, 10, "LONG");
+      const percentage = calculatePnLPercentage(100, 110, 1, 10, "LONG");
       expect(percentage).toBe(100);
     });
 
@@ -155,23 +149,23 @@ describe("Position Calculations", () => {
 
   describe("calculateCurrentValue", () => {
     it("should calculate current value for profitable position", () => {
-      // Entry: $100, Current: $110, Collateral: 0.01 (= 1.00 USDC), Leverage: 1x
+      // Entry: $100, Current: $110, Collateral: 1.00 USDC, Leverage: 1x
       // Initial Investment: 1.00, PnL: 0.1, Current Value: 1.1
-      const currentValue = calculateCurrentValue(100, 110, 0.01, 1, "LONG");
+      const currentValue = calculateCurrentValue(100, 110, 1, 1, "LONG");
       expect(currentValue).toBe(1.1);
     });
 
     it("should calculate current value for losing position", () => {
-      // Entry: $100, Current: $90, Collateral: 0.01 (= 1.00 USDC), Leverage: 1x
+      // Entry: $100, Current: $90, Collateral: 1.00 USDC, Leverage: 1x
       // Initial Investment: 1.00, PnL: -0.1, Current Value: 0.9
-      const currentValue = calculateCurrentValue(100, 90, 0.01, 1, "LONG");
+      const currentValue = calculateCurrentValue(100, 90, 1, 1, "LONG");
       expect(currentValue).toBe(0.9);
     });
 
     it("should calculate current value with leverage", () => {
-      // Entry: $100, Current: $110, Collateral: 0.01 (= 1.00 USDC), Leverage: 10x
+      // Entry: $100, Current: $110, Collateral: 1.00 USDC, Leverage: 10x
       // Initial Investment: 1.00, PnL: 1.0, Current Value: 2.0
-      const currentValue = calculateCurrentValue(100, 110, 0.01, 10, "LONG");
+      const currentValue = calculateCurrentValue(100, 110, 1, 10, "LONG");
       expect(currentValue).toBe(2);
     });
   });
@@ -362,7 +356,7 @@ export const testCases = {
   realPosition1x: {
     entryPrice: 245.1894,
     currentPrice: 105,
-    collateral: 0.01, // Backend value
+    collateral: 1,
     actualCollateral: 1.0, // UI value (collateral * 100)
     leverage: 1,
     direction: "LONG" as const,
@@ -373,7 +367,7 @@ export const testCases = {
   realPosition50x: {
     entryPrice: 245.1894,
     currentPrice: 105,
-    collateral: 0.01, // Backend value
+    collateral: 1,
     actualCollateral: 1.0, // UI value (collateral * 100)
     leverage: 50,
     direction: "LONG" as const,
@@ -385,7 +379,7 @@ export const testCases = {
   profitableLong1x: {
     entryPrice: 100,
     currentPrice: 110,
-    collateral: 0.01,
+    collateral: 1,
     actualCollateral: 1.0,
     leverage: 1,
     direction: "LONG" as const,
@@ -396,7 +390,7 @@ export const testCases = {
   profitableLong10x: {
     entryPrice: 100,
     currentPrice: 110,
-    collateral: 0.01,
+    collateral: 1,
     actualCollateral: 1.0,
     leverage: 10,
     direction: "LONG" as const,
@@ -407,7 +401,7 @@ export const testCases = {
   profitableShort1x: {
     entryPrice: 100,
     currentPrice: 90,
-    collateral: 0.01,
+    collateral: 1,
     actualCollateral: 1.0,
     leverage: 1,
     direction: "SHORT" as const,
