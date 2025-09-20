@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { 
   ChartDataPoint, 
@@ -57,16 +57,16 @@ export const useLiveChartData = (
     };
   }, [token, timeframe, dummyData]);
 
-  // Return appropriate data based on conditions
-  const data = dummyData || 
-    (timeframe === "1s" 
-      ? realtimeData  // For 1s, only show real-time data (starts empty, builds up)
-      : historicalData) || 
-    [];
+  const data = useMemo(() => {
+    if (dummyData) return dummyData;
+    if (timeframe === "1s") return realtimeData;
+    if (historicalData) return historicalData;
+    return [];
+  }, [dummyData, timeframe, realtimeData, historicalData]);
 
-  return {
+  return useMemo(() => ({
     data,
     isLoading: timeframe === "1s" ? false : isLoading,
     error: timeframe === "1s" ? null : error, // No error for 1s since it doesn't use CoinGecko
-  };
+  }), [data, timeframe, isLoading, error]);
 };
