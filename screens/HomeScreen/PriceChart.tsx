@@ -1,9 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet } from "react-native";
 
 import { BodyXSEmphasized } from "@/components";
 import { Trade, useHomeContext } from "@/contexts";
-import { useLiveChartData } from "@/hooks";
+import { useInterpolatedChartData, useLiveChartData } from "@/hooks";
 import {
   calculateLiquidationPrice,
   calculatePriceChange,
@@ -43,8 +43,25 @@ export const PriceChart = ({
   const [chartHeight] = useState(200);
   const { selectedToken, selectedTimeframe, openPositions } = useHomeContext();
 
-  // Optimize animation duration based on timeframe
-  const animationDuration = 60;
+  // State for current time to drive continuous scrolling
+  const [currentTime, setCurrentTime] = useState(Date.now());
+
+  // Update current time for smooth scrolling on 1s timeframe
+  useEffect(() => {
+    if (selectedTimeframe !== "1s" || dummyData) {
+      // Reset to current time when not on 1s timeframe
+      setCurrentTime(Date.now());
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setCurrentTime(Date.now());
+    }, 16); // 60fps for smooth scrolling
+
+    return () => clearInterval(interval);
+  }, [selectedTimeframe, dummyData]);
+
+  const animationDuration = selectedTimeframe === "1s" && !dummyData ? 10 : 60;
 
   // Initialize chart press state here (before any conditional returns)
   const chartPressState = useChartPressState({
@@ -53,7 +70,7 @@ export const PriceChart = ({
   });
 
   const {
-    data,
+    data: rawData,
     isLoading: isChartLoading,
     error: chartError,
   } = useLiveChartData(
@@ -61,6 +78,24 @@ export const PriceChart = ({
     selectedTimeframe as SupportedTimeframe,
     dummyData
   );
+
+  // Apply interpolation only for 1s timeframe
+  const interpolatedResult = useInterpolatedChartData(
+    rawData,
+    selectedTimeframe === "1s" && !dummyData,
+    selectedToken // Pass token to detect switches
+  );
+
+  // Use interpolated data for 1s timeframe, raw data for others
+  const data =
+    selectedTimeframe === "1s" && !dummyData
+      ? interpolatedResult.data
+      : rawData;
+
+  const targetBounds =
+    selectedTimeframe === "1s" && !dummyData
+      ? interpolatedResult.targetBounds
+      : null;
 
   // Get current price from data to match the chart data
   const currentPrice = data.length > 0 ? data[data.length - 1].value : 0;
@@ -133,10 +168,13 @@ export const PriceChart = ({
 
   // Format data for Victory Native (requires x and y fields)
   // Use timestamp as x value for all timeframes for accurate representation
-  const chartData = data.map((item, index) => ({
-    x: item.timestamp || Date.now() - (data.length - 1 - index) * 1000,
-    y: item.value,
-  }));
+  const chartData = useMemo(() => {
+    return data.map((item, index) => ({
+      x: item.timestamp || Date.now() - (data.length - 1 - index) * 1000,
+      y: item.value,
+      key: `${item.timestamp || index}-${index}`, // Unique key combining timestamp and index
+    }));
+  }, [data]);
 
   // Calculate price proximity for dynamic zoom - must be before any returns
   const priceProximityRatio = useMemo(() => {
@@ -146,8 +184,8 @@ export const PriceChart = ({
 
   // Check if liquidation would be pinned
   const yValues = chartData.map(d => d.y);
-  const yMin = Math.min(...yValues);
-  const yMax = Math.max(...yValues);
+  const yMin = targetBounds ? targetBounds.min : Math.min(...yValues);
+  const yMax = targetBounds ? targetBounds.max : Math.max(...yValues);
   const yRange = yMax - yMin;
 
   const isCloseRange = priceProximityRatio < 0.05; // Within 5%
@@ -164,8 +202,8 @@ export const PriceChart = ({
     showLiquidation &&
     liquidationPrice < yMin - yRange * bufferRatio;
 
-  // Dynamic domain calculation for zoom
-  const getDynamicDomain = (): [number, number] => {
+  // Dynamic domain calculation for zoom - memoized to prevent unnecessary updates
+  const dynamicDomain = useMemo((): [number, number] => {
     if (!showLiquidation || !liquidationPrice) {
       // Default domain when no liquidation
       return [yMin - yRange * 0.1, yMax + yRange * 0.1] as [number, number];
@@ -188,11 +226,22 @@ export const PriceChart = ({
 
     // Default domain - don't extend for pinned liquidation
     return [yMin - yRange * 0.1, yMax + yRange * 0.1] as [number, number];
-  };
+  }, [
+    yMin,
+    yMax,
+    yRange,
+    showLiquidation,
+    liquidationPrice,
+    isLiquidationAbove,
+    isLiquidationBelow,
+    isCloseRange,
+    isMediumRange,
+    currentPrice,
+  ]);
 
   // Dynamic domain padding based on proximity and pinned state
-  let domainPaddingTop = 10;
-  let domainPaddingBottom = 10;
+  let domainPaddingTop = 30;
+  let domainPaddingBottom = 30;
 
   // Add extra padding when liquidation is pinned to prevent label overlap
   if (showLiquidation && liquidationPrice > 0) {
@@ -271,8 +320,21 @@ export const PriceChart = ({
             right: 8, // the last point
           }}
           domain={{
-            y: getDynamicDomain(),
+            y: dynamicDomain,
           }}
+          viewport={
+            selectedTimeframe === "1s" && !dummyData && chartData.length > 1
+              ? {
+                  x:
+                    chartData.length < 30
+                      ? [
+                          currentTime - (chartData.length * 1000 - 1000),
+                          currentTime + 1000,
+                        ]
+                      : [currentTime - 29000, currentTime + 1000],
+                }
+              : undefined
+          }
           chartPressState={chartPressState.state}
           yAxis={[
             {
@@ -282,7 +344,7 @@ export const PriceChart = ({
               font: font,
               labelPosition: "outset",
               axisSide: "right",
-              enableRescaling: true,
+              enableRescaling: false,
               formatYLabel: value => {
                 if (typeof value === "number") {
                   return formatPrice(value);
